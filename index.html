@@ -5,13 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MedIRIS</title>
   <link rel="icon" href="public/icons/eye-icon.png" type="image/png">
+  <!-- 
+  icon attrbution: 
+   <a href="https://www.flaticon.com/free-icons/eye" title="eye icons">Eye icons created by Vectors Market - Flaticon</a> 
+  -->
+  <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
 
+  <!-- simplify import path for node modules -->
+  <script type="importmap">
+      {
+        "imports": {
+          "twgl.js": "/node_modules/twgl.js/dist/7.x/twgl-full.module.js"
+        }
+      }
+    </script>
+
+  <canvas id="webgl-canvas" width="400px" height="300px"></canvas>
+  <script type="module" src="src/main.js"></script>
+
 </body>
-<!-- 
-icon attrbution: 
- <a href="https://www.flaticon.com/free-icons/eye" title="eye icons">Eye icons created by Vectors Market - Flaticon</a> 
--->
 </html>

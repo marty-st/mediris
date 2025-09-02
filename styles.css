@@ -1,0 +1,6 @@
+#webgl-canvas {
+    background-color: rgb(0, 0, 0);
+    border: 1px solid #000000;
+    width: 400px;
+    height: 300px;
+}
