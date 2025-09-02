@@ -14,14 +14,20 @@
 
 <body>
 
-  <!-- simplify import path for node modules -->
+  <!-- simplify import path for twgl -->
   <script type="importmap">
-      {
-        "imports": {
-          "twgl.js": "/node_modules/twgl.js/dist/7.x/twgl-full.module.js"
-        }
+    {
+      "imports": {
+        "twgl.js": "/node_modules/twgl.js/dist/7.x/twgl-full.module.js"
       }
-    </script>
+    }
+  </script>
+
+    <!-- make dicomParser available as a global object using CDN -->
+  <script src="./node_modules/dicom-parser/dist/dicomParser.min.js"></script>
+  <script>
+    console.log('dicomParser version:', dicomParser.version);
+  </script>
 
   <canvas id="webgl-canvas" width="400px" height="300px"></canvas>
   <script type="module" src="src/main.js"></script>
