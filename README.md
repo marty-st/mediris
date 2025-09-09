@@ -5,12 +5,14 @@
 **MedIRIS** is written in JavaScript and uses the following libraries:
 - [twgl.js](https://github.com/greggman/twgl.js/)
 - [dicomParser](https://github.com/cornerstonejs/dicomParser)
+- [Tweakpane](https://github.com/cocopon/tweakpane)
 
 ## Build
 To build the project, clone its repository into a folder on your machine and install Node packages in the main directory:
-`git clone https://github.com/marty-st/mediris.git`
-`npm install twgl.js`
-`npm install dicom-parser` 
+- `git clone https://github.com/marty-st/mediris.git`
+- `npm install twgl.js`
+- `npm install dicom-parser` 
+- `npm install --save tweakpane`
 
 ## License
 MedIRIS, a web-based application for viewing PET/CT scan imagery.
