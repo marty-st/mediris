@@ -1,6 +1,9 @@
 /**
- * Code from:
+ * Code by: 
+ * David Banks
+ * from:
  * https://medium.com/@banksysan_10088/webgl-external-glsl-files-dd7cf85f9ee9
+ * 
  * Fetch the fragment and vertex shader text from external files.
  * @param vertexShaderPath
  * @param fragmentShaderPath
