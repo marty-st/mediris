@@ -14,7 +14,7 @@
 
 <body>
 
-  <!-- simplify import path for twgl -->
+  <!-- simplify import paths -->
   <script type="importmap">
     {
       "imports": {
@@ -30,6 +30,7 @@
     console.log('dicomParser version:', dicomParser.version);
   </script>
 
+<!-- Width and Height set the drawing buffer size (resolution), can be adjusted in JS -->
   <canvas id="webgl-canvas" width="400px" height="300px"></canvas>
   <script type="module" src="src/main.js"></script>
 
