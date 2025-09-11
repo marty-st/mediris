@@ -3,7 +3,7 @@
 
 ## Framework
 **MedIRIS** is written in JavaScript and uses the following libraries:
-- [nodemon](https://www.npmjs.com/package/nodemon)
+- [vite](https://github.com/vitejs/vite) (dev only)
 - [twgl.js](https://github.com/greggman/twgl.js/)
 - [dicomParser](https://github.com/cornerstonejs/dicomParser)
 - [Tweakpane](https://github.com/cocopon/tweakpane)
@@ -11,7 +11,7 @@
 ## Build
 To build the project, clone its repository into a folder on your machine and install Node packages in the main directory:
 - `git clone https://github.com/marty-st/mediris.git`
-- `npm install --save-dev nodemon`
+- `npm install --save-dev vite`
 - `npm install twgl.js`
 - `npm install dicom-parser` 
 - `npm install --save tweakpane`
@@ -20,8 +20,10 @@ and add the following to the `package.json` file:
 ```
 {
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "server": "node server.js"
   }
 }
 ```
