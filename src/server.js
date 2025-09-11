@@ -1,6 +1,6 @@
 'use strict'
 
-import parseDicomFolder from "./src/file/dicom.js";
+import parseDicomFolder from "./file/dicom.js";
 
 /**
  * Code from: https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Server-side/Node_server_without_framework
