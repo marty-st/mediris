@@ -1,6 +1,6 @@
 'use strict'
 
-const dataPath = '../../public/data';
+const dataPath = '/data';
 
 // load the file dropped on the element and then call parseByteArray with a
 // Uint8Array containing the files contents

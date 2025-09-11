@@ -5,7 +5,7 @@ import * as twgl from 'twgl.js';
 import fetchShaderTexts from '../file/shader.js';
 
 // Relative path to the shader folder
-const shaderPath = '../../public/shaders/';
+const shaderPath = '/shaders/';
 
 /**
  * 
