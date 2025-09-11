@@ -1,6 +1,6 @@
 'use strict'
 
-import { Pane } from 'tweakpane.js';
+import { Pane } from 'tweakpane';
 
 /**
  * Initializes the context of Tweakpane UI elements for debugging purposes
