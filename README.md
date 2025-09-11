@@ -3,20 +3,26 @@
 
 ## Framework
 **MedIRIS** is written in JavaScript and uses the following libraries:
-- [vite](https://github.com/vitejs/vite) (dev only)
+- [Vite](https://github.com/vitejs/vite) (dev only)
 - [twgl.js](https://github.com/greggman/twgl.js/)
 - [dicomParser](https://github.com/cornerstonejs/dicomParser)
 - [Tweakpane](https://github.com/cocopon/tweakpane)
 
 ## Build
-To build the project, clone its repository into a folder on your machine and install Node packages in the main directory:
-- `git clone https://github.com/marty-st/mediris.git`
-- `npm install --save-dev vite`
-- `npm install twgl.js`
-- `npm install dicom-parser` 
-- `npm install --save tweakpane`
-
-and add the following to the `package.json` file:
+To build the project:
+### 1. Clone its repository into a folder on your machine
+```
+git clone https://github.com/marty-st/mediris.git
+```
+### 2. install Node packages in the root of the project
+(You must have [Node.js](https://nodejs.org/en) installed on your machine)
+```
+`npm install --save-dev vite`
+`npm install twgl.js`
+`npm install dicom-parser` 
+`npm install --save tweakpane`
+```
+### 3. Add the following to the `package.json` file:
 ```
 {
   "scripts": {
@@ -27,8 +33,10 @@ and add the following to the `package.json` file:
   }
 }
 ```
-Then run the application from the command line:
-- `npm run dev`
+### 4. Run the application from the command line:
+```
+npm run dev
+```
 
 ## License
 MedIRIS, a web-based application for viewing PET/CT scan imagery.
