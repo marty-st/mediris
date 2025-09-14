@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import readDicomFileNames from './src/file/dicom.js';
+import getDicomFolderInfo from './src/file/dicom_server.js';
 
 function dicomApi() {
   return {
@@ -10,7 +10,7 @@ function dicomApi() {
           const url = new URL(req.url, 'http://localhost');
           // Hardcoded folder name
           const folder = url.searchParams.get('folder') || 'CT WB w-contrast 5.0 B30s';
-          const result = await readDicomFileNames(folder);
+          const result = await getDicomFolderInfo(folder);
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify(result));
         } catch (err) {
@@ -25,7 +25,7 @@ function dicomApi() {
           const url = new URL(req.url, 'http://localhost');
           // Hardcoded folder name
           const folder = url.searchParams.get('folder') || 'CT WB w-contrast 5.0 B30s';
-          const result = await readDicomFileNames(folder);
+          const result = await getDicomFolderInfo(folder);
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify(result));
         } catch (err) {
