@@ -6,6 +6,8 @@
 - [Vite](https://github.com/vitejs/vite) (dev only)
 - [twgl.js](https://github.com/greggman/twgl.js/)
 - [dicomParser](https://github.com/cornerstonejs/dicomParser)
+- [Cornerstone WADO Image Loader](https://github.com/cornerstonejs/cornerstone3D/)
+- [Cornerstone Core](https://github.com/cornerstonejs/cornerstone3D/)
 - [Tweakpane](https://github.com/cocopon/tweakpane)
 
 ## Build
@@ -19,7 +21,7 @@ git clone https://github.com/marty-st/mediris.git
 ```
 `npm install --save-dev vite`
 `npm install twgl.js`
-`npm install dicom-parser` 
+`npm install dicom-parser cornerstone-wado-image-loader cornerstone-core` 
 `npm install --save tweakpane`
 ```
 ### 3. Add the following to the `package.json` file:
