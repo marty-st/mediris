@@ -1,6 +1,13 @@
 'use strict'
 
-import parseDicomFolder from "./file/dicom.js";
+/**
+ * !!!
+ * UNUSED, AS VITE IS RUNNING THE SERVER.
+ * HOWEVER, A SERVER WILL BE NEEDED FOR DEPLOYMENT.
+ * !!!
+ */
+
+import readDicomFileNames from "./file/dicom.js";
 
 /**
  * Code from: https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Server-side/Node_server_without_framework
@@ -53,6 +60,22 @@ const prepareFile = async (url) => {
 
 http
   .createServer(async (req, res) => {
+    // Accessing DICOM files
+    const urlObj = new URL(req.url, `http://${req.headers.host}`);
+    if (urlObj.pathname === "/server/dicom" && req.method === "GET") {
+      try {
+        // Hardcoded folder name
+        const folder = urlObj.searchParams.get("folder") || "CT WB w-contrast 5.0 B30s";
+        const result = await readDicomFileNames(folder);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "text/plain" });
+        res.end("Error: " + err.message);
+      }
+      return;
+    }
+
     const file = await prepareFile(req.url);
 
     const statusCodeSuccess = 200;
