@@ -8,8 +8,10 @@ function dicomApi() {
       server.middlewares.use('/server/dicom', async (req, res) => {
         try {
           const url = new URL(req.url, 'http://localhost');
-          // Hardcoded folder name
-          const folder = url.searchParams.get('folder') || 'CT WB w-contrast 5.0 B30s';
+          const folder = url.searchParams.get('folder');
+          if (folder === "")
+              throw new Error("No DICOM folder name given to read file data from.");
+
           const result = await getDicomFolderInfo(folder);
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify(result));
@@ -23,8 +25,10 @@ function dicomApi() {
       server.middlewares.use('/server/dicom', async (req, res) => {
         try {
           const url = new URL(req.url, 'http://localhost');
-          // Hardcoded folder name
-          const folder = url.searchParams.get('folder') || 'CT WB w-contrast 5.0 B30s';
+          const folder = url.searchParams.get('folder');
+          if (folder === "")
+              throw new Error("No DICOM folder name given to read file data from.");
+            
           const result = await getDicomFolderInfo(folder);
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify(result));
