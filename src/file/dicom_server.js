@@ -4,43 +4,52 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 const dataPath = './public/data/';
+const urlBase = '/data/'
 
 /**
  * 
- * @param {*} relativeFolder 
- * @returns 
+ * @param {*} folderPath relative path to the folder containing DICOM data
+ * @returns an array of file names that have the .dcm suffix
  */
-export default async function getDicomFolderInfo(relativeFolder)
+async function readDicomFileNames(folderPath)
 {
-  const folderInfo = await readDicomFileNames(relativeFolder);
-  // console.log("DICOM folder info: ", folderInfo);
-  return folderInfo;
-}
-
-/**
- * 
- * @param {*} relativeFolder 
- * @returns 
- */
-async function readDicomFileNames(relativeFolder = "") 
-{
-  const targetFolder = path.join(dataPath, relativeFolder);
-  const entries = await fs.readdir(targetFolder, { withFileTypes: true });
+  const entries = await fs.readdir(folderPath, { withFileTypes: true });
 
   const files = entries
     .filter((e) => e.isFile() && e.name.toLowerCase().endsWith('.dcm'))
     .map((e) => e.name)
     .sort();
 
-  // const subdirs = entries.filter((e) => e.isDirectory()).map((e) => e.name);
+    return files;
+}
 
-  const webBase = `/data/${relativeFolder}`.replace(/\\/g, '/');
+/**
+ * 
+ * @param {*} folderName direct name of the folder containing DICOM data
+ * @returns an URL path to the target folder usable by the client-side code base when fetching.
+ */
+function createFolderURL(folderName) 
+{
+  return`${urlBase}${folderName}`.replace(/\\/g, '/');
+}
+
+/**
+ * Function exposed to the server
+ * @param {*} folderName direct name of the folder containing DICOM data
+ * @returns `folderInfo` - contains folder name, file count, array of file names, folder path string for client-side access.
+ */
+export default async function getDicomFolderInfo(folderName)
+{
+  const folderPath = path.join(dataPath, folderName); 
+
+  const files = await readDicomFileNames(folderPath);
+
+  const folderURL = createFolderURL(folderName);
 
   return {
-    folder: relativeFolder,
+    folder: folderName,
     fileCount: files.length,
     files,
-    webBase,
-    // subdirs,
+    folderURL,
   };
 }
