@@ -1,5 +1,13 @@
 'use strict'
 
+/**
+ * NOTE: The code in this file seems to be no longer supported
+ * by the cornerstone libraries. It works but only partially.
+ * No metadata are loaded (default value always selected).
+ * 
+ * TODO: docs
+ */
+
 import * as cornerstone from 'cornerstone-core';
 import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import dicomParser from 'dicom-parser';
@@ -9,18 +17,34 @@ cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
 cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
 
 // true for compressed DICOM, false for uncompressed
-cornerstoneWADOImageLoader.configure({ useWebWorkers: true });
+cornerstoneWADOImageLoader.configure({ useWebWorkers: false });
 
 // For compressed syntaxes, copy worker+codec files to public/ and initialize:
 // NOTE: Didn't do that as I didn't find the files
-cornerstoneWADOImageLoader.webWorkerManager.initialize({
-  webWorkerPath: '/cornerstone/cornerstoneWADOImageLoaderWebWorker.min.js',
-  taskConfiguration: {
-    decodeTask: {
-      codecsPath: '/cornerstone/cornerstoneWADOImageLoaderCodecs.min.js',
-    },
-  },
-});
+// cornerstoneWADOImageLoader.webWorkerManager.initialize({
+//   webWorkerPath: '/cornerstone/cornerstoneWADOImageLoaderWebWorker.min.js',
+//   taskConfiguration: {
+//     decodeTask: {
+//       codecsPath: '/cornerstone/cornerstoneWADOImageLoaderCodecs.min.js',
+//     },
+//   },
+// });
+
+
+
+/**
+ * Ask server for list of files
+ * @param {*} folderName direct name of the folder containing DICOM data
+ * @returns a json-type object containing DICOM folder metadata and file names
+ */
+async function fetchDicomFileNames(folderName)
+{
+  const listRes = await fetch(`/server/dicom/?folder=${encodeURIComponent(folderName)}`);
+  if (!listRes.ok) 
+    throw new Error(`List HTTP ${listRes.status}`);
+
+  return await listRes.json();
+}
 
 /**
  * Helper function: loads imageIds in batches (limits network/CPU concurrency)
@@ -48,18 +72,11 @@ async function loadInBatches(imageIds, batchSize = 6, onProgress) {
 
 /**
  * 
- * @param {*} relativeFolder 
+ * @param {*} imageIds 
  * @returns 
  */
-export default async function fetchDicom(relativeFolder = 'CT WB w-contrast 5.0 B30s') {
-  // Ask server for list of files and a web base path
-  const listRes = await fetch(`/server/dicom`);
-  if (!listRes.ok) throw new Error(`List HTTP ${listRes.status}`);
-  const list = await listRes.json();
-
-  const urls = list.files.map(f => `${list.webBase}/${encodeURIComponent(f)}`);
-  const imageIds = urls.map(u => `wadouri:${u}`);
-  
+async function loadImages(imageIds)
+{
   // Not using batches:
   // const images = [];
   // for (const id of imageIds) {
@@ -77,10 +94,31 @@ export default async function fetchDicom(relativeFolder = 'CT WB w-contrast 5.0 
   if (images.length === 0) 
     throw new Error('No images loaded');
 
-  const rows = images[0].rows;
-  const cols = images[0].columns;
-  const depth = images.length;
+  return images;
+}
 
+/**
+ * 
+ * @param {*} images 
+ * @returns 
+ */
+function getDataDimensions(images)
+{
+  return { 
+    rows: images[0].rows, 
+    cols: images[0].columns,
+    depth: images.length,
+  };
+}
+
+/**
+ * 
+ * @param {*} images 
+ * @param {*} imageIds 
+ * @returns 
+ */
+function getPixelMetaData(images, imageIds)
+{
   // Enable metadata provider so metaData.get works
   // TODO: Throws error Uncaught (in promise) TypeError: providers[i].provider is not a function
   // cornerstone.metaData.addProvider(
@@ -88,49 +126,127 @@ export default async function fetchDicom(relativeFolder = 'CT WB w-contrast 5.0 
   //   9999
   // );
 
-  const bitsAllocated = cornerstone.metaData.get('bitsAllocated', imageIds[0]) ?? 16;
-  const pixelRepresentation = cornerstone.metaData.get('pixelRepresentation', imageIds[0]) ?? 0; // 0=unsigned,1=signed
+  // const bitsAllocated = cornerstone.metaData.get('bitsAllocated', imageIds[0]) ?? 16;
+  // console.log("bit allocated", bitsAllocated);
+  // const pixelRepresentation = cornerstone.metaData.get('pixelRepresentation', imageIds[0]) ?? 0; // 0=unsigned,1=signed
+  // console.log("pixel representation", pixelRepresentation);
 
-  const Typed =
-    bitsAllocated === 8 ? Uint8Array
+  // Prefer metadata; otherwise infer from pixel data type
+  let bitsAllocated = cornerstone.metaData.get?.('bitsAllocated', imageIds[0]);
+  let pixelRepresentation = cornerstone.metaData.get?.('pixelRepresentation', imageIds[0]);
+  if (bitsAllocated == null || pixelRepresentation == null) {
+    const pd0 = images[0].getPixelData();
+    bitsAllocated = (pd0?.BYTES_PER_ELEMENT || 1) * 8;
+    pixelRepresentation =
+      pd0 instanceof Int8Array || pd0 instanceof Int16Array || pd0 instanceof Int32Array ? 1 : 0;
+  }
+
+  return { bitsAllocated, pixelRepresentation };
+}
+
+/**
+ * 
+ * @param {*} bitsAllocated 
+ * @param {*} pixelRepresentation 
+ * @returns 
+ */
+function defineVolumeArrayType(bitsAllocated, pixelRepresentation)
+{
+  return bitsAllocated === 8 ? Uint8Array
     : bitsAllocated === 16 ? (pixelRepresentation === 1 ? Int16Array : Uint16Array)
     : bitsAllocated === 32 ? (pixelRepresentation === 1 ? Int32Array : Uint32Array)
     : Uint8Array;
+}
 
-  const sliceSize = rows * cols;
+/**
+ * Gathers pixel data for 3D texture into a single volume object
+ * @param {*} images 
+ * @param {*} dimensions 
+ * @param {*} sliceSize 
+ * @param {*} Typed 
+ * @returns 
+ */
+function createVolume(images, dimensions, sliceSize, Typed)
+{
+  const volume = new Typed(sliceSize * dimensions.depth);
 
-  // pixel data for 3D texture
-  const volume = new Typed(sliceSize * depth);
+  for (let z = 0; z < dimensions.depth; z++) {
+    const slicePixelData = images[z].getPixelData(); // Typed array
 
-  for (let z = 0; z < depth; z++) {
-    const pd = images[z].getPixelData(); // Typed array
-    if (pd.length !== sliceSize) {
-      throw new Error(`Unexpected pixels in slice ${z}: ${pd.length} != ${sliceSize}`);
+    if (slicePixelData.length !== sliceSize) {
+      throw new Error(`Unexpected pixels in slice ${z}: ${slicePixelData.length} != ${sliceSize}`);
     }
-    volume.set(pd, z * sliceSize);
+    volume.set(slicePixelData, z * sliceSize);
   }
 
-  // Optional spacing/geometry
+  return volume;
+}
+
+/**
+ * 
+ * @param {*} imageIds 
+ * @param {*} dimensions 
+ * @returns 
+ */
+function getPixelSpacing(imageIds, dimensions)
+{
   const plane = cornerstone.metaData.get('imagePlaneModule', imageIds[0]) || {};
-  const spacing = [
+
+  return [
     plane.columnPixelSpacing ?? 1, // dx
     plane.rowPixelSpacing ?? 1,    // dy
-    (depth > 1 ? Math.abs(
+    (dimensions.depth > 1 ? Math.abs(
       (cornerstone.metaData.get('imagePositionPatient', imageIds[1])?.[2] ?? 0) -
       (cornerstone.metaData.get('imagePositionPatient', imageIds[0])?.[2] ?? 0)
     ) : (cornerstone.metaData.get('sliceThickness', imageIds[0]) ?? 1)) || 1, // dz
   ];
+}
+
+/**
+ * 
+ * @param {*} imageIds 
+ * @param {*} images 
+ * @returns an object containing DICOM slices metadata and pixel volume
+ */
+function getImageData(imageIds, images)
+{
+  const dimensions = getDataDimensions(images);
+
+  const { bitsAllocated, pixelRepresentation } = getPixelMetaData(images, imageIds);
+
+  const Typed = defineVolumeArrayType(bitsAllocated, pixelRepresentation);
+
+  const sliceSize = dimensions.rows * dimensions.cols;
+
+  const volume = createVolume(images, dimensions, sliceSize, Typed);
+
+  // Optional spacing/geometry
+  const spacing = getPixelSpacing(imageIds, dimensions);
 
   return {
-    dimensions: {
-      rows,
-      cols,
-      depth,
-    },
+    dimensions,
     bitsAllocated,
     pixelRepresentation,
     spacing,
     imageIds,
     volume,
   };
+}
+
+/**
+ * Fetches DICOM file names from a server, loads them into memory and returns their
+ * relevant content
+ * @param {*} folderName direct name of the folder containing DICOM data
+ * @returns an object containing DICOM slices metadata and pixel volume 
+ */
+export default async function loadDicom(folderName) {
+
+  const list = await fetchDicomFileNames(folderName);
+  // folderURL is a web base path
+  const urls = list.files.map(f => `${list.folderURL}/${encodeURIComponent(f)}`);
+  const imageIds = urls.map(u => `wadouri:${u}`);
+
+  const images = await loadImages(imageIds);
+
+  return getImageData(imageIds, images);
 }
