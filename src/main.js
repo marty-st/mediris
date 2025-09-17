@@ -2,7 +2,7 @@
 
 import * as twgl from 'twgl.js';
 
-import fetchDicom from './file/dicom.js';
+import loadDicom from './file/dicom.js';
 import { initDebugUI } from './ui/init.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
 import createShaderProgram from './webgl/program.js';
@@ -23,7 +23,7 @@ let volumeTexture = null;
 /* --------------------- */
 
 // Load DICOM during module load
-const imageDataPromise = fetchDicom();
+const imageDataPromise = loadDicom('CT WB w-contrast 5.0 B30s');
 
 window.onload = async function init()
 {
@@ -63,9 +63,6 @@ window.onload = async function init()
 
   // Asynchronously load DICOM to display later
   imageDataPromise.then((imageData) => {
-
-  // Alternatively suppress cornerstone console output
-  console.clear();
 
   console.log("DICOM:", imageData);
   const dimensions = imageData.dimensions;
