@@ -21,7 +21,12 @@ export default function render(gl, canvas, geometries)
   {
     gl.useProgram(geometry.programInfo.program);
     gl.bindVertexArray(geometry.vao);
-    // twgl.setUniforms(programInfo, someUniformsObject);
+
+    if (geometry.uniforms)
+      twgl.setUniforms(geometry.programInfo, geometry.uniforms);
+
     twgl.drawBufferInfo(gl, geometry.bufferInfo);
   }
+
+  gl.bindVertexArray(null);
 }
