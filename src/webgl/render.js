@@ -2,6 +2,8 @@
 
 import * as twgl from 'twgl.js';
 
+import { renderLoop } from '../main';
+
 /**
  * Main render loop
  * @param {*} gl WebGL rendering context
@@ -29,4 +31,7 @@ export default function render(gl, canvas, geometries)
   }
 
   gl.bindVertexArray(null);
+
+  // TODO: This throws an error when called before DICOM is loaded (solution: split render functions)
+  requestAnimationFrame(renderLoop);
 }
