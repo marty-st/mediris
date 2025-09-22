@@ -1,0 +1,26 @@
+#version 300 es
+precision mediump float;
+precision mediump usampler3D;
+
+struct VaryingData 
+{
+	vec2 tex_coord;
+};
+
+in VaryingData var;
+
+uniform usampler3D u_volume_texture;
+uniform float u_slice_number;
+uniform float u_slice_count;
+
+out vec4 o_color;
+
+void main()
+{
+  float slice_norm = (u_slice_number - 1.0) / (u_slice_count - 1.0);
+  uvec4 unsigned_color = texture(u_volume_texture, vec3(var.tex_coord, slice_norm));
+  vec4 float_color = vec4(unsigned_color);
+  vec3 color = vec3(float_color.r, float_color.r, float_color.r);
+  color /= 3000.0; // Hardcoded trial-and-error value
+  o_color = vec4(color, 1.0);
+}
