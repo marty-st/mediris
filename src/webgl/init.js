@@ -51,7 +51,6 @@ export function initGLStates(gl)
   gl.clearColor(0.25,0.25,0.25,1.0);
   twgl.setDefaults({
       attribPrefix: "i_",
-      uniformPrefix: "u_",
     }
    );
 }
