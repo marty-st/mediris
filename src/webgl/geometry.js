@@ -1,6 +1,7 @@
 'use strict'
 
 import * as twgl from 'twgl.js';
+import { vec3 } from 'gl-matrix';
 
 // Hack to be able to use twgl.drawBufferInfo() so that it behaves the same as
 // gl.drawArrays(gl.TRIANGLES, 0, 3)
@@ -30,6 +31,27 @@ export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimens
       u_volume_texture: volumeTexture,
       u_slice_number: UIData.slice,
       u_slice_count: dimensions.depth,
+    }
+  };
+}
+
+export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimensions, UIData, camera)
+{
+  const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
+  const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
+  let bbox_dimensions = vec3.create();
+  vec3.set(bbox_dimensions, 5, 5, 5);
+
+  return {
+    bufferInfo: fullScreenQuadBufferInfo, 
+    vao: emptyVAO, 
+    programInfo: shaderProgramInfo, 
+    uniforms: {
+      u_volume_texture: volumeTexture,
+      u_bbox_dimensions: bbox_dimensions,
+      u_eye_position: camera.u_eye_position,
+      u_view_inv: camera.u_view_inv,
+      u_projection_inv: camera.u_projection_inv,
     }
   };
 }
