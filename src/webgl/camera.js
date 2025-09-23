@@ -2,6 +2,11 @@
 
 import { vec3, mat4, glMatrix } from 'gl-matrix';
 
+/**
+ * Initializes the camera object. Contains values used in shader programs
+ * @param {*} canvas HTML canvas element
+ * @returns camera object
+ */
 export function initCamera(canvas)
 {
   let eyePosition = vec3.create();

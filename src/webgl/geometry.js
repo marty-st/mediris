@@ -14,9 +14,10 @@ const fullScreenQuadArrays = {
  * Creates a geometry object compatible with the rendering pipeline
  * @param {*} gl WebGL rendering context
  * @param {*} shaderProgramInfo associated shader program
+ * @param {*} volumeTexture volume data 3D texture
  * @param {*} dimensions dimensions of provided volume texture
  * @param {*} UIData object with UI-controlled variables
- * @returns geometry object of the volume
+ * @returns geometry object of the volume for individual slice rendering
  */
 export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimensions, UIData)
 {
@@ -35,6 +36,16 @@ export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimens
   };
 }
 
+/**
+ * Creates a geometry object compatible with the rendering pipeline
+ * @param {*} gl WebGL rendering context
+ * @param {*} shaderProgramInfo associated shader program
+ * @param {*} volumeTexture volume data 3D texture
+ * @param {*} dimensions dimensions of provided volume texture
+ * @param {*} UIData object with UI-controlled variables
+ * @param {*} camera object with camera-related uniforms
+ * @returns geometry object of the volume for 3D volume rendering
+ */
 export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimensions, UIData, camera)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
