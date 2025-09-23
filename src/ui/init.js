@@ -4,6 +4,7 @@ import { Pane } from 'tweakpane';
 
 /**
  * Initializes the context of Tweakpane UI elements for debugging purposes
+ * @param UIData object that reflects states of Tweakpane controlled variables
  * @returns `Pane`object
  */
 export function initDebugUI(UIData)
