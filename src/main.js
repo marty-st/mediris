@@ -1,12 +1,12 @@
 'use strict'
 
-import * as twgl from 'twgl.js';
-
 import loadDicom from './file/dicom.js';
 import { initDebugUI } from './ui/init.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
 import createShaderProgram from './webgl/program.js';
 import render from './webgl/render.js';
+import { createVolumeTexture } from './webgl/texture.js';
+import { createTriangleGeometry, createSliceGeometry } from './webgl/geometry.js';
 
 /* --------------------- */
 /* --GLOBAL VARIABLES--- */
@@ -16,9 +16,9 @@ import render from './webgl/render.js';
 let canvas = undefined;             // HTML <canvas> element 
 let gl = undefined;                 // WebGL rendering context element
 let pane = undefined;               // Tweakpane rendering window
-let geometries = [];
-let volumeTexture = null;
+let geometries = [];                // array of rendered objects
 
+// Meidator object between Tweakpane and the rest of the application
 let UIData = {
   slice: 1,
 };
@@ -30,6 +30,7 @@ let UIData = {
 // Load DICOM during module load
 const imageDataPromise = loadDicom('CT WB w-contrast 5.0 B30s');
 
+// Define WebGL window initialization
 window.onload = async function init()
 {
   /* --------------------- */
@@ -37,7 +38,6 @@ window.onload = async function init()
   /* --------------------- */
 
   pane = initDebugUI(UIData);
-  // console.log("pane state", pane.exportState());
 
   /* --------------------- */
   /* CANVAS INITIALIZATION */
@@ -58,27 +58,13 @@ window.onload = async function init()
   /* --------------------- */
   /* -DATA INITIALIZATION- */
   /* --------------------- */
-
-  const triangleArrays = {
-     position: { numComponents: 2, data: [-0.5, 0, 0, 0.866, 0.3, 0], },
-  };
-
-  // Hack to be able to use twgl.drawBufferInfo() so that it behaves the same as
-  // gl.drawArrays(gl.TRIANGLES, 0, 3)
-  // where this setup sets bufferInfo.numElements to 3
-  const fullScreenQuadArrays = {
-    position: { numComponents: 1, data: [0, 0, 0], },
-  };
-
-  const triangleBufferInfo = twgl.createBufferInfoFromArrays(gl, triangleArrays);
-  const triangleVAO = twgl.createVAOFromBufferInfo(gl, triangleProgramInfo, triangleBufferInfo);
-
-  const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
-  const emptyVAO = twgl.createVAOFromBufferInfo(gl, volumeProgramInfo, fullScreenQuadBufferInfo);
-
-  geometries.push(
-    {bufferInfo: triangleBufferInfo, vao: triangleVAO, programInfo: triangleProgramInfo, uniforms: null},
-  );
+  
+  geometries.push(createTriangleGeometry(gl, triangleProgramInfo));
+  
+  /* --------------------- */
+  /* -----RENDER LOAD----- */
+  /* --------------------- */
+  render(gl, canvas, geometries);
 
   // Asynchronously load DICOM to display later
   imageDataPromise.then((imageData) => {
@@ -87,60 +73,33 @@ window.onload = async function init()
     const dimensions = imageData.dimensions;
     const volume = imageData.volume;
 
-    // Example: upload 3D texture (unsigned 16-bit)
-    volumeTexture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_3D, volumeTexture);
-    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
-    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    const volumeTexture = createVolumeTexture(gl, volume, dimensions);
 
-    // Choose formats based on bit depth and signedness (example: unsigned 16)
-    gl.texImage3D(
-      gl.TEXTURE_3D,
-      0,
-      gl.R16UI,             // internalFormat
-      dimensions.cols,
-      dimensions.rows,
-      dimensions.depth,
-      0,
-      gl.RED_INTEGER,       // format
-      gl.UNSIGNED_SHORT,    // type
-      volume
-    );
+    geometries.push(createSliceGeometry(gl, volumeProgramInfo, volumeTexture, dimensions, UIData));
 
-    geometries.push({
-      bufferInfo: fullScreenQuadBufferInfo, 
-      vao: emptyVAO, 
-      programInfo: volumeProgramInfo, 
-      uniforms: {
-        u_volume_texture: volumeTexture,
-        u_slice_number: UIData.slice,
-        u_slice_count: dimensions.depth,
-      }
-    });
-
-    // render again with the new geometry loaded
+    /* --------------------- */
+    /* -----RENDER LOOP----- */
+    /* --------------------- */
+    // start render loop with the volume geometry loaded
     this.requestAnimationFrame(renderLoop);
   })
-  
-  /* --------------------- */
-  /* -----RENDER LOOP----- */
-  /* --------------------- */
-
-  // Renders before DICOM data are loaded
-  render(gl, canvas, geometries);
 }
 
+/**
+ * Updates variables throughout the render loop
+ */
 function update()
 {
   geometries[1].uniforms.u_slice_number = UIData.slice;
 }
 
+/**
+ * Main render loop called via requestAnimationFrame(). 
+ * Actual rendering is forwarded to the main render() function
+ */
 export function renderLoop()
 {
   update();
   render(gl, canvas, geometries);
+  requestAnimationFrame(renderLoop);
 }
