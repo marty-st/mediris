@@ -6,7 +6,8 @@ import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from '
 import createShaderProgram from './webgl/program.js';
 import render from './webgl/render.js';
 import { createVolumeTexture } from './webgl/texture.js';
-import { createTriangleGeometry, createSliceGeometry } from './webgl/geometry.js';
+import { createTriangleGeometry, createSliceGeometry, createVolumeGeometry } from './webgl/geometry.js';
+import { initCamera } from './webgl/camera.js';
 
 /* --------------------- */
 /* --GLOBAL VARIABLES--- */
@@ -18,7 +19,7 @@ let gl = undefined;                 // WebGL rendering context element
 let pane = undefined;               // Tweakpane rendering window
 let geometries = [];                // array of rendered objects
 
-// Meidator object between Tweakpane and the rest of the application
+// Mediator object between Tweakpane and the rest of the application
 let UIData = {
   slice: 1,
 };
@@ -53,17 +54,21 @@ window.onload = async function init()
   /* --------------------- */
 
   const triangleProgramInfo = await createShaderProgram(gl, "basic");
-  const volumeProgramInfo = await createShaderProgram(gl, "fsquad", "slice_texture");
+  const sliceProgramInfo = await createShaderProgram(gl, "fsquad", "slice_texture");
+  const volumeProgramInfo = await createShaderProgram(gl, "fsquad", "raytrace");
 
   /* --------------------- */
   /* -DATA INITIALIZATION- */
   /* --------------------- */
+
+  const camera = initCamera(canvas);
   
   geometries.push(createTriangleGeometry(gl, triangleProgramInfo));
   
   /* --------------------- */
   /* -----RENDER LOAD----- */
   /* --------------------- */
+
   render(gl, canvas, geometries);
 
   // Asynchronously load DICOM to display later
@@ -75,11 +80,13 @@ window.onload = async function init()
 
     const volumeTexture = createVolumeTexture(gl, volume, dimensions);
 
-    geometries.push(createSliceGeometry(gl, volumeProgramInfo, volumeTexture, dimensions, UIData));
+    geometries.push(createSliceGeometry(gl, sliceProgramInfo, volumeTexture, dimensions, UIData));
+    geometries.push(createVolumeGeometry(gl, volumeProgramInfo, volumeTexture, dimensions, UIData, camera));
 
     /* --------------------- */
     /* -----RENDER LOOP----- */
     /* --------------------- */
+    
     // start render loop with the volume geometry loaded
     this.requestAnimationFrame(renderLoop);
   })
