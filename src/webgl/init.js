@@ -28,6 +28,8 @@ export function initGLContext(canvas)
     alert('WebGL2 is not supported!')
   }
 
+  gl.enable(gl.SCISSOR_TEST);
+
   return gl;
 }
 

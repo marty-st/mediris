@@ -8,12 +8,13 @@ import * as twgl from 'twgl.js';
  * @param {*} canvas HTML canvas element
  * @param {*} geometries Array of `geometry` objects
  */
-export default function render(gl, canvas, geometries)
+export default function render(gl, canvas, viewport, geometries)
 { 
   // TODO: canvas resize
   // https://webgl2fundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html
 
-  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.viewport(viewport.leftX, viewport.bottomY, viewport.width, viewport.height);
+  gl.scissor(viewport.leftX, viewport.bottomY, viewport.width, viewport.height);
 
   gl.clear(gl.COLOR_BUFFER_BIT);
 

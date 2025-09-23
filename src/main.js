@@ -18,6 +18,12 @@ let canvas = undefined;             // HTML <canvas> element
 let gl = undefined;                 // WebGL rendering context element
 let pane = undefined;               // Tweakpane rendering window
 let geometries = [];                // array of rendered objects
+let viewportMain = undefined;       // main viewport position and dimensions
+
+// Debug variables
+const debugMode = true;
+let geometriesDebug = [];
+let viewportDebug = undefined;
 
 // Mediator object between Tweakpane and the rest of the application
 let UIData = {
@@ -61,15 +67,32 @@ window.onload = async function init()
   /* -DATA INITIALIZATION- */
   /* --------------------- */
 
-  const camera = initCamera(canvas);
+  viewportMain = {
+    leftX: 0,
+    bottomY: canvas.height * 0.5,
+    width: canvas.width,
+    height: canvas.height * 0.5,
+  };
+  
+  viewportDebug = {
+    leftX: 0,
+    bottomY: 0,
+    width: canvas.width,
+    height: canvas.height * 0.5,
+  }
+
+  const camera = initCamera(viewportMain);
   
   geometries.push(createTriangleGeometry(gl, triangleProgramInfo));
+  geometriesDebug.push(createTriangleGeometry(gl, triangleProgramInfo));
   
   /* --------------------- */
   /* -----RENDER LOAD----- */
   /* --------------------- */
 
-  render(gl, canvas, geometries);
+  render(gl, canvas, viewportMain, geometries);
+  if (debugMode)
+    render(gl, canvas, viewportDebug, geometries);
 
   // Asynchronously load DICOM to display later
   imageDataPromise.then((imageData) => {
@@ -80,8 +103,8 @@ window.onload = async function init()
 
     const volumeTexture = createVolumeTexture(gl, volume, dimensions);
 
-    geometries.push(createSliceGeometry(gl, sliceProgramInfo, volumeTexture, dimensions, UIData));
     geometries.push(createVolumeGeometry(gl, volumeProgramInfo, volumeTexture, dimensions, UIData, camera));
+    geometriesDebug.push(createSliceGeometry(gl, sliceProgramInfo, volumeTexture, dimensions, UIData));
 
     /* --------------------- */
     /* -----RENDER LOOP----- */
@@ -97,7 +120,7 @@ window.onload = async function init()
  */
 function update()
 {
-  geometries[1].uniforms.u_slice_number = UIData.slice;
+  geometriesDebug[1].uniforms.u_slice_number = UIData.slice;
 }
 
 /**
@@ -107,6 +130,8 @@ function update()
 export function renderLoop()
 {
   update();
-  render(gl, canvas, geometries);
+  render(gl, canvas, viewportMain, geometries);
+  if (debugMode)
+    render(gl, canvas, viewportDebug, geometriesDebug)
   requestAnimationFrame(renderLoop);
 }

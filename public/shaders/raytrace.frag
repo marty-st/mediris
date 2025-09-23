@@ -86,7 +86,7 @@ Hit evaluate(const Ray ray)
 vec3 trace(Ray ray) 
 {
   // The accumulated color used when tracing the rays through the scene.
-	vec3 color = vec3(0.0);
+	vec3 color = vec3(0.15, 0.2, 0.2);
 
   int bounces = 0;
 
