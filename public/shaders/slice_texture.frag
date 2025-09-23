@@ -2,17 +2,27 @@
 precision mediump float;
 precision mediump usampler3D;
 
+/* -------DEFINITIONS------- */
+/* ------------------------- */
 struct VaryingData 
 {
 	vec2 tex_coord;
 };
 
+/* ----------INPUT---------- */
+/* ------------------------- */
 in VaryingData var;
 
+/* --------UNIFORMS--------- */
+/* ------------------------- */
 uniform usampler3D u_volume_texture;
+// Affects what depth (z-coordinate) of the 3D texture is sampled
 uniform float u_slice_number;
+// Total count of images that make up the 3D texture's depth
 uniform float u_slice_count;
 
+/* ---------OUTPUT---------- */
+/* ------------------------- */
 out vec4 o_color;
 
 void main()
