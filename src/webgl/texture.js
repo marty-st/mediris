@@ -1,5 +1,32 @@
 'use strict'
 
+export function create2DTexture(gl, image, dimensions)
+{
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.RGBA,
+    dimensions.width,
+    dimensions.height,
+    0,
+    gl.RGBA,
+    gl.UNSIGNED_BYTE,
+    image
+  );
+
+  return texture;
+}
+
 /**
  * Creates a 3D texture from DICOM volume data
  * @param {*} gl WebGL rendering context
@@ -22,6 +49,7 @@ export function createVolumeTexture(gl, volume, dimensions)
     // gl.UNPACK_ALIGNMENT specifies the alignment requirements
     // for the start of each pixel row in memory. 1 == byte alignment
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 
     // IMPORTANT: Choose formats based on bit depth and signedness 
     // hardcoded: unsigned 16bit
