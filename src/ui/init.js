@@ -21,15 +21,15 @@ export function initDebugUI(UIData)
   // pane.addBinding(PARAMS, 'title');
   // pane.addBinding(PARAMS, 'color');
 
-  const PARAMS = {
-    slice: 1,
-  };
+  pane.addBinding(UIData, 'slice', {min: 1, max: 226, step: 1});
 
-  const slice_slider = pane.addBinding(PARAMS, 'slice', {min: 1, max: 226, step: 1});
-
-  slice_slider.on('change', function(ev) {
-    UIData.slice = ev.value;
-  });
+  pane.addBinding(UIData, "framesPerSecond", {
+        readonly: true,
+        label: "FPS",
+        view: "graph",
+        min: 0,
+        max: 200
+    });
 
   return pane;
 }

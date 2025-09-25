@@ -29,7 +29,10 @@ let viewportDebug = undefined;
 // Mediator object between Tweakpane and the rest of the application
 let UIData = {
   slice: 1,
+  framesPerSecond: 0,
 };
+
+let previousTime = 0;
 
 /* --------------------- */
 /* ----FILE LOADING----- */
@@ -124,18 +127,23 @@ window.onload = async function init()
 /**
  * Updates variables throughout the render loop
  */
-function update()
+function update(currentTime)
 {
+  const timeDelta = 0.001 * (currentTime - previousTime);
+  UIData.framesPerSecond = timeDelta > 0.0 ? 1.0 / timeDelta : 0.0;
   geometriesDebug[1].uniforms.u_slice_number = UIData.slice;
+
+  previousTime = currentTime;
 }
 
 /**
  * Main render loop called via requestAnimationFrame(). 
  * Actual rendering is forwarded to the main render() function
  */
-export function renderLoop()
+export function renderLoop(currentTime)
 {
-  update();
+  update(currentTime);
+
   render(gl, canvas, viewportMain, geometries);
   if (debugMode)
     render(gl, canvas, viewportDebug, geometriesDebug)
