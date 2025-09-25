@@ -43,8 +43,10 @@ in VaryingData var;
 /* ------------------------- */
 // Volume data texture
 uniform usampler3D u_volume_texture;
-// Bounding box dimensions
-uniform vec3 u_bbox_dimensions;
+// Bounding box lower left corner
+uniform vec3 u_bbox_min;
+// Bounding box upper right corner
+uniform vec3 u_bbox_max;
 // Camera uniforms
 uniform vec3 u_eye_position;
 uniform mat4 u_view_inv;
@@ -56,29 +58,44 @@ out vec4 o_color;
 
 /* ------LOCAL METHODS------ */
 /* ------------------------- */
-Hit ray_cube_intersection(const Ray ray, const vec3 dimensions)
+
+// Computes intersection with an axis aligned cube
+// Code from:
+// https://tavianator.com/2011/ray_box.html
+// TODO: fix division by zero (see code in the link)
+Hit ray_cube_intersection(const Ray ray, const vec3 bbox_min, const vec3 bbox_max)
 {
-  // For now a plane intersection
-  const vec3 normal = vec3(0.0, 1.0, 0.0);
-  const vec3 point = vec3(0.0);
+	float tmin = -1e20;
+	float tmax = 1e20;
 
-  float t = dot(normal, (point - ray.origin)) / dot(normal, ray.direction);
-	if (t < 0.0)
+	// bbox axis intersection parameters
+	float t0x = (bbox_min.x - ray.origin.x) / ray.direction.x;
+	float t1x = (bbox_max.x - ray.origin.x) / ray.direction.x;
+	tmin = max(tmin, min(t0x, t1x));
+	tmax = min(tmax, max(t0x, t1x));
+
+	float t0y = (bbox_min.y - ray.origin.y) / ray.direction.y;
+	float t1y = (bbox_max.y - ray.origin.y) / ray.direction.y;
+	tmin = max(tmin, min(t0y, t1y));
+	tmax = min(tmax, max(t0y, t1y));
+
+	float t0z = (bbox_min.z - ray.origin.z) / ray.direction.z;
+	float t1z = (bbox_max.z - ray.origin.z) / ray.direction.z;
+	tmin = max(tmin, min(t0z, t1z));
+	tmax = min(tmax, max(t0z, t1z));
+
+	if (tmax < tmin)
 		return miss;
-		
-	vec3 intersection = ray.origin + t * ray.direction;
 
-	// Finite plane - square
-	if (abs(intersection.x) + abs(intersection.z) > dimensions.x)
-		return miss;
+	vec3 interesection = ray.origin + tmin * ray.direction;
 
-  return Hit(t, intersection, normal);
+	return Hit(tmin, interesection, vec3(0.0));
 }
 
 // Evaluates the intersections of the ray with the scene objects and returns the closest hit.
 Hit evaluate(const Ray ray)
 {	
-	Hit closest_hit = ray_cube_intersection(ray, u_bbox_dimensions);
+	Hit closest_hit = ray_cube_intersection(ray, u_bbox_min, u_bbox_max);
   return closest_hit;
 }
 
@@ -101,7 +118,15 @@ vec3 trace(Ray ray)
 		if (hit.t == miss.t)
 			break;
     
-    color = vec3(0.7, 0.7, 0.7);
+		vec3 sample_point = hit.intersection + ray.direction * 0.1;
+
+		// (-1,1) to (0,1)
+		vec3 uv_coords = (sample_point + 1.0) * 0.5;
+		
+		uvec4 ucolor = texture(u_volume_texture, uv_coords);
+		vec4 float_color = vec4(ucolor);
+  	color = vec3(float_color.r, float_color.r, float_color.r);
+		color /= 3000.0;
   }
 
   return color;

@@ -50,8 +50,10 @@ export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimen
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
-  let bbox_dimensions = vec3.create();
-  vec3.set(bbox_dimensions, 5, 5, 5);
+  let bbox_min = vec3.create();
+  vec3.set(bbox_min, -1, -1, -1);
+  let bbox_max = vec3.create();
+  vec3.set(bbox_max, 1, 1, 1);
 
   return {
     bufferInfo: fullScreenQuadBufferInfo, 
@@ -59,7 +61,8 @@ export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimen
     programInfo: shaderProgramInfo, 
     uniforms: {
       u_volume_texture: volumeTexture,
-      u_bbox_dimensions: bbox_dimensions,
+      u_bbox_min: bbox_min,
+      u_bbox_max: bbox_max,
       u_eye_position: camera.u_eye_position,
       u_view_inv: camera.u_view_inv,
       u_projection_inv: camera.u_projection_inv,
