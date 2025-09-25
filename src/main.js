@@ -87,7 +87,7 @@ window.onload = async function init()
   const camera = initCamera(viewportMain);
 
   loadingScreenImagePromise.then((loadingScreenImage) =>{
-    loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
+    const loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
     geometries.push(createLoadingScreenGeometry(gl, loadingScreenProgramInfo, loadingScreenTexture));
     geometriesDebug.push(createLoadingScreenGeometry(gl, loadingScreenProgramInfo, loadingScreenTexture));
 
