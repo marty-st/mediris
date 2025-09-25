@@ -5,9 +5,10 @@ import { initDebugUI } from './ui/init.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
 import createShaderProgram from './webgl/program.js';
 import render from './webgl/render.js';
-import { createVolumeTexture } from './webgl/texture.js';
-import { createTriangleGeometry, createSliceGeometry, createVolumeGeometry } from './webgl/geometry.js';
+import { create2DTexture, createVolumeTexture } from './webgl/texture.js';
+import { createSliceGeometry, createVolumeGeometry, createLoadingScreenGeometry } from './webgl/geometry.js';
 import { initCamera } from './webgl/camera.js';
+import loadImage from './file/image.js';
 
 /* --------------------- */
 /* --GLOBAL VARIABLES--- */
@@ -36,6 +37,8 @@ let UIData = {
 
 // Load DICOM during module load
 const imageDataPromise = loadDicom('CT WB w-contrast 5.0 B30s');
+// Load images for texture use
+const loadingScreenImagePromise = loadImage('loading.png');
 
 // Define WebGL window initialization
 window.onload = async function init()
@@ -59,7 +62,7 @@ window.onload = async function init()
   /* SHADER INITIALIZATION */
   /* --------------------- */
 
-  const triangleProgramInfo = await createShaderProgram(gl, "basic");
+  const loadingScreenProgramInfo = await createShaderProgram(gl, "fsquad", "fstexture");
   const sliceProgramInfo = await createShaderProgram(gl, "fsquad", "slice_texture");
   const volumeProgramInfo = await createShaderProgram(gl, "fsquad", "raytrace");
 
@@ -82,17 +85,20 @@ window.onload = async function init()
   }
 
   const camera = initCamera(viewportMain);
-  
-  geometries.push(createTriangleGeometry(gl, triangleProgramInfo));
-  geometriesDebug.push(createTriangleGeometry(gl, triangleProgramInfo));
-  
-  /* --------------------- */
-  /* -----RENDER LOAD----- */
-  /* --------------------- */
 
-  render(gl, canvas, viewportMain, geometries);
-  if (debugMode)
-    render(gl, canvas, viewportDebug, geometries);
+  loadingScreenImagePromise.then((loadingScreenImage) =>{
+    loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
+    geometries.push(createLoadingScreenGeometry(gl, loadingScreenProgramInfo, loadingScreenTexture));
+    geometriesDebug.push(createLoadingScreenGeometry(gl, loadingScreenProgramInfo, loadingScreenTexture));
+
+    /* --------------------- */
+    /* -----RENDER LOAD----- */
+    /* --------------------- */
+
+    render(gl, canvas, viewportMain, geometries);
+    if (debugMode)
+      render(gl, canvas, viewportDebug, geometries);
+  })
 
   // Asynchronously load DICOM to display later
   imageDataPromise.then((imageData) => {

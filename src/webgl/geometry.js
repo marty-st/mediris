@@ -10,6 +10,21 @@ const fullScreenQuadArrays = {
   position: { numComponents: 1, data: [0, 0, 0], },
 };
 
+export function createLoadingScreenGeometry(gl, shaderProgramInfo, texture)
+{
+  const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
+  const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
+
+  return {
+    bufferInfo: fullScreenQuadBufferInfo, 
+    vao: emptyVAO, 
+    programInfo: shaderProgramInfo, 
+    uniforms: {
+      u_texture: texture,
+    }
+  };
+}
+
 /**
  * Creates a geometry object compatible with the rendering pipeline
  * @param {*} gl WebGL rendering context
