@@ -25,7 +25,8 @@ struct RayIntersectionData
 // The definition of an intersection including information about the hit object.
 struct Hit 
 {
-  float t;				          // The distance between the ray origin and the intersection points along the ray. 
+  float t_first;				    // The distance between the ray origin and the CLOSEST intersection point along the ray. 
+	float t_last;							// The distance between the ray origin and the FARTHEST intersection point along the ray. 
 	vec3 intersection;        // The intersection point.
   vec3 normal;              // The surface normal at the interesection point.
 };
@@ -33,7 +34,7 @@ struct Hit
 /* -----LOCAL VARIABLES----- */
 /* ------------------------- */
 const RayIntersectionData no_intersection = RayIntersectionData(1e20, vec3(0.0), vec3(0.0));
-const Hit miss = Hit(1e20, vec3(0.0), vec3(0.0));
+const Hit miss = Hit(1e20, 1e20, vec3(0.0), vec3(0.0));
 
 /* ----------INPUT---------- */
 /* ------------------------- */
@@ -89,7 +90,7 @@ Hit ray_cube_intersection(const Ray ray, const vec3 bbox_min, const vec3 bbox_ma
 
 	vec3 interesection = ray.origin + tmin * ray.direction;
 
-	return Hit(tmin, interesection, vec3(0.0));
+	return Hit(tmin, tmax, interesection, vec3(0.0));
 }
 
 // Evaluates the intersections of the ray with the scene objects and returns the closest hit.
@@ -97,6 +98,27 @@ Hit evaluate(const Ray ray)
 {	
 	Hit closest_hit = ray_cube_intersection(ray, u_bbox_min, u_bbox_max);
   return closest_hit;
+}
+
+vec3 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_travel_distance)
+{
+	vec3 sample_point = first_interesection;
+	float step_size = 0.02;
+	vec3 color = vec3(0.0);
+
+	while (volume_travel_distance >= 0.0)
+	{
+		vec3 uv_coords = (sample_point + 1.0) * 0.5;
+
+		uvec4 sample_ucolor = texture(u_volume_texture, uv_coords);
+		vec4 float_sample_color = vec4(sample_ucolor) / 3000.0;
+  	color += vec3(float_sample_color.r, float_sample_color.r, float_sample_color.r);
+
+		sample_point += ray_direction * step_size;
+		volume_travel_distance -= step_size;
+	}
+
+	return color;
 }
 
 // Traces the ray trough the scene and accumulates the color.
@@ -113,20 +135,12 @@ vec3 trace(Ray ray)
 
 		// First intersection depth, costs some perfomance
 		if (i == 0) 
-			gl_FragDepth = (1.0 / hit.t - 1.0) / -0.999; // (1.0 / hit.t - 1.0 / near) / (1.0 / far - 1.0 / near)
+			gl_FragDepth = (1.0 / hit.t_first - 1.0) / -0.999; // (1.0 / hit.t - 1.0 / near) / (1.0 / far - 1.0 / near)
 		
-		if (hit.t == miss.t)
+		if (hit.t_first == miss.t_first)
 			break;
     
-		vec3 sample_point = hit.intersection + ray.direction * 0.1;
-
-		// (-1,1) to (0,1)
-		vec3 uv_coords = (sample_point + 1.0) * 0.5;
-		
-		uvec4 ucolor = texture(u_volume_texture, uv_coords);
-		vec4 float_color = vec4(ucolor);
-  	color = vec3(float_color.r, float_color.r, float_color.r);
-		color /= 3000.0;
+		color += sample_volume(ray.direction, hit.intersection, hit.t_last - hit.t_first);
   }
 
   return color;
