@@ -220,6 +220,8 @@ function getImageData(imageIds, images)
 
   const volume = createVolume(images, dimensions, sliceSize, Typed);
 
+  // const { min, max } = getPixelDataRange(volume);
+
   // Optional spacing/geometry
   const spacing = getPixelSpacing(imageIds, dimensions);
 
@@ -231,6 +233,31 @@ function getImageData(imageIds, images)
     imageIds,
     volume,
   };
+}
+
+/**
+ * Finds the min and max value in the volume array
+ * @param {*} volume volume pixel data array
+ * @returns min and max value from the volume array
+ */
+function getPixelDataRange(volume)
+{
+  let min = volume[0];
+  let max = volume[0];
+
+  for (let i = 0; i < volume.length; ++i){
+    const element = volume[i];
+    if (element !== NaN)
+    {
+      min = Math.min(min, element);
+      max = Math.max(max, element);
+    }
+  };
+
+  // console.log("min in volume", min);
+  // console.log("max in volume", max);
+
+  return { min, max };
 }
 
 /**
