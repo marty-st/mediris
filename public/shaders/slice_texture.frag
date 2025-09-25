@@ -31,6 +31,6 @@ void main()
   uvec4 unsigned_color = texture(u_volume_texture, vec3(var.tex_coord, slice_norm));
   vec4 float_color = vec4(unsigned_color);
   vec3 color = vec3(float_color.r, float_color.r, float_color.r);
-  color /= 3000.0; // Hardcoded trial-and-error value
+  color /= 4096.0; // Hardcoded
   o_color = vec4(color, 1.0);
 }

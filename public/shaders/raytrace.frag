@@ -109,10 +109,17 @@ vec3 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_tr
 	while (volume_travel_distance >= 0.0)
 	{
 		vec3 uv_coords = (sample_point + 1.0) * 0.5;
+		// Temporary fix to flip the texture y-axis
+		// uv_coords.y = 1.0 - uv_coords.y;
 
 		uvec4 sample_ucolor = texture(u_volume_texture, uv_coords);
-		vec4 float_sample_color = vec4(sample_ucolor) / 3000.0;
-  	color += vec3(float_sample_color.r, float_sample_color.r, float_sample_color.r);
+		vec4 float_sample_color = vec4(sample_ucolor);
+
+		// BONES
+		// if (float_sample_color.r > 1500.0 && float_sample_color.r < 2900.0)
+  	// 	color += vec3(float_sample_color.r, float_sample_color.r, float_sample_color.r);
+
+		color += vec3(float_sample_color.r, float_sample_color.r, float_sample_color.r) / 4096.0;
 
 		sample_point += ray_direction * step_size;
 		volume_travel_distance -= step_size;
