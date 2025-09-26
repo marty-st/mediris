@@ -110,7 +110,7 @@ vec3 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_tr
 	{
 		vec3 uv_coords = (sample_point + 1.0) * 0.5;
 		// Temporary fix to flip the texture y-axis
-		// uv_coords.y = 1.0 - uv_coords.y;
+		uv_coords.y = 1.0 - uv_coords.y;
 
 		uvec4 sample_ucolor = texture(u_volume_texture, uv_coords);
 		vec4 float_sample_color = vec4(sample_ucolor);
