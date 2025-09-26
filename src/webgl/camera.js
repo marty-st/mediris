@@ -10,7 +10,7 @@ import { vec3, mat4, glMatrix } from 'gl-matrix';
 export function initCamera(canvas)
 {
   let eyePosition = vec3.create();
-  vec3.set(eyePosition, 3, 2, 3);
+  vec3.set(eyePosition, -3, 2, -3);
   let viewMat = mat4.create();
   mat4.lookAt(viewMat, eyePosition, [0, 0, 0], [0, 1, 0]);
   let viewInvMat = mat4.create();
