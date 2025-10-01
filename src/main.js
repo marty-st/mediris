@@ -7,8 +7,9 @@ import createShaderProgram from './webgl/program.js';
 import render from './webgl/render.js';
 import { create2DTexture, createVolumeTexture } from './webgl/texture.js';
 import { createSliceGeometry, createVolumeGeometry, createLoadingScreenGeometry } from './webgl/geometry.js';
-import { initCamera } from './webgl/camera.js';
+import { updateCamera, initCamera } from './webgl/camera.js';
 import loadImage from './file/image.js';
+import { controlCamera, initCameraControls, initMouseControls, resetCameraControls, resetMouseControls } from './ui/controls.js';
 
 /* --------------------- */
 /* --GLOBAL VARIABLES--- */
@@ -31,6 +32,10 @@ let UIData = {
   slice: 1,
   framesPerSecond: 0,
 };
+
+let camera = undefined;
+let mouse = undefined;
+let cameraControls = undefined;
 
 let previousTime = 0;
 
@@ -87,7 +92,9 @@ window.onload = async function init()
     height: canvas.height * 0.5,
   }
 
-  const camera = initCamera(viewportMain);
+  camera = initCamera(viewportMain);
+  mouse = initMouseControls();
+  cameraControls = initCameraControls();
 
   loadingScreenImagePromise.then((loadingScreenImage) =>{
     const loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
@@ -132,8 +139,12 @@ function update(currentTime)
   const timeDelta = 0.001 * (currentTime - previousTime);
   UIData.framesPerSecond = timeDelta > 0.0 ? 1.0 / timeDelta : 0.0;
   geometriesDebug[1].uniforms.u_slice_number = UIData.slice;
-
+  controlCamera(mouse, cameraControls);
+  updateCamera(camera, cameraControls, viewportMain, timeDelta);
+  
   previousTime = currentTime;
+  resetMouseControls(mouse);
+  resetCameraControls(cameraControls);
 }
 
 /**
