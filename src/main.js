@@ -35,8 +35,8 @@ let viewportDebug = undefined;
 // 4. Add 2 uniforms (itv, color) to the volumeGeometry object in createVolumeGeometry - webgl/geometry.js
 // 5. Handle in the shader
 const tf = {
-  skin: {interval: {min: 1040, max: 1080}, color: {r: 1, g: 0, b: 0, a: 1} },
-  boneCortical: {interval: {min: 1500, max: 3200}, color: {r: 0, g: 1, b: 0, a: 1} },
+  skin: { interval: {min: 1040, max: 1080}, color: {r: 0.46, g: 0.02, b: 0.02, a: 0.05} },
+  boneCortical: { interval: {min: 1350, max: 3200}, color: {r: 0.07, g: 0.42, b: 0.07, a: 0.80} },
 };
 
 // Mediator object between Tweakpane and the rest of the application
@@ -128,6 +128,10 @@ window.onload = async function init()
 
     const volumeTexture = createVolumeTexture(gl, volume, dimensions);
 
+    // Remove loading screen
+    geometries.pop();
+    geometriesDebug.pop();
+
     geometries.push(createVolumeGeometry(gl, volumeProgramInfo, volumeTexture, dimensions, UIData, camera));
     geometriesDebug.push(createSliceGeometry(gl, sliceProgramInfo, volumeTexture, dimensions, UIData));
 
@@ -147,7 +151,7 @@ function update(currentTime)
 {
   const timeDelta = 0.001 * (currentTime - previousTime);
   UIData.framesPerSecond = timeDelta > 0.0 ? 1.0 / timeDelta : 0.0;
-  geometriesDebug[1].uniforms.u_slice_number = UIData.slice;
+  geometriesDebug[0].uniforms.u_slice_number = UIData.slice;
   controlCamera(mouse, cameraControls);
   updateCamera(camera, cameraControls, viewportMain, timeDelta);
   
