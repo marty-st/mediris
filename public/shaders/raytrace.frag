@@ -105,14 +105,14 @@ Hit evaluate(const Ray ray)
   return closest_hit;
 }
 
-vec3 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_travel_distance)
+vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_travel_distance)
 {
 	vec3 sample_point = first_interesection;
 	// TODO: make step_size adjustable uniform
 	float step_size = 0.005;
-	vec3 color = vec3(0.0);
+	vec4 color = vec4(0.0);
 
-	while (volume_travel_distance >= 0.0)
+	while (volume_travel_distance >= 0.0 && color.a < 1.0)
 	{
 		vec3 uv_coords = (sample_point + 1.0) * 0.5;
 		// Temporary fix to flip the texture y-axis
@@ -121,17 +121,15 @@ vec3 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_tr
 		uvec4 sample_ucolor = texture(u_volume_texture, uv_coords);
 		vec4 float_sample_color = vec4(sample_ucolor);
 
-		// TODO: use alpha
 		// TODO: use UBOs and loop over array of tf invtervals and values
 		// SKIN
 		if (float_sample_color.r > u_itv_skin.x && float_sample_color.r < u_itv_skin.y)
-			color += u_color_skin.xyz;
+			color += vec4(u_color_skin.xyz * u_color_skin.a, u_color_skin.a);
 
 		// BONE CORTICAL
+		// NOTE: Think about different color multiplier and opacity addition
 		if (float_sample_color.r > u_itv_bone_cortical.x && float_sample_color.r < u_itv_bone_cortical.y)
-  		color += u_color_bone_cortical.xyz;
-
-		// color += vec3(float_sample_color.r, float_sample_color.r, float_sample_color.r) / 4096.0;
+  		color += vec4(u_color_bone_cortical.xyz * u_color_bone_cortical.a, u_color_bone_cortical.a);
 
 		sample_point += ray_direction * step_size;
 		volume_travel_distance -= step_size;
@@ -141,10 +139,10 @@ vec3 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_tr
 }
 
 // Traces the ray trough the scene and accumulates the color.
-vec3 trace(Ray ray) 
+vec4 trace(Ray ray) 
 {
   // The accumulated color used when tracing the rays through the scene.
-	vec3 color = vec3(0.15, 0.2, 0.2);
+	vec4 color = vec4(0.0);
 
   int bounces = 0;
 
@@ -162,6 +160,10 @@ vec3 trace(Ray ray)
 		color += sample_volume(ray.direction, hit.intersection, hit.t_last - hit.t_first);
   }
 
+	vec4 background_color = vec4(0.15, 0.2, 0.2, 1.0);
+	if (color.a == 0.0)
+		color = background_color;
+
   return color;
 }
 
@@ -170,7 +172,7 @@ void main()
   vec3 ray_origin = (u_view_inv * u_projection_inv * vec4(var.tex_coord * 2.0 - 1.0, -1.0, 1.0)).xyz;
   vec3 ray_direction = normalize(ray_origin - u_eye_position);
 
-  vec3 color = trace(Ray(ray_origin, ray_direction));
+  vec4 color = trace(Ray(ray_origin, ray_direction));
 
-	o_color = vec4(color, 1.0);
+	o_color = color;
 }
