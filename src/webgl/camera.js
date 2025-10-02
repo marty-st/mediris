@@ -17,7 +17,7 @@ export function initCamera(viewport)
     nearPlane: 1, 
     farPlane: 1000,
     // shader uniforms
-    u_eye_position: vec3.fromValues(-3, 2, -3),
+    u_eye_position: vec3.fromValues(-1.5, 1.25, -1.5),
     u_view_inv: mat4.create(),
     u_projection_inv: mat4.create(),
   };

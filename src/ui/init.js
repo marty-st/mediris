@@ -69,7 +69,7 @@ export function initDebugUI(UIData)
   folderTF.addBinding(UIData, "colorSkin", {
     color: { type: "float" },
     picker: "inline",
-    expanded: true,
+    expanded: false,
   })
   .on('change', (event) => {
     const { r, g, b, a } = event.value;
@@ -88,7 +88,7 @@ export function initDebugUI(UIData)
   folderTF.addBinding(UIData, "colorBoneCortical", {
     color: { type: "float" },
     picker: "inline",
-    expanded: true,
+    expanded: false,
   })
   .on('change', (event) => {
     const { r, g, b, a } = event.value;
