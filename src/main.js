@@ -1,7 +1,7 @@
 'use strict'
 
 import loadDicom from './file/dicom.js';
-import { initDebugUI } from './ui/init.js';
+import { initDebugUI, initUIData } from './ui/init.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
 import createShaderProgram from './webgl/program.js';
 import render from './webgl/render.js';
@@ -27,11 +27,20 @@ const debugMode = true;
 let geometriesDebug = [];
 let viewportDebug = undefined;
 
-// Mediator object between Tweakpane and the rest of the application
-let UIData = {
-  slice: 1,
-  framesPerSecond: 0,
+// Transfer Function Definition
+// NOTE: To add another medium
+// 1. define its values here
+// 2. Dually add them to UIData in ui/init.js (for Tweakpane and for shader uniform)
+// 3. Add binding to the UI pane (interval, color + on change events)
+// 4. Add 2 uniforms (itv, color) to the volumeGeometry object in createVolumeGeometry - webgl/geometry.js
+// 5. Handle in the shader
+const tf = {
+  skin: {interval: {min: 1040, max: 1080}, color: {r: 1, g: 0, b: 0, a: 1} },
+  boneCortical: {interval: {min: 1500, max: 3200}, color: {r: 0, g: 1, b: 0, a: 1} },
 };
+
+// Mediator object between Tweakpane and the rest of the application
+let UIData = initUIData(tf);
 
 let camera = undefined;
 let mouse = undefined;

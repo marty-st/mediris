@@ -48,6 +48,11 @@ uniform usampler3D u_volume_texture;
 uniform vec3 u_bbox_min;
 // Bounding box upper right corner
 uniform vec3 u_bbox_max;
+// Transfer Function
+uniform vec2 u_itv_skin;
+uniform vec4 u_color_skin;
+uniform vec2 u_itv_bone_cortical;
+uniform vec4 u_color_bone_cortical;
 // Camera uniforms
 uniform vec3 u_eye_position;
 uniform mat4 u_view_inv;
@@ -103,7 +108,8 @@ Hit evaluate(const Ray ray)
 vec3 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_travel_distance)
 {
 	vec3 sample_point = first_interesection;
-	float step_size = 0.02;
+	// TODO: make step_size adjustable uniform
+	float step_size = 0.005;
 	vec3 color = vec3(0.0);
 
 	while (volume_travel_distance >= 0.0)
@@ -115,11 +121,17 @@ vec3 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_tr
 		uvec4 sample_ucolor = texture(u_volume_texture, uv_coords);
 		vec4 float_sample_color = vec4(sample_ucolor);
 
-		// BONES
-		// if (float_sample_color.r > 1500.0 && float_sample_color.r < 2900.0)
-  	// 	color += vec3(float_sample_color.r, float_sample_color.r, float_sample_color.r);
+		// TODO: use alpha
+		// TODO: use UBOs and loop over array of tf invtervals and values
+		// SKIN
+		if (float_sample_color.r > u_itv_skin.x && float_sample_color.r < u_itv_skin.y)
+			color += u_color_skin.xyz;
 
-		color += vec3(float_sample_color.r, float_sample_color.r, float_sample_color.r) / 4096.0;
+		// BONE CORTICAL
+		if (float_sample_color.r > u_itv_bone_cortical.x && float_sample_color.r < u_itv_bone_cortical.y)
+  		color += u_color_bone_cortical.xyz;
+
+		// color += vec3(float_sample_color.r, float_sample_color.r, float_sample_color.r) / 4096.0;
 
 		sample_point += ray_direction * step_size;
 		volume_travel_distance -= step_size;
