@@ -10,6 +10,7 @@
 - [Cornerstone WADO Image Loader](https://github.com/cornerstonejs/cornerstone3D/)
 - [Cornerstone Core](https://github.com/cornerstonejs/cornerstone3D/)
 - [Tweakpane](https://github.com/cocopon/tweakpane)
+- [Tweakpane Essentials Plugin](https://github.com/tweakpane/plugin-essentials)
 
 ## Build
 To build the project:
@@ -24,6 +25,7 @@ git clone https://github.com/marty-st/mediris.git
 `npm install twgl.js gl-matrix`
 `npm install dicom-parser cornerstone-wado-image-loader cornerstone-core` 
 `npm install --save tweakpane`
+`npm install @tweakpane/plugin-essentials`
 ```
 ### 3. Add the following to the `package.json` file:
 ```
