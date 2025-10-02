@@ -1,17 +1,8 @@
 'use strict'
 
 import { Pane } from 'tweakpane';
+import * as TweakpaneEssentialsPlugin from '@tweakpane/plugin-essentials';
 import { vec2, vec4 } from 'gl-matrix';
-
-function initInterval(medium)
-{
-  return {x: medium.interval.min, y: medium.interval.max};
-}
-
-function initColor(medium)
-{
-  return { r: medium.color.r, g: medium.color.g, b: medium.color.b, a: medium.color.a };
-}
 
 function initIntervalVec(medium)
 {
@@ -29,12 +20,12 @@ export function initUIData(tf)
     slice: 1,
     framesPerSecond: 0,
     // Transfer Function
-    itvSkin: initInterval(tf.skin),
-    colorSkin: initColor(tf.skin),
+    itvSkin: tf.skin.interval,
+    colorSkin: tf.skin.color,
     u_itv_skin: initIntervalVec(tf.skin),
     u_color_skin: initColorVec(tf.skin),
-    itvBoneCortical: initInterval(tf.boneCortical),
-    colorBoneCortical: initColor(tf.boneCortical),
+    itvBoneCortical: tf.boneCortical.interval,
+    colorBoneCortical: tf.boneCortical.color,
     u_itv_bone_cortical: initIntervalVec(tf.boneCortical),
     u_color_bone_cortical: initColorVec(tf.boneCortical),
   };
@@ -51,6 +42,8 @@ export function initDebugUI(UIData)
 {
   const pane = new Pane();
 
+  pane.registerPlugin(TweakpaneEssentialsPlugin);
+
   pane.addBinding(UIData, 'slice', {min: 1, max: 226, step: 1});
 
   pane.addBinding(UIData, "framesPerSecond", {
@@ -65,12 +58,13 @@ export function initDebugUI(UIData)
 
   // SKIN
   folderTF.addBinding(UIData, "itvSkin", {
-    x: {min: 0, max: 4095, step: 1},
-    y: {min: 0, max: 4095, step: 1},
+    min: 0,
+    max: 4095,
+    step: 1,
   })
   .on('change', (event) => {
-    const { x, y } = event.value;
-    vec2.set(UIData.u_itv_skin, x, y);
+    const { min, max } = event.value;
+    vec2.set(UIData.u_itv_skin, min, max);
   });
   folderTF.addBinding(UIData, "colorSkin", {
     color: { type: "float" },
@@ -83,12 +77,13 @@ export function initDebugUI(UIData)
   });
   // BONE CORTICAL
   folderTF.addBinding(UIData, "itvBoneCortical", {
-    x: {min: 0, max: 4095, step: 1},
-    y: {min: 0, max: 4095, step: 1},
+    min: 0,
+    max: 4095,
+    step: 1,
   })
   .on('change', (event) => {
-    const { x, y } = event.value;
-    vec2.set(UIData.u_itv_bone_cortical, x, y);
+    const { min, max } = event.value;
+    vec2.set(UIData.u_itv_bone_cortical, min, max);
   });
   folderTF.addBinding(UIData, "colorBoneCortical", {
     color: { type: "float" },
