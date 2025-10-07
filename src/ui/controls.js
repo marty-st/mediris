@@ -30,9 +30,11 @@ export function initMouseControls()
     y: 0,
     xDelta: 0,
     yDelta: 0,
+    scrollDelta: 0,
     move: false,
     down: false,
     up: false, 
+    scroll: false,
     downButton: null,
     upButton: null,
   };
@@ -41,7 +43,7 @@ export function initMouseControls()
     mouse.move = true
 
     const mouseXPrev = mouse.x;
-    const mouseYPrev = mouse.x;
+    const mouseYPrev = mouse.y;
 
     mouse.x = event.screenX;
     mouse.y = event.screenY;
@@ -63,6 +65,11 @@ export function initMouseControls()
     mouse.downButton = null;
   });
 
+  document.addEventListener("wheel", (event) => { 
+    mouse.scroll = true;
+    mouse.scrollDelta = event.deltaY;
+  })
+
   return mouse;
 
 }
@@ -79,22 +86,22 @@ export function initCameraControls()
 
 export function controlCamera(mouse, cameraControls)
 {
-  if (!mouse.move || !mouse.down)
+  if (!mouse.move && !mouse.down && !mouse.scroll)
     return;
 
   // move
   if (mouse.downButton === "primary")
   {
     cameraControls.move = true;
-    vec2.set(cameraControls.moveVector, -mouse.xDelta, mouse.yDelta);
+    vec2.set(cameraControls.moveVector, mouse.xDelta, -mouse.yDelta);
   }
 
   // zoom
-  // TODO: odd behaviour, suspect deltas being incorrect after mouse stops moving
-  if (mouse.downButton === "secondary")
+  if (mouse.scroll)
   {
+    console.log("mouse scrolling");
     cameraControls.zoom = true;
-    cameraControls.zoomDirection = mouse.yDelta < 0 ? "in" : "out";
+    cameraControls.zoomDirection = mouse.scrollDelta < 0 ? "in" : "out";
   }
 }
 
@@ -103,6 +110,7 @@ export function resetMouseControls(mouse)
 {
   mouse.move = false;
   mouse.up = false;
+  mouse.scroll = false;
   mouse.upButton = null;
 }
 
