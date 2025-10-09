@@ -23,7 +23,7 @@ let geometries = [];                // array of rendered objects
 let viewportMain = undefined;       // main viewport position and dimensions
 
 // Debug variables
-const debugMode = true;
+const debugMode = false;
 let geometriesDebug = [];
 let viewportDebug = undefined;
 
@@ -89,9 +89,9 @@ window.onload = async function init()
 
   viewportMain = {
     leftX: 0,
-    bottomY: canvas.height * 0.5,
+    bottomY: debugMode ? canvas.height * 0.5 : 0,
     width: canvas.width,
-    height: canvas.height * 0.5,
+    height: debugMode ? canvas.height * 0.5 : canvas.height,
   };
   
   viewportDebug = {
