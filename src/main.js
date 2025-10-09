@@ -27,6 +27,24 @@ const debugMode = false;
 let geometriesDebug = [];
 let viewportDebug = undefined;
 
+// HU units are usually defined in the range <-1000, 3000>,
+// however, the data loads in unsigned short format, so
+// the values must be offset by a constant
+const C = 1000;
+// Hounsfield units for various media
+// template: { min: 0 + C, max: 0 + C },
+const hu = {
+  air: { min: -1000 + C, max: -950 + C},
+  lungs: { min: -750 + C, max: -700 + C },
+  fat: { min: -120 + C, max: -90 + C },
+  water: { min: 0 + C, max: 0 + C },
+  muscle: { min: 35 + C, max: 55 + C },
+  softTissueContrast: { min: 100 + C, max: 300 + C },
+  boneCancellous: { min: 300 + C, max: 400 + C },
+  boneCortical: { min: 500 + C, max: 1900 + C },
+
+};
+
 // Transfer Function Definition
 // NOTE: To add another medium
 // 1. define its values here
@@ -35,8 +53,14 @@ let viewportDebug = undefined;
 // 4. Add 2 uniforms (itv, color) to the volumeGeometry object in createVolumeGeometry - webgl/geometry.js
 // 5. Handle in the shader
 const tf = {
-  skin: { interval: {min: 1040, max: 1080}, color: {r: 0.46, g: 0.02, b: 0.02, a: 0.05} },
-  boneCortical: { interval: {min: 1350, max: 3200}, color: {r: 0.07, g: 0.42, b: 0.07, a: 0.80} },
+  air: { interval: hu.air, color: {r: 0, g: 0, b: 0, a: 0} },
+  lungs: { interval: hu.lungs, color: {r: 0.65, g: 0.35, b: 0.11, a: 0.00} },
+  fat: { interval: hu.fat, color: {r: 0.82, g: 0.83, b: 0.18, a: 0.11} },
+  water: { interval: hu.water, color: {r: 0.03, g: 0.49, b: 0.87, a: 0.12} },
+  muscle: { interval: hu.muscle, color: {r: 0.46, g: 0.02, b: 0.02, a: 0.05} },
+  softTissueContrast: { interval: hu.softTissueContrast, color: {r: 0.66, g: 0.36, b: 0.52, a: 0.02} },
+  boneCancellous: { interval: hu.boneCancellous, color: {r: 0.17, g: 0.23, b: 0.66, a: 0.43} },
+  boneCortical: { interval: hu.boneCortical, color: {r: 0.07, g: 0.42, b: 0.07, a: 0.80} },
 };
 
 // Mediator object between Tweakpane and the rest of the application

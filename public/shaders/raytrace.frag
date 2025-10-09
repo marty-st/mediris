@@ -49,8 +49,20 @@ uniform vec3 u_bbox_min;
 // Bounding box upper right corner
 uniform vec3 u_bbox_max;
 // Transfer Function
-uniform vec2 u_itv_skin;
-uniform vec4 u_color_skin;
+uniform vec2 u_itv_air;
+uniform vec4 u_color_air;
+uniform vec2 u_itv_lungs;
+uniform vec4 u_color_lungs;
+uniform vec2 u_itv_fat;
+uniform vec4 u_color_fat;
+uniform vec2 u_itv_water;
+uniform vec4 u_color_water;
+uniform vec2 u_itv_muscle;
+uniform vec4 u_color_muscle;
+uniform vec2 u_itv_soft_tissue_contrast;
+uniform vec4 u_color_soft_tissue_contrast;
+uniform vec2 u_itv_bone_cancellous;
+uniform vec4 u_color_bone_cancellous;
 uniform vec2 u_itv_bone_cortical;
 uniform vec4 u_color_bone_cortical;
 // Camera uniforms
@@ -105,29 +117,64 @@ Hit evaluate(const Ray ray)
   return closest_hit;
 }
 
+vec4 sample_voxel(vec3 sample_point)
+{
+	vec3 uv_coords = (sample_point + 1.0) * 0.5;
+	// Temporary fix to flip the texture y-axis
+	uv_coords.y = 1.0 - uv_coords.y;
+
+	uvec4 sample_ucolor = texture(u_volume_texture, uv_coords);
+	return vec4(sample_ucolor);
+}
+
 vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_travel_distance)
 {
 	vec3 sample_point = first_interesection;
 	// TODO: make step_size adjustable uniform
-	float step_size = 0.005;
+	const float default_step_size = 0.005;
+	// const float air_jump_factor = 0.1;
+	float step_size = default_step_size;
 	vec4 color = vec4(0.0);
 
 	while (volume_travel_distance >= 0.0 && color.a < 1.0)
 	{
-		vec3 uv_coords = (sample_point + 1.0) * 0.5;
-		// Temporary fix to flip the texture y-axis
-		uv_coords.y = 1.0 - uv_coords.y;
+		vec4 float_sample_color = sample_voxel(sample_point);
 
-		uvec4 sample_ucolor = texture(u_volume_texture, uv_coords);
-		vec4 float_sample_color = vec4(sample_ucolor);
-
+		// AIR SKIP
+		if (float_sample_color.r < u_itv_air.y)
+		{
+			sample_point += ray_direction * step_size;
+			volume_travel_distance -= step_size;
+			continue;
+		}
 		// TODO: use UBOs and loop over array of tf invtervals and values
-		// SKIN
-		if (float_sample_color.r > u_itv_skin.x && float_sample_color.r < u_itv_skin.y)
-			color += vec4(u_color_skin.xyz * u_color_skin.a, u_color_skin.a);
+		// NOTE: Think about different color multiplier and opacity addition
+
+		// LUNGS
+		if (float_sample_color.r > u_itv_lungs.x && float_sample_color.r < u_itv_lungs.y)
+			color += vec4(u_color_lungs.xyz * u_color_lungs.a, u_color_lungs.a);
+
+		// FAT
+		if (float_sample_color.r > u_itv_fat.x && float_sample_color.r < u_itv_fat.y)
+			color += vec4(u_color_fat.xyz * u_color_fat.a, u_color_fat.a);
+
+		// WATER - not present as of now
+		// if (float_sample_color.r > u_itv_water.x && float_sample_color.r < u_itv_water.y)
+		// 	color += vec4(u_color_water.xyz * u_color_water.a, u_color_water.a);
+
+		// MUSCLE
+		if (float_sample_color.r > u_itv_muscle.x && float_sample_color.r < u_itv_muscle.y)
+			color += vec4(u_color_muscle.xyz * u_color_muscle.a, u_color_muscle.a);
+
+		// SOFT TISSUE CONTRAST
+		if (float_sample_color.r > u_itv_soft_tissue_contrast.x && float_sample_color.r < u_itv_soft_tissue_contrast.y)
+			color += vec4(u_color_soft_tissue_contrast.xyz * u_color_soft_tissue_contrast.a, u_color_soft_tissue_contrast.a);
+
+		// BONE CANCELLOUS
+		if (float_sample_color.r > u_itv_bone_cancellous.x && float_sample_color.r < u_itv_bone_cancellous.y)
+			color += vec4(u_color_bone_cancellous.xyz * u_color_bone_cancellous.a, u_color_bone_cancellous.a);
 
 		// BONE CORTICAL
-		// NOTE: Think about different color multiplier and opacity addition
 		if (float_sample_color.r > u_itv_bone_cortical.x && float_sample_color.r < u_itv_bone_cortical.y)
   		color += vec4(u_color_bone_cortical.xyz * u_color_bone_cortical.a, u_color_bone_cortical.a);
 
