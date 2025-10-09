@@ -95,7 +95,14 @@ function updateProjectionInverseMatrix(camera, viewport)
   const perspectiveMat = mat4.create();
   // NOTE: when near was set to 0.1 and shader projection plane distance was 1.0, raytracing
   // didn't work. I'm curious what is the exact issue with that. 
-  mat4.perspective(perspectiveMat, glMatrix.toRadian(camera.FOV), viewport.width / viewport.height, camera.nearPlane, camera.farPlane);
+  mat4.perspective(
+    perspectiveMat, 
+    glMatrix.toRadian(camera.FOV), 
+    viewport.width / viewport.height, 
+    camera.nearPlane, 
+    camera.farPlane
+  );
+
   mat4.invert(camera.u_projection_inv, perspectiveMat);
 }
 
@@ -103,13 +110,11 @@ function moveCamera(camera, moveVector)
 {
   const [deltaX, deltaY] = moveVector;
 
-  console.log("deltaY", deltaY);
-
   camera.yaw   += deltaX * camera.rotateSensitivity;
   camera.pitch += deltaY * camera.rotateSensitivity;
 
   // clamp pitch
-  Math.min(camera.maxPitch, Math.max(camera.minPitch, camera.pitch));
+  camera.pitch = Math.min(camera.maxPitch, Math.max(camera.minPitch, camera.pitch));
 
   // wrap yaw to avoid float growth
   const twoPI = Math.PI * 2;
@@ -117,7 +122,7 @@ function moveCamera(camera, moveVector)
     camera.yaw = ((camera.yaw % twoPI) + twoPI) % twoPI;
 
   updatePosition(camera);
-  updateViewInverseMatrix(camera, camera.u_eye_position, camera.targetPosition);
+  updateViewInverseMatrix(camera);
 }
 
 function zoomCamera(camera, viewport, zoomDirection)
@@ -127,7 +132,7 @@ function zoomCamera(camera, viewport, zoomDirection)
   else // zoomDirection === "out"
     camera.FOV = Math.min(camera.FOV + camera.zoomStep, camera.maxFOV);
 
-  updateProjectionInverseMatrix(camera, viewport, camera.FOV, camera.nearPlane, camera.farPlane);
+  updateProjectionInverseMatrix(camera, viewport);
 }
 
 export function updateCamera(camera, cameraControls, viewport, timeDelta)
