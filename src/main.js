@@ -102,7 +102,7 @@ window.onload = async function init()
   }
 
   camera = initCamera(viewportMain);
-  mouse = initMouseControls();
+  mouse = initMouseControls(canvas);
   cameraControls = initCameraControls();
 
   loadingScreenImagePromise.then((loadingScreenImage) =>{

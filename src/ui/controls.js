@@ -23,7 +23,7 @@ function getMouseButtonName(buttonCode)
   return buttonName;
 }
 
-export function initMouseControls()
+export function initMouseControls(canvas)
 {
   let mouse = {
     x: 0,
@@ -37,9 +37,27 @@ export function initMouseControls()
     scroll: false,
     downButton: null,
     upButton: null,
+    overCanvas: true, // when init to false, only works after first re-entry
   };
 
-  document.addEventListener("mousemove", (event) => {
+  canvas.addEventListener("mouseover", () => {
+    mouse.overCanvas = true;
+  })
+
+  canvas.addEventListener("mouseout", () => {
+    mouse.overCanvas = false;
+    mouse.move = false;
+    mouse.zoom = false;
+    mouse.down = false;
+    mouse.up = false;
+    mouse.downButton = null;
+
+  })
+
+  canvas.addEventListener("mousemove", (event) => {
+    if (!mouse.overCanvas)
+      return;
+
     mouse.move = true
 
     const mouseXPrev = mouse.x;
@@ -52,12 +70,18 @@ export function initMouseControls()
     mouse.yDelta = mouse.y - mouseYPrev;
   });
 
-  document.addEventListener("mousedown", (event) => {
+  canvas.addEventListener("mousedown", (event) => {
+    if (!mouse.overCanvas)
+      return;
+
     mouse.down = true;
     mouse.downButton = getMouseButtonName(event.button);
   });
 
-  document.addEventListener("mouseup", (event) => {
+  canvas.addEventListener("mouseup", (event) => {
+    if (!mouse.overCanvas)
+      return;
+
     mouse.up = true;
     mouse.upButton = getMouseButtonName(event.button);
 
@@ -65,7 +89,13 @@ export function initMouseControls()
     mouse.downButton = null;
   });
 
-  document.addEventListener("wheel", (event) => { 
+  canvas.addEventListener("wheel", (event) => { 
+    if (!mouse.overCanvas)
+      return;
+
+    // prevent page scrolling
+    event.preventDefault();
+
     mouse.scroll = true;
     mouse.scrollDelta = event.deltaY;
   })
@@ -99,7 +129,6 @@ export function controlCamera(mouse, cameraControls)
   // zoom
   if (mouse.scroll)
   {
-    console.log("mouse scrolling");
     cameraControls.zoom = true;
     cameraControls.zoomDirection = mouse.scrollDelta < 0 ? "in" : "out";
   }
