@@ -152,10 +152,14 @@ function getPixelMetaData(images, imageIds)
  */
 function defineVolumeArrayType(bitsAllocated, pixelRepresentation)
 {
-  return bitsAllocated === 8 ? Uint8Array
-    : bitsAllocated === 16 ? (pixelRepresentation === 1 ? Int16Array : Uint16Array)
-    : bitsAllocated === 32 ? (pixelRepresentation === 1 ? Int32Array : Uint32Array)
-    : Uint8Array;
+  // Data are typed as float for hardware-supported interpolation on the GPU
+  // Otherwise Uint16Array is enough
+  return Float32Array;
+  
+  // return bitsAllocated === 8 ? Uint8Array
+  //   : bitsAllocated === 16 ? (pixelRepresentation === 1 ? Int16Array : Uint16Array)
+  //   : bitsAllocated === 32 ? (pixelRepresentation === 1 ? Int32Array : Uint32Array)
+  //   : Uint8Array;
 }
 
 /**

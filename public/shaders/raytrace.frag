@@ -1,6 +1,6 @@
 #version 300 es
 precision mediump float;
-precision mediump usampler3D;
+precision mediump sampler3D;
 
 /* -------DEFINITIONS------- */
 /* ------------------------- */
@@ -43,7 +43,7 @@ in VaryingData var;
 /* --------UNIFORMS--------- */
 /* ------------------------- */
 // Volume data texture
-uniform usampler3D u_volume_texture;
+uniform sampler3D u_volume_texture;
 // Bounding box lower left corner
 uniform vec3 u_bbox_min;
 // Bounding box upper right corner
@@ -123,8 +123,7 @@ vec4 sample_voxel(vec3 sample_point)
 	// Temporary fix to flip the texture y-axis
 	uv_coords.y = 1.0 - uv_coords.y;
 
-	uvec4 sample_ucolor = texture(u_volume_texture, uv_coords);
-	return vec4(sample_ucolor);
+	return texture(u_volume_texture, uv_coords);
 }
 
 vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_travel_distance)
@@ -136,47 +135,52 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_tr
 	float step_size = default_step_size;
 	vec4 color = vec4(0.0);
 
+	// TODO: use UBOs and loop over array of tf invtervals and values
+	vec2 media_itv[6] = vec2[6](
+		u_itv_lungs,
+		u_itv_fat,
+		// u_itv_water,
+		u_itv_muscle,
+		u_itv_soft_tissue_contrast,
+		u_itv_bone_cancellous,
+		u_itv_bone_cortical
+	);
+
+	vec4 media_color[6] = vec4[6](
+		u_color_lungs,
+		u_color_fat,
+		// u_color_water,
+		u_color_muscle,
+		u_color_soft_tissue_contrast,
+		u_color_bone_cancellous,
+		u_color_bone_cortical
+	);
+
 	while (volume_travel_distance >= 0.0 && color.a < 1.0)
 	{
 		vec4 float_sample_color = sample_voxel(sample_point);
 
-		// AIR SKIP
+		// AIR SKIP // TIDO: try air jumps with uitv <0, 20>
 		if (float_sample_color.r < u_itv_air.y)
 		{
 			sample_point += ray_direction * step_size;
 			volume_travel_distance -= step_size;
 			continue;
+			// color += vec4(u_color_air.rgb * u_color_air.a, u_color_air.a);
 		}
-		// TODO: use UBOs and loop over array of tf invtervals and values
+
 		// NOTE: Think about different color multiplier and opacity addition
+		for(int i = 0; i < 6; ++i)
+		{
+			vec2 medium_itv = media_itv[i];
+			vec4 medium_color = media_color[i];
 
-		// LUNGS
-		if (float_sample_color.r > u_itv_lungs.x && float_sample_color.r < u_itv_lungs.y)
-			color += vec4(u_color_lungs.xyz * u_color_lungs.a, u_color_lungs.a);
-
-		// FAT
-		if (float_sample_color.r > u_itv_fat.x && float_sample_color.r < u_itv_fat.y)
-			color += vec4(u_color_fat.xyz * u_color_fat.a, u_color_fat.a);
-
-		// WATER - not present as of now
-		// if (float_sample_color.r > u_itv_water.x && float_sample_color.r < u_itv_water.y)
-		// 	color += vec4(u_color_water.xyz * u_color_water.a, u_color_water.a);
-
-		// MUSCLE
-		if (float_sample_color.r > u_itv_muscle.x && float_sample_color.r < u_itv_muscle.y)
-			color += vec4(u_color_muscle.xyz * u_color_muscle.a, u_color_muscle.a);
-
-		// SOFT TISSUE CONTRAST
-		if (float_sample_color.r > u_itv_soft_tissue_contrast.x && float_sample_color.r < u_itv_soft_tissue_contrast.y)
-			color += vec4(u_color_soft_tissue_contrast.xyz * u_color_soft_tissue_contrast.a, u_color_soft_tissue_contrast.a);
-
-		// BONE CANCELLOUS
-		if (float_sample_color.r > u_itv_bone_cancellous.x && float_sample_color.r < u_itv_bone_cancellous.y)
-			color += vec4(u_color_bone_cancellous.xyz * u_color_bone_cancellous.a, u_color_bone_cancellous.a);
-
-		// BONE CORTICAL
-		if (float_sample_color.r > u_itv_bone_cortical.x && float_sample_color.r < u_itv_bone_cortical.y)
-  		color += vec4(u_color_bone_cortical.xyz * u_color_bone_cortical.a, u_color_bone_cortical.a);
+			if (float_sample_color.r > medium_itv.x && float_sample_color.r < medium_itv.y)
+			{
+				color += vec4(medium_color.rgb * medium_color.a, medium_color.a);
+				break;
+			}
+		}
 
 		sample_point += ray_direction * step_size;
 		volume_travel_distance -= step_size;

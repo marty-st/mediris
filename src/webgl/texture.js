@@ -39,32 +39,48 @@ export function createVolumeTexture(gl, volume, dimensions)
     const volumeTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_3D, volumeTexture);
 
-    // gl.NEAREST as we have integer values in the volume
-    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+
+    // ERROR: GL_INVALID_OPERATION: glGenerateMipmap: Texture format does not support mipmap generation.
+    // gl.generateMipmap(gl.TEXTURE_3D);
 
     // gl.UNPACK_ALIGNMENT specifies the alignment requirements
     // for the start of each pixel row in memory. 1 == byte alignment
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 
-    // IMPORTANT: Choose formats based on bit depth and signedness 
-    // hardcoded: unsigned 16bit
     gl.texImage3D(
       gl.TEXTURE_3D,
       0,
-      gl.R16UI,             // internalFormat
+      gl.R16F,             // internalFormat
       dimensions.cols,
       dimensions.rows,
       dimensions.depth,
       0,
-      gl.RED_INTEGER,       // format
-      gl.UNSIGNED_SHORT,    // type
+      gl.RED,       // format
+      gl.FLOAT,    // type
       volume
     );
+    
+    // Also possible to use this (with gl.NEAREST):
+    // gl.texImage3D(
+    //   gl.TEXTURE_3D,
+    //   0,
+    //   gl.R16UI,             // internalFormat
+    //   dimensions.cols,
+    //   dimensions.rows,
+    //   dimensions.depth,
+    //   0,
+    //   gl.RED_INTEGER,       // format
+    //   gl.UNSIGNED_SHORT,    // type
+    //   volume
+    // );
+
+    gl.bindTexture(gl.TEXTURE_3D, null);
 
     return volumeTexture;
 }
