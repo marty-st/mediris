@@ -52,13 +52,24 @@ const hu = {
 // 3. Add binding to the UI pane (interval, color + on change events)
 // 4. Add 2 uniforms (itv, color) to the volumeGeometry object in createVolumeGeometry - webgl/geometry.js
 // 5. Handle in the shader
+// const tf = {
+//   air: { interval: hu.air, color: {r: 0, g: 0, b: 0, a: 0} },
+//   lungs: { interval: hu.lungs, color: {r: 0.65, g: 0.35, b: 0.11, a: 0.00} },
+//   fat: { interval: hu.fat, color: {r: 0.82, g: 0.83, b: 0.18, a: 0.11} },
+//   water: { interval: hu.water, color: {r: 0.03, g: 0.49, b: 0.87, a: 0.12} },
+//   muscle: { interval: hu.muscle, color: {r: 0.46, g: 0.02, b: 0.02, a: 0.05} },
+//   softTissueContrast: { interval: hu.softTissueContrast, color: {r: 0.66, g: 0.36, b: 0.52, a: 0.02} },
+//   boneCancellous: { interval: hu.boneCancellous, color: {r: 0.17, g: 0.23, b: 0.66, a: 0.43} },
+//   boneCortical: { interval: hu.boneCortical, color: {r: 0.07, g: 0.42, b: 0.07, a: 0.80} },
+// };
+
 const tf = {
   air: { interval: hu.air, color: {r: 0, g: 0, b: 0, a: 0} },
   lungs: { interval: hu.lungs, color: {r: 0.65, g: 0.35, b: 0.11, a: 0.00} },
-  fat: { interval: hu.fat, color: {r: 0.82, g: 0.83, b: 0.18, a: 0.11} },
-  water: { interval: hu.water, color: {r: 0.03, g: 0.49, b: 0.87, a: 0.12} },
-  muscle: { interval: hu.muscle, color: {r: 0.46, g: 0.02, b: 0.02, a: 0.05} },
-  softTissueContrast: { interval: hu.softTissueContrast, color: {r: 0.66, g: 0.36, b: 0.52, a: 0.02} },
+  fat: { interval: hu.fat, color: {r: 0.82, g: 0.83, b: 0.18, a: 0.00} },
+  water: { interval: hu.water, color: {r: 0.03, g: 0.49, b: 0.87, a: 0.00} },
+  muscle: { interval: hu.muscle, color: {r: 0.46, g: 0.02, b: 0.02, a: 0.00} },
+  softTissueContrast: { interval: hu.softTissueContrast, color: {r: 0.66, g: 0.36, b: 0.52, a: 0.00} },
   boneCancellous: { interval: hu.boneCancellous, color: {r: 0.17, g: 0.23, b: 0.66, a: 0.43} },
   boneCortical: { interval: hu.boneCortical, color: {r: 0.07, g: 0.42, b: 0.07, a: 0.80} },
 };
@@ -178,7 +189,7 @@ function update(currentTime)
   geometriesDebug[0].uniforms.u_slice_number = UIData.slice;
   controlCamera(mouse, cameraControls);
   updateCamera(camera, cameraControls, viewportMain, timeDelta);
-  
+
   previousTime = currentTime;
   resetMouseControls(mouse);
   resetCameraControls(cameraControls);

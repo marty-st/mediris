@@ -33,6 +33,7 @@ struct Hit
 
 /* -----LOCAL VARIABLES----- */
 /* ------------------------- */
+const float PI = 3.14159265358979323846;
 const RayIntersectionData no_intersection = RayIntersectionData(1e20, vec3(0.0), vec3(0.0));
 const Hit miss = Hit(1e20, 1e20, vec3(0.0), vec3(0.0));
 
@@ -140,6 +141,63 @@ vec3 compute_gradient(vec3 sample_point, float delta)
 	return vec3(x_pos - x_neg, y_pos - y_neg, z_pos - z_neg) / (2.0 * delta);
 }
 
+float fresnel_schlick(float value)
+{
+	// equivalent to pow(1 - value, 5.0) with less multiplication instructions
+	float clamped = clamp(1.0 - value, 0.0, 1.0);
+	float value2 = clamped * clamped;
+	return value2 * value2 * value; 
+}
+
+vec3 lambert_diffuse(vec4 medium_color, vec3 N)
+{
+	// TO DO: make a uniform
+	vec3 light_dir = vec3(1.0, -1.0, -1.0);
+
+	vec3 L = normalize(-light_dir);
+	float NdotL = dot(N, L);
+
+	return NdotL * medium_color.rgb;
+}
+
+vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N)
+{
+	// TO DO: make a uniform
+	vec3 light_dir = vec3(1.0, -1.0, -1.0);
+
+	// Base Diffuse
+	// ThetaL = dot(N, L)
+	// ThetaV = dot(N, V)
+	// ThetaD = dot(L, H)
+	// FD90 = 0.5 + 2 * roughness * cos^2ThetaD
+	// base_diffuse = (baseColor / pi) * (1 + (FD90 - 1) * (1 - cosThetaL) ^ 5) * (1 + (FD90 - 1) * (1 - cosThetaV) ^ 5)
+	vec3 L = normalize(-light_dir);
+	vec3 V = normalize(u_eye_position - sample_point);
+	vec3 H = normalize(L + V);
+	float LdotH = dot(L, H);
+	float NdotL = dot(N, L);
+	float NdotV = dot(N, V);
+
+	float roughness = 0.1;
+	float FD90 = 0.5 + 2.0 * roughness * LdotH * LdotH;
+	// NOTE: ? This is the rewritten formula from the Disney 2012 paper, however not equivalent to the code below, possibly for cases
+	// where dot product is < 0
+	// vec3 base_diffuse = (1.0 + (FD90 - 1.0) * pow(1.0 - NdotL, 5.0)) * (1.0 + (FD90 - 1.0) * pow(1.0 - NdotV, 5.0));
+
+	// Code below from: https://github.com/wdas/brdf/blob/main/src/brdfs/disney.brdf
+	float FL = fresnel_schlick(NdotL);
+	float FV = fresnel_schlick(NdotV);
+	float base_diffuse = mix(1.0, FD90, FL) * mix(1.0, FD90, FV);
+
+	// Subsurface diffuse
+	float subsurface = 0.0;
+	float FSS90 = LdotH * LdotH * roughness;
+	float FSS = mix(1.0, FSS90, FL) * mix(1.0, FSS90, FV);
+	float subsurface_diffuse = 1.25 * (FSS * (1.0 / (NdotL + NdotV) - 0.5) + 0.5);
+
+	return (medium_color.rgb / (0.5 * PI)) * mix(base_diffuse, subsurface_diffuse, subsurface);
+}
+
 vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_travel_distance)
 {
 	vec3 sample_point = first_interesection;
@@ -170,15 +228,9 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_tr
 		u_color_bone_cortical
 	);
 
-	vec3 light_dir = vec3(1.0, -1.0, -1.0);
-	vec3 to_light = -light_dir;
-
 	while (volume_travel_distance >= 0.0 && color.a < 1.0)
 	{
 		vec4 float_sample_color = sample_voxel(sample_point);
-		
-		vec3 normal = normalize(compute_gradient(sample_point, default_step_size));
-		float NdotL = max(dot(normal, to_light), 0.0);
 
 		// AIR SKIP // TIDO: try air jumps with uitv <0, 20>
 		if (float_sample_color.r < u_itv_air.y)
@@ -197,8 +249,18 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_tr
 
 			if (float_sample_color.r >= medium_itv.x && float_sample_color.r < medium_itv.y)
 			{
-				color += vec4(NdotL * medium_color.rgb * medium_color.a, medium_color.a);
-				// color += vec4((normal + 1.0) * 0.5 * medium_color.a, medium_color.a); // Show normals
+				vec3 N = normalize(compute_gradient(sample_point, default_step_size));
+				
+				// LAMBERT DIFFUSE
+				// vec3 diffuse_color = 1.25 * lambert_diffuse(medium_color, N);
+
+				// DISNEY DIFFUSE
+				vec3 diffuse_color = disney_diffuse(medium_color, sample_point, N);
+
+				color += vec4(diffuse_color * medium_color.a, medium_color.a);
+
+				// SHOW NORMALS
+				// color += vec4((normal + 1.0) * 0.5 * medium_color.a, medium_color.a); 
 				break;
 			}
 		}
