@@ -178,10 +178,11 @@ vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N)
 	float NdotL = dot(N, L);
 	float NdotV = dot(N, V);
 
+	// TODO: make a uniform
 	float roughness = 0.1;
 	float FD90 = 0.5 + 2.0 * roughness * LdotH * LdotH;
 	// NOTE: ? This is the rewritten formula from the Disney 2012 paper, however not equivalent to the code below, possibly for cases
-	// where dot product is < 0
+	// where dot product is < 0 -> needs to be clamped?
 	// vec3 base_diffuse = (1.0 + (FD90 - 1.0) * pow(1.0 - NdotL, 5.0)) * (1.0 + (FD90 - 1.0) * pow(1.0 - NdotV, 5.0));
 
 	// Code below from: https://github.com/wdas/brdf/blob/main/src/brdfs/disney.brdf
@@ -190,19 +191,37 @@ vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N)
 	float base_diffuse = mix(1.0, FD90, FL) * mix(1.0, FD90, FV);
 
 	// Subsurface diffuse
+	// TODO: make a uniform
 	float subsurface = 0.0;
 	float FSS90 = LdotH * LdotH * roughness;
 	float FSS = mix(1.0, FSS90, FL) * mix(1.0, FSS90, FV);
 	float subsurface_diffuse = 1.25 * (FSS * (1.0 / (NdotL + NdotV) - 0.5) + 0.5);
 
-	return (medium_color.rgb / (0.5 * PI)) * mix(base_diffuse, subsurface_diffuse, subsurface);
+	// Sheen (Fabric effect)
+	// TODO: make uniforms
+
+	// NOTE: sheen seems to behave oddly. Perhaps because of the transparency of the rendered data (color accumulates under the surface)
+	// The resulting image gets brighter as a whole as sheen and sheen tint values increase 
+	// float sheen = 0.0;
+	// float sheen_tint = 1.0;
+
+	// float luminescence = 0.3 * medium_color.r + 0.6 * medium_color.g  + 0.1 * medium_color.b; // approximation
+	// vec3 tint_comp = luminescence > 0.0 ? medium_color.rgb / luminescence : vec3(1.0);
+	// vec3 sheen_comp = mix(vec3(1.0), tint_comp, sheen_tint);
+
+	// float FH = fresnel_schlick(LdotH);
+	vec3 sheen_color = vec3(0.0); // FH * sheen * sheen_comp;
+
+	vec3 diffuse = (1.0 / (0.5 * PI)) * mix(base_diffuse, subsurface_diffuse, subsurface) + sheen_color;
+
+	return medium_color.rgb * diffuse;
 }
 
 vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_travel_distance)
 {
 	vec3 sample_point = first_interesection;
 	// TODO: make step_size adjustable uniform
-	const float default_step_size = 0.005;
+	const float default_step_size = 0.005; // This should be at least (1 / number of slices) * 0.5
 	// const float air_jump_factor = 0.1;
 	float step_size = default_step_size;
 	vec4 color = vec4(0.0);
@@ -257,6 +276,7 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_tr
 				// DISNEY DIFFUSE
 				vec3 diffuse_color = disney_diffuse(medium_color, sample_point, N);
 
+				// TODO: alpha should be consistent for all step sizes so: alpha = medium_alpha * (step size / reference step size)
 				color += vec4(diffuse_color * medium_color.a, medium_color.a);
 
 				// SHOW NORMALS
