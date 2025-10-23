@@ -104,6 +104,15 @@ export function initMouseControls(canvas)
 
 }
 
+// NOTE: This can be done using setTimeout, clearTimeout
+export function resetMouseControls(mouse)
+{
+  mouse.move = false;
+  mouse.up = false;
+  mouse.scroll = false;
+  mouse.upButton = null;
+}
+
 export function initCameraControls()
 {
   return {
@@ -134,15 +143,6 @@ export function controlCamera(mouse, cameraControls)
   }
 }
 
-// NOTE: This can be done using setTimeout, clearTimeout
-export function resetMouseControls(mouse)
-{
-  mouse.move = false;
-  mouse.up = false;
-  mouse.scroll = false;
-  mouse.upButton = null;
-}
-
 export function resetCameraControls(cameraControls)
 {
 
@@ -151,4 +151,50 @@ export function resetCameraControls(cameraControls)
 
   vec2.zero(cameraControls.moveVector);
   cameraControls.zoomDirection = null;
+}
+
+export function initKeyboardControls()
+{
+  let keyboard = {
+    down: new Set(),
+    up: new Set(),
+  };
+
+  document.addEventListener("keydown", (event) => {
+    keyboard.down.add(event.key);
+  });
+
+  document.addEventListener("keyup", (event) => {
+    keyboard.up.add(event.key);
+    keyboard.down.delete(event.key);
+  });
+
+  return keyboard;
+}
+
+export function resetKeyboardControls(keyboard)
+{
+  keyboard.up.clear();
+}
+
+export function initAppControls()
+{
+  return {
+    reloadShaders: false,
+    reloadDicom: false,
+  };
+}
+
+export function controlApp(keyboard, appControls)
+{
+  if (keyboard.up.has("r"))
+    appControls.reloadShaders = true;
+  if (keyboard.up.has("R"))
+    appControls.reloadDicom = true;
+}
+
+export function resetAppControls(appControls)
+{
+  for (const value in appControls)
+    appControls[value] = false;
 }
