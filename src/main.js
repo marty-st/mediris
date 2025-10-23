@@ -9,7 +9,7 @@ import { create2DTexture, createVolumeTexture } from './webgl/texture.js';
 import { createSliceGeometry, createVolumeGeometry, createLoadingScreenGeometry } from './webgl/geometry.js';
 import { updateCamera, initCamera } from './webgl/camera.js';
 import loadImage from './file/image.js';
-import { controlCamera, initCameraControls, initMouseControls, resetCameraControls, resetMouseControls } from './ui/controls.js';
+import { controlApp, controlCamera, initAppControls, initCameraControls, initKeyboardControls, initMouseControls, resetAppControls, resetCameraControls, resetKeyboardControls, resetMouseControls } from './ui/controls.js';
 
 /* --------------------- */
 /* --GLOBAL VARIABLES--- */
@@ -77,9 +77,11 @@ const tf = {
 // Mediator object between Tweakpane and the rest of the application
 let UIData = initUIData(tf);
 
-let camera = undefined;
 let mouse = undefined;
+let keyboard = undefined;
+let camera = undefined;
 let cameraControls = undefined;
+let appControls = undefined;
 
 let previousTime = 0;
 
@@ -118,6 +120,8 @@ window.onload = async function init()
   const sliceProgramInfo = await createShaderProgram(gl, "fsquad", "slice_texture");
   const volumeProgramInfo = await createShaderProgram(gl, "fsquad", "raytrace");
 
+  console.log(volumeProgramInfo);
+
   /* --------------------- */
   /* -DATA INITIALIZATION- */
   /* --------------------- */
@@ -136,9 +140,11 @@ window.onload = async function init()
     height: canvas.height * 0.5,
   }
 
-  camera = initCamera(viewportMain);
   mouse = initMouseControls(canvas);
+  keyboard = initKeyboardControls();
+  camera = initCamera(viewportMain);
   cameraControls = initCameraControls();
+  appControls = initAppControls();
 
   loadingScreenImagePromise.then((loadingScreenImage) =>{
     const loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
@@ -179,6 +185,22 @@ window.onload = async function init()
   })
 }
 
+async function reloadShaders()
+{
+  // NOTE: Temporary manual solution, should be possible to make each geometry take care of its own shader
+  const volumeProgramInfo = await createShaderProgram(gl, "fsquad", "raytrace");
+
+  geometries[0].programInfo = volumeProgramInfo;
+
+  console.log("Reloaded shaders");
+}
+
+function updateApp()
+{
+  if (appControls.reloadShaders)
+    reloadShaders();
+}
+
 /**
  * Updates variables throughout the render loop
  */
@@ -187,19 +209,25 @@ function update(currentTime)
   const timeDelta = 0.001 * (currentTime - previousTime);
   UIData.framesPerSecond = timeDelta > 0.0 ? 1.0 / timeDelta : 0.0;
   geometriesDebug[0].uniforms.u_slice_number = UIData.slice;
+
   controlCamera(mouse, cameraControls);
   updateCamera(camera, cameraControls, viewportMain, timeDelta);
 
+  controlApp(keyboard, appControls);
+  updateApp();
+
   previousTime = currentTime;
   resetMouseControls(mouse);
+  resetKeyboardControls(keyboard);
   resetCameraControls(cameraControls);
+  resetAppControls(appControls);
 }
 
 /**
  * Main render loop called via requestAnimationFrame(). 
  * Actual rendering is forwarded to the main render() function
  */
-export function renderLoop(currentTime)
+function renderLoop(currentTime)
 {
   update(currentTime);
 
