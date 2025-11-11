@@ -52,12 +52,6 @@ in VaryingData var;
 
 /* --------UNIFORMS--------- */
 /* ------------------------- */
-// Volume data texture
-uniform sampler3D u_volume_texture;
-// Bounding box lower left corner
-uniform vec3 u_bbox_min;
-// Bounding box upper right corner
-uniform vec3 u_bbox_max;
 // Ray Tracing
 uniform float u_step_size;
 uniform float u_default_step_size;
@@ -98,43 +92,35 @@ out vec4 o_color;
 /* ------LOCAL METHODS------ */
 /* ------------------------- */
 
-// Computes intersection with an axis aligned cube
-// Code from:
-// https://tavianator.com/2011/ray_box.html
-// TODO: fix division by zero (see code in the link)
-Hit ray_cube_intersection(const Ray ray, const vec3 bbox_min, const vec3 bbox_max)
+Hit ray_sphere_intersection(Ray ray, vec3 center, float radius)
 {
 	float tmin = -1e20;
 	float tmax = 1e20;
 
-	// bbox axis intersection parameters
-	float t0x = (bbox_min.x - ray.origin.x) / ray.direction.x;
-	float t1x = (bbox_max.x - ray.origin.x) / ray.direction.x;
-	tmin = max(tmin, min(t0x, t1x));
-	tmax = min(tmax, max(t0x, t1x));
+	vec3 oc = ray.origin - center;
+	float b = dot(oc, ray.direction);
+	float c = dot(oc, oc) - radius*radius;
+	float det = b*b - c;
 
-	float t0y = (bbox_min.y - ray.origin.y) / ray.direction.y;
-	float t1y = (bbox_max.y - ray.origin.y) / ray.direction.y;
-	tmin = max(tmin, min(t0y, t1y));
-	tmax = min(tmax, max(t0y, t1y));
-
-	float t0z = (bbox_min.z - ray.origin.z) / ray.direction.z;
-	float t1z = (bbox_max.z - ray.origin.z) / ray.direction.z;
-	tmin = max(tmin, min(t0z, t1z));
-	tmax = min(tmax, max(t0z, t1z));
-
-	if (tmax < tmin)
+	if (det < 0.0)
 		return miss;
 
-	vec3 interesection = ray.origin + tmin * ray.direction;
+	tmin = -b - sqrt(det);
 
-	return Hit(tmin, tmax, interesection, vec3(0.0));
+	if (tmin < 0.0)
+		tmin = 0.0;
+
+	tmax = -b + sqrt(det);
+
+	vec3 intersection = ray.origin + tmin * ray.direction;
+
+	return Hit(tmin, tmax, intersection, normalize(intersection - center));
 }
 
 // Evaluates the intersections of the ray with the scene objects and returns the closest hit.
 Hit evaluate(const Ray ray)
 {	
-	Hit closest_hit = ray_cube_intersection(ray, u_bbox_min, u_bbox_max);
+	Hit closest_hit = ray_sphere_intersection(ray, vec3(0.0), 1.0);
   return closest_hit;
 }
 
@@ -144,7 +130,8 @@ vec4 sample_voxel(vec3 sample_point)
 	// Temporary fix to flip the texture y-axis
 	uv_coords.y = 1.0 - uv_coords.y;
 
-	return texture(u_volume_texture, uv_coords);
+	// return texture(u_volume_texture, uv_coords);
+	return vec4(0.0);
 }
 
 vec3 compute_gradient(vec3 sample_point, float delta)
@@ -158,8 +145,7 @@ vec3 compute_gradient(vec3 sample_point, float delta)
 	float z_pos = sample_voxel(vec3(sample_point.xy, sample_point.z + delta)).r;
 	float z_neg = sample_voxel(vec3(sample_point.xy, sample_point.z - delta)).r;
 
-	// NOTE: Had to put minus in front, otherwise normal were pointing in the wrong direction for the shading models
-	return -vec3(x_pos - x_neg, y_pos - y_neg, z_pos - z_neg) / (2.0 * delta);
+	return vec3(x_pos - x_neg, y_pos - y_neg, z_pos - z_neg) / (2.0 * delta);
 }
 
 float fresnel_schlick(float value)
@@ -173,7 +159,7 @@ float fresnel_schlick(float value)
 vec3 lambert_diffuse(vec4 medium_color, vec3 N)
 {
 	vec3 L = normalize(u_light.position);
-	float NdotL = dot(N, L);
+	float NdotL = max(dot(N, L), 0.0);
 
 	return NdotL * medium_color.rgb;
 }
@@ -189,12 +175,9 @@ vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N)
 	vec3 L = normalize(u_light.position);
 	vec3 V = normalize(u_eye_position - sample_point);
 	vec3 H = normalize(L + V);
-	float LdotH = dot(L, H);
-	float NdotL = dot(N, L);
-	float NdotV = dot(N, V);
-
-	// if (NdotL < 0.0)
-	// 	return vec3(0.0);
+	float LdotH = max(dot(L, H), 0.2);
+	float NdotL = max(dot(N, L), 0.2);
+	float NdotV = max(dot(N, V), 0.0);
 
 	float FD90 = 0.5 + 2.0 * u_roughness * LdotH * LdotH;
 	// NOTE: ? This is the rewritten formula from the Disney 2012 paper, however not equivalent to the code below, possibly for cases
@@ -223,85 +206,43 @@ vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N)
 	vec3 sheen_color = FH * u_sheen * sheen_comp;
 
 	// TEMP: Scale PI by 0.5 to make image brighter
-	vec3 diffuse = (1.0 / (0.5 * PI)) * mix(base_diffuse, subsurface_diffuse, u_subsurface) + sheen_color;
+	vec3 diffuse = (1.0 / (PI)) * mix(base_diffuse, subsurface_diffuse, u_subsurface) + sheen_color;
 
 	return medium_color.rgb * diffuse;
 }
 
-vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_travel_distance)
+vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 normal, float volume_travel_distance)
 {
 	vec3 sample_point = first_interesection;
 	vec4 color = vec4(0.0);
 
-	// TODO: use UBOs and loop over array of tf invtervals and values
-	vec2 media_itv[1] = vec2[1](
-		// u_itv_lungs,
-		// 	u_itv_fat,
-		// u_itv_water,
-		// u_itv_muscle,
-		// u_itv_soft_tissue_contrast,
-		// u_itv_bone_cancellous,
-		u_itv_bone_cortical
-	);
-
-	vec4 media_color[1] = vec4[1](
-		// u_color_lungs,
-		// u_color_fat,
-		// u_color_water,
-		// u_color_muscle,
-		// u_color_soft_tissue_contrast,
-		// u_color_bone_cancellous,
-		u_color_bone_cortical
-	);
+	vec4 medium_color = u_color_bone_cortical;
 
 	while (volume_travel_distance >= 0.0 && color.a < 1.0)
 	{
-		vec4 float_sample_color = sample_voxel(sample_point);
+		// vec3 gradient = compute_gradient(sample_point, u_default_step_size);
+		
+		vec3 diffuse_color = vec3(0.0); 
 
-		// AIR SKIP // TIDO: try air jumps with uitv <0, 20>
-		if (float_sample_color.r < u_itv_air.y)
+		switch(u_shading_model)
 		{
-			sample_point += ray_direction * u_step_size;
-			volume_travel_distance -= u_step_size;
-			continue;
-			// color += vec4(u_color_air.rgb * u_color_air.a, u_color_air.a);
-		}
-
-		// NOTE: Think about different color multiplier and opacity addition
-		for(int i = 0; i < 1; ++i)
-		{
-			vec2 medium_itv = media_itv[i];
-			vec4 medium_color = media_color[i];	
-
-			if (float_sample_color.r >= medium_itv.x && float_sample_color.r < medium_itv.y)
-			{
-				vec3 gradient = compute_gradient(sample_point, u_default_step_size);
-				vec3 normal = normalize(gradient);	
-				
-				vec3 diffuse_color = vec3(0.0); 
-
-				switch(u_shading_model)
-				{
-					case DISNEY:
-						diffuse_color = disney_diffuse(medium_color, sample_point, normal);
-						break;
-					case LAMBERT:
-						diffuse_color = lambert_diffuse(medium_color, normal);
-						break;
-					case NORMAL:
-						diffuse_color = vec3((normal + 1.0) * 0.5);
-						break;
-					case POSITION:
-						diffuse_color = sample_point;
-						break;
-				}
-
-				// TODO: alpha should be consistent for all step sizes so: alpha = medium_alpha * (step size / reference step size)
-				float available_alpha = min(medium_color.a, 1.0 - color.a);
-				color += vec4(diffuse_color * available_alpha, available_alpha);
+			case DISNEY:
+				diffuse_color = disney_diffuse(medium_color, sample_point, normal);
 				break;
-			}
+			case LAMBERT:
+				diffuse_color = lambert_diffuse(medium_color, normal);
+				break;
+			case NORMAL:
+				diffuse_color = vec3((normal + 1.0) * 0.5);
+				break;
+			case POSITION:
+				diffuse_color = sample_point;
+				break;
 		}
+
+		// TODO: alpha should be consistent for all step sizes so: alpha = medium_alpha * (step size / reference step size)
+		float available_alpha = min(medium_color.a, 1.0 - color.a);
+		color += vec4(diffuse_color * available_alpha, available_alpha);
 
 		sample_point += ray_direction * u_step_size;
 		volume_travel_distance -= u_step_size;
@@ -329,7 +270,7 @@ vec4 trace(Ray ray)
 		if (hit.t_first == miss.t_first)
 			break;
     
-		color += sample_volume(ray.direction, hit.intersection, hit.t_last - hit.t_first);
+		color += sample_volume(ray.direction, hit.intersection, hit.normal, hit.t_last - hit.t_first);
   }
 
 	vec4 background_color = vec4(0.15, 0.2, 0.2, 1.0);

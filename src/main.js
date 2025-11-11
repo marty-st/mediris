@@ -6,7 +6,7 @@ import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from '
 import createShaderProgram from './webgl/program.js';
 import render from './webgl/render.js';
 import { create2DTexture, createVolumeTexture } from './webgl/texture.js';
-import { createSliceGeometry, createVolumeGeometry, createLoadingScreenGeometry } from './webgl/geometry.js';
+import { createSliceGeometry, createVolumeGeometry, createLoadingScreenGeometry, createSphereGeometry } from './webgl/geometry.js';
 import { updateCamera, initCamera } from './webgl/camera.js';
 import loadImage from './file/image.js';
 import { controlApp, controlCamera, initAppControls, initCameraControls, initKeyboardControls, initMouseControls, resetAppControls, resetCameraControls, resetKeyboardControls, resetMouseControls } from './ui/controls.js';
@@ -23,7 +23,6 @@ let geometries = [];                // array of rendered objects
 let viewportMain = undefined;       // main viewport position and dimensions
 
 // Debug variables
-const debugMode = false;
 let geometriesDebug = [];
 let viewportDebug = undefined;
 
@@ -41,7 +40,7 @@ const hu = {
   muscle: { min: 35 + C, max: 55 + C },
   softTissueContrast: { min: 100 + C, max: 300 + C },
   boneCancellous: { min: 300 + C, max: 400 + C },
-  boneCortical: { min: 500 + C, max: 1900 + C },
+  boneCortical: { min: 350 + C, max: 1900 + C },
 
 };
 
@@ -70,8 +69,8 @@ const tf = {
   water: { interval: hu.water, color: {r: 0.03, g: 0.49, b: 0.87, a: 0.00} },
   muscle: { interval: hu.muscle, color: {r: 0.46, g: 0.02, b: 0.02, a: 0.00} },
   softTissueContrast: { interval: hu.softTissueContrast, color: {r: 0.66, g: 0.36, b: 0.52, a: 0.00} },
-  boneCancellous: { interval: hu.boneCancellous, color: {r: 0.17, g: 0.23, b: 0.66, a: 0.43} },
-  boneCortical: { interval: hu.boneCortical, color: {r: 0.07, g: 0.42, b: 0.07, a: 0.80} },
+  boneCancellous: { interval: hu.boneCancellous, color: {r: 0.41, g: 0.66, b: 0.17, a: 0.0} },
+  boneCortical: { interval: hu.boneCortical, color: {r: 0.88, g: 0.88, b: 0.88, a: 1.00} },
 };
 
 // Mediator object between Tweakpane and the rest of the application
@@ -119,6 +118,7 @@ window.onload = async function init()
   const loadingScreenProgramInfo = await createShaderProgram(gl, "fsquad", "fstexture");
   const sliceProgramInfo = await createShaderProgram(gl, "fsquad", "slice_texture");
   const volumeProgramInfo = await createShaderProgram(gl, "fsquad", "raytrace");
+  const sphereProgramInfo = await createShaderProgram(gl, "fsquad", "sphere");
 
   console.log(volumeProgramInfo);
 
@@ -128,9 +128,9 @@ window.onload = async function init()
 
   viewportMain = {
     leftX: 0,
-    bottomY: debugMode ? canvas.height * 0.5 : 0,
+    bottomY: UIData.mode == 2 ? canvas.height * 0.5 : 0,
     width: canvas.width,
-    height: debugMode ? canvas.height * 0.5 : canvas.height,
+    height: UIData.mode == 2 ? canvas.height * 0.5 : canvas.height,
   };
   
   viewportDebug = {
@@ -156,7 +156,7 @@ window.onload = async function init()
     /* --------------------- */
 
     render(gl, canvas, viewportMain, geometries);
-    if (debugMode)
+    if (UIData.mode == 2)
       render(gl, canvas, viewportDebug, geometries);
   })
 
@@ -174,7 +174,10 @@ window.onload = async function init()
     geometriesDebug.pop();
 
     geometries.push(createVolumeGeometry(gl, volumeProgramInfo, volumeTexture, dimensions, UIData, camera));
-    geometriesDebug.push(createSliceGeometry(gl, sliceProgramInfo, volumeTexture, dimensions, UIData));
+    geometries.push(createSphereGeometry(gl, sphereProgramInfo, UIData, camera));
+
+    if (UIData.mode == 2)
+      geometriesDebug.push(createSliceGeometry(gl, sliceProgramInfo, volumeTexture, dimensions, UIData));
 
     /* --------------------- */
     /* -----RENDER LOOP----- */
@@ -188,9 +191,9 @@ window.onload = async function init()
 async function reloadShaders()
 {
   // NOTE: Temporary manual solution, should be possible to make each geometry take care of its own shader
-  const volumeProgramInfo = await createShaderProgram(gl, "fsquad", "raytrace");
+  const programInfo = UIData.mode == 1 ? await createShaderProgram(gl, "fsquad", "sphere") : await createShaderProgram(gl, "fsquad", "raytrace");
 
-  geometries[0].programInfo = volumeProgramInfo;
+  geometries[UIData.mode].programInfo = programInfo;
 
   console.log("Reloaded shaders");
 }
@@ -208,8 +211,17 @@ function update(currentTime)
 {
   const timeDelta = 0.001 * (currentTime - previousTime);
   UIData.framesPerSecond = timeDelta > 0.0 ? 1.0 / timeDelta : 0.0;
-  geometriesDebug[0].uniforms.u_slice_number = UIData.slice;
+  geometries[UIData.mode].uniforms.u_step_size = UIData.stepSize;
+  geometries[UIData.mode].uniforms.u_default_step_size = UIData.defaultStepSize;
+  geometries[UIData.mode].uniforms.u_shading_model = UIData.shadingModel;
+  geometries[UIData.mode].uniforms.u_roughness = UIData.roughness;
+  geometries[UIData.mode].uniforms.u_subsurface = UIData.subsurface;
+  geometries[UIData.mode].uniforms.u_sheen = UIData.sheen;
+  geometries[UIData.mode].uniforms.u_sheen_tint = UIData.sheenTint;
 
+  if (UIData.mode == 2)
+    geometriesDebug[0].uniforms.u_slice_number = UIData.slice;
+  
   controlCamera(mouse, cameraControls);
   updateCamera(camera, cameraControls, viewportMain, timeDelta);
 
@@ -231,8 +243,10 @@ function renderLoop(currentTime)
 {
   update(currentTime);
 
-  render(gl, canvas, viewportMain, geometries);
-  if (debugMode)
+  render(gl, canvas, viewportMain, geometries.slice(UIData.mode, UIData.mode + 1));
+  
+  if (UIData.mode == 2)
     render(gl, canvas, viewportDebug, geometriesDebug)
+
   requestAnimationFrame(renderLoop);
 }
