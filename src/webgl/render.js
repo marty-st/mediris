@@ -8,7 +8,7 @@ import * as twgl from 'twgl.js';
  * @param {*} canvas HTML canvas element
  * @param {*} geometries Array of `geometry` objects
  */
-export default function render(gl, canvas, viewport, geometries)
+export default function render(gl, canvas, viewport, scene, geometries)
 { 
   // TODO: canvas resize
   // https://webgl2fundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html
@@ -22,6 +22,8 @@ export default function render(gl, canvas, viewport, geometries)
   {
     gl.useProgram(geometry.programInfo.program);
     gl.bindVertexArray(geometry.vao);
+
+    twgl.setUniforms(geometry.programInfo, scene.uniforms)
 
     if (geometry.uniforms)
       twgl.setUniforms(geometry.programInfo, geometry.uniforms);

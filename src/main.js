@@ -4,6 +4,7 @@ import loadDicom from './file/dicom.js';
 import { initDebugUI, initUIData } from './ui/init.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
 import createShaderProgram from './webgl/program.js';
+import { createSceneEmpty, createSceneRaycast } from './webgl/scene.js';
 import render from './webgl/render.js';
 import { create2DTexture, createVolumeTexture } from './webgl/texture.js';
 import { createSliceGeometry, createVolumeGeometry, createLoadingScreenGeometry, createSphereGeometry } from './webgl/geometry.js';
@@ -19,6 +20,8 @@ import { controlApp, controlCamera, initAppControls, initCameraControls, initKey
 let canvas = undefined;             // HTML <canvas> element 
 let gl = undefined;                 // WebGL rendering context element
 let pane = undefined;               // Tweakpane rendering window
+let sceneEmpty = undefined;         // Object with empty settings for scenes with no additional spec
+let sceneRaycast = undefined;       // object with raycast scene settings
 let geometries = [];                // array of rendered objects
 let viewportMain = undefined;       // main viewport position and dimensions
 
@@ -120,8 +123,6 @@ window.onload = async function init()
   const volumeProgramInfo = await createShaderProgram(gl, "fsquad", "raytrace");
   const sphereProgramInfo = await createShaderProgram(gl, "fsquad", "sphere");
 
-  console.log(volumeProgramInfo);
-
   /* --------------------- */
   /* -DATA INITIALIZATION- */
   /* --------------------- */
@@ -145,6 +146,8 @@ window.onload = async function init()
   camera = initCamera(viewportMain);
   cameraControls = initCameraControls();
   appControls = initAppControls();
+  sceneEmpty = createSceneEmpty();
+  sceneRaycast = createSceneRaycast(UIData, camera);
 
   loadingScreenImagePromise.then((loadingScreenImage) =>{
     const loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
@@ -155,9 +158,9 @@ window.onload = async function init()
     /* -----RENDER LOAD----- */
     /* --------------------- */
 
-    render(gl, canvas, viewportMain, geometries);
+    render(gl, canvas, viewportMain, sceneEmpty, geometries);
     if (UIData.mode == 2)
-      render(gl, canvas, viewportDebug, geometries);
+      render(gl, canvas, viewportDebug, sceneEmpty, geometries);
   })
 
   // Asynchronously load DICOM to display later
@@ -211,13 +214,13 @@ function update(currentTime)
 {
   const timeDelta = 0.001 * (currentTime - previousTime);
   UIData.framesPerSecond = timeDelta > 0.0 ? 1.0 / timeDelta : 0.0;
-  geometries[UIData.mode].uniforms.u_step_size = UIData.stepSize;
-  geometries[UIData.mode].uniforms.u_default_step_size = UIData.defaultStepSize;
-  geometries[UIData.mode].uniforms.u_shading_model = UIData.shadingModel;
-  geometries[UIData.mode].uniforms.u_roughness = UIData.roughness;
-  geometries[UIData.mode].uniforms.u_subsurface = UIData.subsurface;
-  geometries[UIData.mode].uniforms.u_sheen = UIData.sheen;
-  geometries[UIData.mode].uniforms.u_sheen_tint = UIData.sheenTint;
+  sceneRaycast.uniforms.u_step_size = UIData.stepSize;
+  sceneRaycast.uniforms.u_default_step_size = UIData.defaultStepSize;
+  sceneRaycast.uniforms.u_shading_model = UIData.shadingModel;
+  sceneRaycast.uniforms.u_roughness = UIData.roughness;
+  sceneRaycast.uniforms.u_subsurface = UIData.subsurface;
+  sceneRaycast.uniforms.u_sheen = UIData.sheen;
+  sceneRaycast.uniforms.u_sheen_tint = UIData.sheenTint;
 
   if (UIData.mode == 2)
     geometriesDebug[0].uniforms.u_slice_number = UIData.slice;
@@ -243,10 +246,10 @@ function renderLoop(currentTime)
 {
   update(currentTime);
 
-  render(gl, canvas, viewportMain, geometries.slice(UIData.mode, UIData.mode + 1));
+  render(gl, canvas, viewportMain, sceneRaycast, geometries.slice(UIData.mode, UIData.mode + 1));
   
   if (UIData.mode == 2)
-    render(gl, canvas, viewportDebug, geometriesDebug)
+    render(gl, canvas, viewportDebug, sceneEmpty, geometriesDebug)
 
   requestAnimationFrame(renderLoop);
 }

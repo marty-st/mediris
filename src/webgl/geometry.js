@@ -77,17 +77,6 @@ export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimen
       u_volume_texture: volumeTexture,
       u_bbox_min: bbox_min,
       u_bbox_max: bbox_max,
-      // Ray Tracing
-      u_step_size: UIData.stepSize,
-      u_default_step_size: UIData.defaultStepSize,
-      u_shading_model: UIData.shadingModel,
-      // Light
-      u_light: { position: UIData.u_light },
-      // Shading Model
-      u_roughness: UIData.roughness,
-      u_subsurface: UIData.subsurface,
-      u_sheen: UIData.sheen,
-      u_sheen_tint: UIData.sheenTint,
       // Transfer Function
       u_itv_air: UIData.u_itv_air,
       u_color_air: UIData.u_color_air,
@@ -105,9 +94,6 @@ export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimen
       u_color_bone_cancellous: UIData.u_color_bone_cancellous,
       u_itv_bone_cortical: UIData.u_itv_bone_cortical,
       u_color_bone_cortical: UIData.u_color_bone_cortical,
-      u_eye_position: camera.u_eye_position,
-      u_view_inv: camera.u_view_inv,
-      u_projection_inv: camera.u_projection_inv,
     }
   };
 }
@@ -128,17 +114,6 @@ export function createSphereGeometry(gl, shaderProgramInfo, UIData, camera)
     vao: emptyVAO, 
     programInfo: shaderProgramInfo, 
     uniforms: {
-      // Ray Tracing
-      u_step_size: UIData.stepSize,
-      u_default_step_size: UIData.defaultStepSize,
-      u_shading_model: UIData.shadingModel,
-      // Light
-      u_light: { position: UIData.u_light },
-      // Shading Model
-      u_roughness: UIData.roughness,
-      u_subsurface: UIData.subsurface,
-      u_sheen: UIData.sheen,
-      u_sheen_tint: UIData.sheenTint,
       // Transfer Function
       u_itv_air: UIData.u_itv_air,
       u_color_air: UIData.u_color_air,
@@ -156,9 +131,6 @@ export function createSphereGeometry(gl, shaderProgramInfo, UIData, camera)
       u_color_bone_cancellous: UIData.u_color_bone_cancellous,
       u_itv_bone_cortical: UIData.u_itv_bone_cortical,
       u_color_bone_cortical: UIData.u_color_bone_cortical,
-      u_eye_position: camera.u_eye_position,
-      u_view_inv: camera.u_view_inv,
-      u_projection_inv: camera.u_projection_inv,
     }
   };
 }
