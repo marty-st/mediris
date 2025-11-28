@@ -175,9 +175,18 @@ vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N)
 	vec3 L = normalize(u_light.position);
 	vec3 V = normalize(u_eye_position - sample_point);
 	vec3 H = normalize(L + V);
-	float LdotH = max(dot(L, H), 0.2);
-	float NdotL = max(dot(N, L), 0.2);
-	float NdotV = max(dot(N, V), 0.0);
+	float LdotH = dot(L, H);
+	float NdotL = dot(N, L);
+	float NdotV = dot(N, V);
+
+	if (NdotL < 0.0)
+	{
+		// L *= -1.0;
+		// H = normalize(L + V);
+		// LdotH = dot(L, H);
+		// NdotL = dot(N, L);
+		return vec3(0.0);
+	}
 
 	float FD90 = 0.5 + 2.0 * u_roughness * LdotH * LdotH;
 	// NOTE: ? This is the rewritten formula from the Disney 2012 paper, however not equivalent to the code below, possibly for cases
@@ -206,7 +215,7 @@ vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N)
 	vec3 sheen_color = FH * u_sheen * sheen_comp;
 
 	// TEMP: Scale PI by 0.5 to make image brighter
-	vec3 diffuse = (1.0 / (PI)) * mix(base_diffuse, subsurface_diffuse, u_subsurface) + sheen_color;
+	vec3 diffuse = (1.0 / (0.5 * PI)) * mix(base_diffuse, subsurface_diffuse, u_subsurface) + sheen_color;
 
 	return medium_color.rgb * diffuse;
 }

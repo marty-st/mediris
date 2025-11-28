@@ -193,8 +193,14 @@ vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N)
 	float NdotL = dot(N, L);
 	float NdotV = dot(N, V);
 
-	// if (NdotL < 0.0)
-	// 	return vec3(0.0);
+	if (NdotL < 0.0)
+	{
+		// L *= -1.0;
+		// H = normalize(L + V);
+		// LdotH = dot(L, H);
+		// NdotL = dot(N, L);
+		return vec3(0.0);
+	}
 
 	float FD90 = 0.5 + 2.0 * u_roughness * LdotH * LdotH;
 	// NOTE: ? This is the rewritten formula from the Disney 2012 paper, however not equivalent to the code below, possibly for cases
