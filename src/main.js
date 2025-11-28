@@ -44,32 +44,15 @@ const hu = {
 };
 
 // Transfer Function Definition
-// NOTE: To add another medium
-// 1. define its values here
-// 2. Dually add them to UIData in ui/init.js (for Tweakpane and for shader uniform)
-// 3. Add binding to the UI pane (interval, color + on change events)
-// 4. Add 2 uniforms (itv, color) to the volumeGeometry object in createVolumeGeometry - webgl/geometry.js
-// 5. Handle in the shader
-// const tf = {
-//   air: { interval: hu.air, color: {r: 0, g: 0, b: 0, a: 0} },
-//   lungs: { interval: hu.lungs, color: {r: 0.65, g: 0.35, b: 0.11, a: 0.00} },
-//   fat: { interval: hu.fat, color: {r: 0.82, g: 0.83, b: 0.18, a: 0.11} },
-//   water: { interval: hu.water, color: {r: 0.03, g: 0.49, b: 0.87, a: 0.12} },
-//   muscle: { interval: hu.muscle, color: {r: 0.46, g: 0.02, b: 0.02, a: 0.05} },
-//   softTissueContrast: { interval: hu.softTissueContrast, color: {r: 0.66, g: 0.36, b: 0.52, a: 0.02} },
-//   boneCancellous: { interval: hu.boneCancellous, color: {r: 0.17, g: 0.23, b: 0.66, a: 0.43} },
-//   boneCortical: { interval: hu.boneCortical, color: {r: 0.07, g: 0.42, b: 0.07, a: 0.80} },
-// };
-
 const tf = {
-  air: { interval: hu.air, color: {r: 0, g: 0, b: 0, a: 0} },
-  lungs: { interval: hu.lungs, color: {r: 0.65, g: 0.35, b: 0.11, a: 0.00} },
-  fat: { interval: hu.fat, color: {r: 0.82, g: 0.83, b: 0.18, a: 0.00} },
-  water: { interval: hu.water, color: {r: 0.03, g: 0.49, b: 0.87, a: 0.00} },
-  muscle: { interval: hu.muscle, color: {r: 0.46, g: 0.02, b: 0.02, a: 0.00} },
-  softTissueContrast: { interval: hu.softTissueContrast, color: {r: 0.66, g: 0.36, b: 0.52, a: 0.00} },
-  boneCancellous: { interval: hu.boneCancellous, color: {r: 0.41, g: 0.66, b: 0.17, a: 0.0} },
-  boneCortical: { interval: hu.boneCortical, color: {r: 0.88, g: 0.88, b: 0.88, a: 1.00} },
+  air: { interval: hu.air, color: {r: 0, g: 0, b: 0, a: 0}, enabled: false},
+  lungs: { interval: hu.lungs, color: {r: 0.65, g: 0.35, b: 0.11, a: 0.00}, enabled: false},
+  fat: { interval: hu.fat, color: {r: 0.82, g: 0.83, b: 0.18, a: 0.00}, enabled: false},
+  water: { interval: hu.water, color: {r: 0.03, g: 0.49, b: 0.87, a: 0.00}, enabled: false},
+  muscle: { interval: hu.muscle, color: {r: 0.46, g: 0.02, b: 0.02, a: 0.00}, enabled: false},
+  softTissueContrast: { interval: hu.softTissueContrast, color: {r: 0.66, g: 0.36, b: 0.52, a: 0.00}, enabled: false},
+  boneCancellous: { interval: hu.boneCancellous, color: {r: 0.41, g: 0.66, b: 0.17, a: 0.0}, enabled: false},
+  boneCortical: { interval: hu.boneCortical, color: {r: 0.88, g: 0.88, b: 0.88, a: 1.00}, enabled: true},
 };
 
 // Mediator object between Tweakpane and the rest of the application
@@ -160,8 +143,8 @@ window.onload = async function init()
     // Remove loading screen
     geometries.pop();
 
-    geometries.push(createVolumeGeometry(gl, volumeProgramInfo, volumeTexture, dimensions, UIData, camera));
-    geometries.push(createSphereGeometry(gl, sphereProgramInfo, UIData, camera));
+    geometries.push(createVolumeGeometry(gl, volumeProgramInfo, volumeTexture, dimensions, UIData));
+    geometries.push(createSphereGeometry(gl, sphereProgramInfo, UIData));
 
     /* --------------------- */
     /* -----RENDER LOOP----- */
@@ -175,9 +158,9 @@ window.onload = async function init()
 async function reloadShaders()
 {
   // NOTE: Temporary manual solution, should be possible to make each geometry take care of its own shader
-  const programInfo = UIData.mode == 1 ? await createShaderProgram(gl, "fsquad", "sphere") : await createShaderProgram(gl, "fsquad", "raytrace");
+  const shaderName = UIData.mode == 0 ? "raytrace" : "sphere";
 
-  geometries[UIData.mode].programInfo = programInfo;
+  geometries[UIData.mode].programInfo = await createShaderProgram(gl, "fsquad", shaderName)
 
   console.log("Reloaded shaders");
 }

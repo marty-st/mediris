@@ -52,6 +52,37 @@ export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimens
 }
 
 /**
+ * Creates an object that can be mapped by twgl.js to a Uniform Block on the GPU
+ * @param {*} UIData object with UI-controlled variables
+ * @returns object with the same exact structure as defined in the shader
+ */
+function getTransferFunctionfromUIData(UIData)
+{
+  let tf = { 
+    media: []
+  };
+
+  console.log(UIData.transferFunction);
+
+  for (const key in UIData.transferFunction)
+  {
+    const medium = UIData.transferFunction[key];
+
+    if (!medium.enabled)
+      continue;
+
+    tf.media.push({
+      color: medium.colorVec,
+      interval: medium.intervalVec,
+    })
+  }
+
+  tf.media_array_size = tf.media.length;
+
+  return tf;
+}
+
+/**
  * Creates a geometry object compatible with the rendering pipeline
  * @param {*} gl WebGL rendering context
  * @param {*} shaderProgramInfo associated shader program
@@ -61,7 +92,7 @@ export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimens
  * @param {*} camera object with camera-related uniforms
  * @returns geometry object of the volume for 3D volume rendering
  */
-export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimensions, UIData, camera)
+export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimensions, UIData)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
@@ -77,24 +108,12 @@ export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimen
       u_volume_texture: volumeTexture,
       u_bbox_min: bbox_min,
       u_bbox_max: bbox_max,
-      // Transfer Function
-      u_itv_air: UIData.u_itv_air,
-      u_color_air: UIData.u_color_air,
-      u_itv_lungs: UIData.u_itv_lungs,
-      u_color_lungs: UIData.u_color_lungs,
-      u_itv_fat: UIData.u_itv_fat,
-      u_color_fat: UIData.u_color_fat,
-      u_itv_water: UIData.u_itv_water,
-      u_color_water: UIData.u_color_water,
-      u_itv_muscle: UIData.u_itv_muscle,
-      u_color_muscle: UIData.u_color_muscle,
-      u_itv_soft_tissue_contrast: UIData.u_itv_soft_tissue_contrast,
-      u_color_soft_tissue_contrast: UIData.u_color_soft_tissue_contrast,
-      u_itv_bone_cancellous: UIData.u_itv_bone_cancellous,
-      u_color_bone_cancellous: UIData.u_color_bone_cancellous,
-      u_itv_bone_cortical: UIData.u_itv_bone_cortical,
-      u_color_bone_cortical: UIData.u_color_bone_cortical,
-    }
+    },
+    // Transfer Function
+    uniformBlock: {
+      info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "TransferFunction"),
+      uniforms: getTransferFunctionfromUIData(UIData),
+    },
   };
 }
 
@@ -104,7 +123,7 @@ export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimen
  * @param {*} shaderProgramInfo associated shader program
  * @returns geometry object of the sphere
  */
-export function createSphereGeometry(gl, shaderProgramInfo, UIData, camera)
+export function createSphereGeometry(gl, shaderProgramInfo, UIData)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
@@ -113,24 +132,10 @@ export function createSphereGeometry(gl, shaderProgramInfo, UIData, camera)
     bufferInfo: fullScreenQuadBufferInfo, 
     vao: emptyVAO, 
     programInfo: shaderProgramInfo, 
-    uniforms: {
-      // Transfer Function
-      u_itv_air: UIData.u_itv_air,
-      u_color_air: UIData.u_color_air,
-      u_itv_lungs: UIData.u_itv_lungs,
-      u_color_lungs: UIData.u_color_lungs,
-      u_itv_fat: UIData.u_itv_fat,
-      u_color_fat: UIData.u_color_fat,
-      u_itv_water: UIData.u_itv_water,
-      u_color_water: UIData.u_color_water,
-      u_itv_muscle: UIData.u_itv_muscle,
-      u_color_muscle: UIData.u_color_muscle,
-      u_itv_soft_tissue_contrast: UIData.u_itv_soft_tissue_contrast,
-      u_color_soft_tissue_contrast: UIData.u_color_soft_tissue_contrast,
-      u_itv_bone_cancellous: UIData.u_itv_bone_cancellous,
-      u_color_bone_cancellous: UIData.u_color_bone_cancellous,
-      u_itv_bone_cortical: UIData.u_itv_bone_cortical,
-      u_color_bone_cortical: UIData.u_color_bone_cortical,
-    }
+    // Transfer Function
+    uniformBlock: {
+      info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "TransferFunction"),
+      uniforms: getTransferFunctionfromUIData(UIData),
+    },
   };
 }

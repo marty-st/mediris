@@ -36,9 +36,17 @@ struct Light
 	vec3 position;
 };
 
+struct Medium
+{
+	vec4 color;
+	vec2 interval;
+};
+
 /* -----LOCAL VARIABLES----- */
 /* ------------------------- */
 const float PI = 3.14159265358979323846;
+const int MAX_TF_ARRAY_SIZE = 20;
+const float AIR_UPPER_LIMIT = 50.0;
 const RayIntersectionData no_intersection = RayIntersectionData(1e20, vec3(0.0), vec3(0.0));
 const Hit miss = Hit(1e20, 1e20, vec3(0.0), vec3(0.0));
 const int DISNEY = 0;
@@ -70,22 +78,11 @@ uniform float u_subsurface;
 uniform float u_sheen;
 uniform float u_sheen_tint;
 // Transfer Function
-uniform vec2 u_itv_air;
-uniform vec4 u_color_air;
-uniform vec2 u_itv_lungs;
-uniform vec4 u_color_lungs;
-uniform vec2 u_itv_fat;
-uniform vec4 u_color_fat;
-uniform vec2 u_itv_water;
-uniform vec4 u_color_water;
-uniform vec2 u_itv_muscle;
-uniform vec4 u_color_muscle;
-uniform vec2 u_itv_soft_tissue_contrast;
-uniform vec4 u_color_soft_tissue_contrast;
-uniform vec2 u_itv_bone_cancellous;
-uniform vec4 u_color_bone_cancellous;
-uniform vec2 u_itv_bone_cortical;
-uniform vec4 u_color_bone_cortical;
+uniform TransferFunction
+{
+	int media_array_size;
+	Medium media[MAX_TF_ARRAY_SIZE];
+} tf;
 // Camera uniforms
 uniform vec3 u_eye_position;
 uniform mat4 u_view_inv;
@@ -239,45 +236,25 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_tr
 	vec3 sample_point = first_interesection;
 	vec4 color = vec4(0.0);
 
-	// TODO: use UBOs and loop over array of tf invtervals and values
-	vec2 media_itv[1] = vec2[1](
-		// u_itv_lungs,
-		// 	u_itv_fat,
-		// u_itv_water,
-		// u_itv_muscle,
-		// u_itv_soft_tissue_contrast,
-		// u_itv_bone_cancellous,
-		u_itv_bone_cortical
-	);
-
-	vec4 media_color[1] = vec4[1](
-		// u_color_lungs,
-		// u_color_fat,
-		// u_color_water,
-		// u_color_muscle,
-		// u_color_soft_tissue_contrast,
-		// u_color_bone_cancellous,
-		u_color_bone_cortical
-	);
-
 	while (volume_travel_distance >= 0.0 && color.a < 1.0)
 	{
 		vec4 float_sample_color = sample_voxel(sample_point);
 
-		// AIR SKIP // TIDO: try air jumps with uitv <0, 20>
-		if (float_sample_color.r < u_itv_air.y)
+		// AIR SKIP 
+		// TODO: read the value from a uniform
+		if (float_sample_color.r < AIR_UPPER_LIMIT)
 		{
 			sample_point += ray_direction * u_step_size;
 			volume_travel_distance -= u_step_size;
 			continue;
-			// color += vec4(u_color_air.rgb * u_color_air.a, u_color_air.a);
+			// color += vec4(tf.media[0].color.rgb * tf.media[0].color..a, tf.media[0].color.a);
 		}
 
 		// NOTE: Think about different color multiplier and opacity addition
-		for(int i = 0; i < 1; ++i)
+		for(int i = 0; i < tf.media_array_size; ++i)
 		{
-			vec2 medium_itv = media_itv[i];
-			vec4 medium_color = media_color[i];	
+			vec2 medium_itv = tf.media[i].interval;
+			vec4 medium_color = tf.media[i].color;
 
 			if (float_sample_color.r >= medium_itv.x && float_sample_color.r < medium_itv.y)
 			{

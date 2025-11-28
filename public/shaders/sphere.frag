@@ -36,9 +36,16 @@ struct Light
 	vec3 position;
 };
 
+struct Medium
+{
+	vec4 color;
+	vec2 interval;
+};
+
 /* -----LOCAL VARIABLES----- */
 /* ------------------------- */
 const float PI = 3.14159265358979323846;
+const int MAX_TF_ARRAY_SIZE = 20;
 const RayIntersectionData no_intersection = RayIntersectionData(1e20, vec3(0.0), vec3(0.0));
 const Hit miss = Hit(1e20, 1e20, vec3(0.0), vec3(0.0));
 const int DISNEY = 0;
@@ -64,22 +71,11 @@ uniform float u_subsurface;
 uniform float u_sheen;
 uniform float u_sheen_tint;
 // Transfer Function
-uniform vec2 u_itv_air;
-uniform vec4 u_color_air;
-uniform vec2 u_itv_lungs;
-uniform vec4 u_color_lungs;
-uniform vec2 u_itv_fat;
-uniform vec4 u_color_fat;
-uniform vec2 u_itv_water;
-uniform vec4 u_color_water;
-uniform vec2 u_itv_muscle;
-uniform vec4 u_color_muscle;
-uniform vec2 u_itv_soft_tissue_contrast;
-uniform vec4 u_color_soft_tissue_contrast;
-uniform vec2 u_itv_bone_cancellous;
-uniform vec4 u_color_bone_cancellous;
-uniform vec2 u_itv_bone_cortical;
-uniform vec4 u_color_bone_cortical;
+uniform TransferFunction
+{
+	int media_array_size;
+	Medium media[MAX_TF_ARRAY_SIZE];
+} tf;
 // Camera uniforms
 uniform vec3 u_eye_position;
 uniform mat4 u_view_inv;
@@ -225,7 +221,7 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 normal, fl
 	vec3 sample_point = first_interesection;
 	vec4 color = vec4(0.0);
 
-	vec4 medium_color = u_color_bone_cortical;
+	vec4 medium_color = tf.media[tf.media_array_size - 1].color;
 
 	while (volume_travel_distance >= 0.0 && color.a < 1.0)
 	{
