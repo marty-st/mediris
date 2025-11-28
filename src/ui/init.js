@@ -22,8 +22,6 @@ function initVec3(v)
 export function initUIData(tf)
 {
   let UIData = {
-    // Debug
-    slice: 1,
     framesPerSecond: 0,
     mode: 0,
     // Ray Tracing
@@ -99,8 +97,6 @@ export function initDebugUI(UIData)
 
   pane.registerPlugin(TweakpaneEssentialsPlugin);
 
-  // pane.addBinding(UIData, 'slice', {min: 1, max: 226, step: 1});
-
   pane.addBinding(UIData, "framesPerSecond", {
         readonly: true,
         label: "FPS",
@@ -113,7 +109,6 @@ export function initDebugUI(UIData)
     options: {
       main: 0,
       debugShader: 1,
-      debugSlice: 2,
     }
   });
 

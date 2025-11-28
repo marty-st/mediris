@@ -7,7 +7,7 @@ import createShaderProgram from './webgl/program.js';
 import { createSceneEmpty, createSceneRaycast } from './webgl/scene.js';
 import render from './webgl/render.js';
 import { create2DTexture, createVolumeTexture } from './webgl/texture.js';
-import { createSliceGeometry, createVolumeGeometry, createLoadingScreenGeometry, createSphereGeometry } from './webgl/geometry.js';
+import { createVolumeGeometry, createLoadingScreenGeometry, createSphereGeometry } from './webgl/geometry.js';
 import { updateCamera, initCamera } from './webgl/camera.js';
 import loadImage from './file/image.js';
 import { controlApp, controlCamera, initAppControls, initCameraControls, initKeyboardControls, initMouseControls, resetAppControls, resetCameraControls, resetKeyboardControls, resetMouseControls } from './ui/controls.js';
@@ -24,10 +24,6 @@ let sceneEmpty = undefined;         // Object with empty settings for scenes wit
 let sceneRaycast = undefined;       // object with raycast scene settings
 let geometries = [];                // array of rendered objects
 let viewportMain = undefined;       // main viewport position and dimensions
-
-// Debug variables
-let geometriesDebug = [];
-let viewportDebug = undefined;
 
 // HU units are usually defined in the range <-1000, 3000>,
 // however, the data loads in unsigned short format, so
@@ -119,7 +115,6 @@ window.onload = async function init()
   /* --------------------- */
 
   const loadingScreenProgramInfo = await createShaderProgram(gl, "fsquad", "fstexture");
-  const sliceProgramInfo = await createShaderProgram(gl, "fsquad", "slice_texture");
   const volumeProgramInfo = await createShaderProgram(gl, "fsquad", "raytrace");
   const sphereProgramInfo = await createShaderProgram(gl, "fsquad", "sphere");
 
@@ -133,13 +128,6 @@ window.onload = async function init()
     width: canvas.width,
     height: UIData.mode == 2 ? canvas.height * 0.5 : canvas.height,
   };
-  
-  viewportDebug = {
-    leftX: 0,
-    bottomY: 0,
-    width: canvas.width,
-    height: canvas.height * 0.5,
-  }
 
   mouse = initMouseControls(canvas);
   keyboard = initKeyboardControls();
@@ -152,15 +140,12 @@ window.onload = async function init()
   loadingScreenImagePromise.then((loadingScreenImage) =>{
     const loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
     geometries.push(createLoadingScreenGeometry(gl, loadingScreenProgramInfo, loadingScreenTexture));
-    geometriesDebug.push(createLoadingScreenGeometry(gl, loadingScreenProgramInfo, loadingScreenTexture));
 
     /* --------------------- */
     /* -----RENDER LOAD----- */
     /* --------------------- */
 
     render(gl, canvas, viewportMain, sceneEmpty, geometries);
-    if (UIData.mode == 2)
-      render(gl, canvas, viewportDebug, sceneEmpty, geometries);
   })
 
   // Asynchronously load DICOM to display later
@@ -174,13 +159,9 @@ window.onload = async function init()
 
     // Remove loading screen
     geometries.pop();
-    geometriesDebug.pop();
 
     geometries.push(createVolumeGeometry(gl, volumeProgramInfo, volumeTexture, dimensions, UIData, camera));
     geometries.push(createSphereGeometry(gl, sphereProgramInfo, UIData, camera));
-
-    if (UIData.mode == 2)
-      geometriesDebug.push(createSliceGeometry(gl, sliceProgramInfo, volumeTexture, dimensions, UIData));
 
     /* --------------------- */
     /* -----RENDER LOOP----- */
@@ -221,9 +202,6 @@ function update(currentTime)
   sceneRaycast.uniforms.u_subsurface = UIData.subsurface;
   sceneRaycast.uniforms.u_sheen = UIData.sheen;
   sceneRaycast.uniforms.u_sheen_tint = UIData.sheenTint;
-
-  if (UIData.mode == 2)
-    geometriesDebug[0].uniforms.u_slice_number = UIData.slice;
   
   controlCamera(mouse, cameraControls);
   updateCamera(camera, cameraControls, viewportMain, timeDelta);
@@ -247,9 +225,6 @@ function renderLoop(currentTime)
   update(currentTime);
 
   render(gl, canvas, viewportMain, sceneRaycast, geometries.slice(UIData.mode, UIData.mode + 1));
-  
-  if (UIData.mode == 2)
-    render(gl, canvas, viewportDebug, sceneEmpty, geometriesDebug)
 
   requestAnimationFrame(renderLoop);
 }
