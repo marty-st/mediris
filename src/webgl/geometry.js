@@ -62,8 +62,6 @@ function getTransferFunctionfromUIData(UIData)
     media: []
   };
 
-  console.log(UIData.transferFunction);
-
   for (const key in UIData.transferFunction)
   {
     const medium = UIData.transferFunction[key];

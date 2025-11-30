@@ -23,8 +23,17 @@ export default function render(gl, canvas, viewport, scene, geometries)
     gl.useProgram(geometry.programInfo.program);
     gl.bindVertexArray(geometry.vao);
 
-    twgl.setUniforms(geometry.programInfo, scene.uniforms)
+    // Scene uniforms & UBOs
+    if (scene.uniforms)
+      twgl.setUniforms(geometry.programInfo, scene.uniforms)
+    
+    if (scene.uniformBlock)
+    {
+      twgl.setBlockUniforms(scene.uniformBlock.info, scene.uniformBlock.uniforms);
+      twgl.setUniformBlock(gl, geometry.programInfo, scene.uniformBlock.info);
+    }
 
+    // Geometry uniforms & UBOs
     if (geometry.uniforms)
       twgl.setUniforms(geometry.programInfo, geometry.uniforms);
 

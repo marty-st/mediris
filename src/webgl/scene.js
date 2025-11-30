@@ -1,5 +1,7 @@
 'use strict'
 
+import * as twgl from 'twgl.js';
+
 export function createSceneEmpty()
 {
   return {
@@ -7,7 +9,27 @@ export function createSceneEmpty()
   };
 }
 
-export function createSceneRaycast(UIData, camera)
+function getLightsFromUIData(UIData)
+{
+  let lights = {
+    array: [],
+  };
+
+  for (const key in UIData.lights)
+  {
+    const light = UIData.lights[key];
+
+    lights.array.push({
+      position: light.positionVec,
+    });
+  }
+
+  lights.array_size = lights.array.length;
+
+  return lights;
+}
+
+export function createSceneRaycast(gl, shaderProgramInfo, camera, UIData)
 {
   return {
     uniforms: {
@@ -26,6 +48,10 @@ export function createSceneRaycast(UIData, camera)
       u_subsurface: UIData.subsurface,
       u_sheen: UIData.sheen,
       u_sheen_tint: UIData.sheenTint,
-    }
+    },
+    uniformBlock: {
+      info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "Lights"),
+      uniforms: getLightsFromUIData(UIData),
+    },
   };
 }

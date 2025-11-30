@@ -1,6 +1,7 @@
 'use strict'
 
 import loadDicom from './file/dicom.js';
+import * as twgl from 'twgl.js';
 import { initDebugUI, initUIData } from './ui/init.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
 import createShaderProgram from './webgl/program.js';
@@ -55,8 +56,21 @@ const tf = {
   boneCortical: { interval: hu.boneCortical, color: {r: 0.88, g: 0.88, b: 0.88, a: 1.00}, enabled: true},
 };
 
+// Lights Setup
+const lights = {
+    keyLight: {
+      position: {x: 0, y: 1, z: -1},
+    },
+    fillLight: {
+      position: {x: -1, y: 1, z: 0},
+    },
+    backLight: {
+      position: {x: 0, y: 1, z: 1},
+    },
+};
+
 // Mediator object between Tweakpane and the rest of the application
-let UIData = initUIData(tf);
+let UIData = initUIData(tf, lights);
 
 let mouse = undefined;
 let keyboard = undefined;
@@ -118,7 +132,7 @@ window.onload = async function init()
   cameraControls = initCameraControls();
   appControls = initAppControls();
   sceneEmpty = createSceneEmpty();
-  sceneRaycast = createSceneRaycast(UIData, camera);
+  sceneRaycast = createSceneRaycast(gl, volumeProgramInfo, camera, UIData);
 
   loadingScreenImagePromise.then((loadingScreenImage) =>{
     const loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
@@ -158,9 +172,25 @@ window.onload = async function init()
 async function reloadShaders()
 {
   // NOTE: Temporary manual solution, should be possible to make each geometry take care of its own shader
+  // TODO: refactor
   const shaderName = UIData.mode == 0 ? "raytrace" : "sphere";
+  const geometry = geometries[UIData.mode];
 
-  geometries[UIData.mode].programInfo = await createShaderProgram(gl, "fsquad", shaderName)
+  geometry.programInfo = await createShaderProgram(gl, "fsquad", shaderName);
+
+  if (geometry.uniformBlock)
+  {
+    const blockName = geometry.uniformBlock.info.name;
+    geometry.uniformBlock.info = twgl.createUniformBlockInfo(gl, geometry.programInfo, blockName);
+    
+  }
+
+  if (UIData.mode == 0 && sceneRaycast.uniformBlock)
+  {
+    const blockName = sceneRaycast.uniformBlock.info.name;
+    sceneRaycast.uniformBlock.info = twgl.createUniformBlockInfo(gl, geometry.programInfo, blockName);
+  }
+
 
   console.log("Reloaded shaders");
 }

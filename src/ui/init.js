@@ -59,12 +59,29 @@ function initTransferFunctionProperties(tf)
   return transferFunction;
 }
 
+function initLightsProperties(lights)
+{
+  let lightsProperties = {};
+
+  for (const key in lights)
+  {
+    const light = lights[key];
+
+    lightsProperties[key] = {};
+    lightsProperties[key].position = light.position;
+    lightsProperties[key].positionVec = initVec3(light.position);
+  }
+
+  return lightsProperties;
+}
+
 /**
  * Creates an object that stores UI related data
  * @param {*} tf object that defines the transfer function
+ * @param {*} l object that defines lights in a scene
  * @returns mediator object between UI and the rest of the application
  */
-export function initUIData(tf)
+export function initUIData(tf, l)
 {
   let UIData = {
     framesPerSecond: 0,
@@ -73,13 +90,8 @@ export function initUIData(tf)
     defaultStepSize: 0.0025,
     stepSize: 0.0025,
     shadingModel: 0,
-    // Light:
-    light: {
-      x: 0,
-      y: 0,
-      z: -1,
-    },
-    u_light: initVec3({x: 0, y: 0, z: -1}),
+    // Lights
+    lights: initLightsProperties(l),
     // Shading Model
     roughness: 0.1,
     subsurface: 0.0,
@@ -130,6 +142,28 @@ function addTransferFunctionBindings(pane, UIData)
 }
 
 /**
+ * Creates a UI section for controlling the light sources
+ * @param {*} pane Tweakpane global-state object
+ * @param {*} UIData mediator object between UI and the rest of the application
+ */
+function addLightsBindings(pane, UIData)
+{
+  for (const key in UIData.lights)
+  {
+    pane.addBinding(UIData.lights[key], "position", 
+    { 
+      label: key,
+      min: -1, 
+      max: 1,
+    })
+    .on('change', (event) => {
+      const {x, y, z} = event.value;
+      vec3.set(UIData.lights[key].positionVec, x, y, z);
+    });
+  }
+}
+
+/**
  * Initializes the context of Tweakpane UI elements for debugging purposes
  * @param UIData object that reflects states of Tweakpane controlled variables
  * @returns `Pane`object
@@ -166,11 +200,12 @@ export function initDebugUI(UIData)
     } 
   });
 
-  pane.addBinding(UIData, "light", { min: -1, max: 1 })
-  .on('change', (event) => {
-    const {x, y, z} = event.value;
-    vec3.set(UIData.u_light, x, y, z);
-  });
+  addLightsBindings(pane, UIData);
+  // pane.addBinding(UIData, "light", { min: -1, max: 1 })
+  // .on('change', (event) => {
+  //   const {x, y, z} = event.value;
+  //   vec3.set(UIData.u_light, x, y, z);
+  // });
 
   pane.addBinding(UIData, "roughness", { min: 0, max: 1 });
   pane.addBinding(UIData, "subsurface", { min: 0, max: 1 });

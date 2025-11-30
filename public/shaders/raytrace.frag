@@ -46,6 +46,7 @@ struct Medium
 /* ------------------------- */
 const float PI = 3.14159265358979323846;
 const int MAX_TF_ARRAY_SIZE = 20;
+const int MAX_LIGHT_ARRAY_SIZE = 5;
 const float AIR_UPPER_LIMIT = 50.0;
 const RayIntersectionData no_intersection = RayIntersectionData(1e20, vec3(0.0), vec3(0.0));
 const Hit miss = Hit(1e20, 1e20, vec3(0.0), vec3(0.0));
@@ -71,7 +72,10 @@ uniform float u_step_size;
 uniform float u_default_step_size;
 uniform int u_shading_model;
 // Light
-uniform Light u_light;
+uniform Lights {
+	int array_size;
+	Light array[MAX_LIGHT_ARRAY_SIZE];
+} lights;
 // Shading model
 uniform float u_roughness;
 uniform float u_subsurface;
@@ -167,15 +171,15 @@ float fresnel_schlick(float value)
 	return value2 * value2 * value; 
 }
 
-vec3 lambert_diffuse(vec4 medium_color, vec3 N)
+vec3 lambert_diffuse(vec4 medium_color, vec3 N, Light light)
 {
-	vec3 L = normalize(u_light.position);
+	vec3 L = normalize(light.position);
 	float NdotL = dot(N, L);
 
 	return NdotL * medium_color.rgb;
 }
 
-vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N)
+vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
 {
 	// Base Diffuse
 	// ThetaL = dot(N, L)
@@ -183,7 +187,7 @@ vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N)
 	// ThetaD = dot(L, H)
 	// FD90 = 0.5 + 2 * roughness * cos^2ThetaD
 	// base_diffuse = (baseColor / pi) * (1 + (FD90 - 1) * (1 - cosThetaL) ^ 5) * (1 + (FD90 - 1) * (1 - cosThetaV) ^ 5)
-	vec3 L = normalize(u_light.position);
+	vec3 L = normalize(light.position);
 	vec3 V = normalize(u_eye_position - sample_point);
 	vec3 H = normalize(L + V);
 	float LdotH = dot(L, H);
@@ -226,7 +230,7 @@ vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N)
 	vec3 sheen_color = FH * u_sheen * sheen_comp;
 
 	// TEMP: Scale PI by 0.5 to make image brighter
-	vec3 diffuse = (1.0 / (0.5 * PI)) * mix(base_diffuse, subsurface_diffuse, u_subsurface) + sheen_color;
+	vec3 diffuse = (1.0 / (PI)) * mix(base_diffuse, subsurface_diffuse, u_subsurface) + sheen_color;
 
 	return medium_color.rgb * diffuse;
 }
@@ -266,10 +270,16 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_tr
 				switch(u_shading_model)
 				{
 					case DISNEY:
-						diffuse_color = disney_diffuse(medium_color, sample_point, normal);
+						for (int l = 0; l < lights.array_size; ++l)
+						{
+							diffuse_color += disney_diffuse(medium_color, sample_point, normal, lights.array[l]);
+						}
 						break;
 					case LAMBERT:
-						diffuse_color = lambert_diffuse(medium_color, normal);
+						for (int l = 0; l < lights.array_size; ++l)
+						{
+							diffuse_color += lambert_diffuse(medium_color, normal, lights.array[l]);
+						}
 						break;
 					case NORMAL:
 						diffuse_color = vec3((normal + 1.0) * 0.5);
