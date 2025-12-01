@@ -34,6 +34,7 @@ struct Hit
 struct Light
 {
 	vec3 position;
+	float intensity;
 };
 
 struct Medium
@@ -66,8 +67,8 @@ uniform float u_default_step_size;
 uniform int u_shading_model;
 // Light
 uniform Lights {
-	int array_size;
-	Light array[MAX_LIGHT_ARRAY_SIZE];
+	int lights_array_size;
+	Light lights_array[MAX_LIGHT_ARRAY_SIZE];
 } lights;
 // Shading model
 uniform float u_roughness;
@@ -78,7 +79,7 @@ uniform float u_sheen_tint;
 uniform TransferFunction
 {
 	int media_array_size;
-	Medium media[MAX_TF_ARRAY_SIZE];
+	Medium media_array[MAX_TF_ARRAY_SIZE];
 } tf;
 // Camera uniforms
 uniform vec3 u_eye_position;
@@ -161,7 +162,7 @@ vec3 lambert_diffuse(vec4 medium_color, vec3 N, Light light)
 	vec3 L = normalize(light.position);
 	float NdotL = max(dot(N, L), 0.0);
 
-	return NdotL * medium_color.rgb;
+	return light.intensity * NdotL * medium_color.rgb;
 }
 
 vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
@@ -217,7 +218,7 @@ vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
 	// TEMP: Scale PI by 0.5 to make image brighter
 	vec3 diffuse = (1.0 / (PI)) * mix(base_diffuse, subsurface_diffuse, u_subsurface) + sheen_color;
 
-	return medium_color.rgb * diffuse;
+	return light.intensity * medium_color.rgb * diffuse;
 }
 
 vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 normal, float volume_travel_distance)
@@ -225,7 +226,7 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 normal, fl
 	vec3 sample_point = first_interesection;
 	vec4 color = vec4(0.0);
 
-	vec4 medium_color = tf.media[tf.media_array_size - 1].color;
+	vec4 medium_color = tf.media_array[tf.media_array_size - 1].color;
 
 	while (volume_travel_distance >= 0.0 && color.a < 1.0)
 	{
@@ -236,15 +237,15 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 normal, fl
 		switch(u_shading_model)
 		{
 			case DISNEY:
-				for (int l = 0; l < lights.array_size; ++l)
+				for (int l = 0; l < lights.lights_array_size; ++l)
 				{
-					diffuse_color += disney_diffuse(medium_color, sample_point, normal, lights.array[l]);
+					diffuse_color += disney_diffuse(medium_color, sample_point, normal, lights.lights_array[l]);
 				}
 				break;
 			case LAMBERT:
-				for (int l = 0; l < lights.array_size; ++l)
+				for (int l = 0; l < lights.lights_array_size; ++l)
 				{
-					diffuse_color += lambert_diffuse(medium_color, normal, lights.array[l]);
+					diffuse_color += lambert_diffuse(medium_color, normal, lights.lights_array[l]);
 				}
 				break;
 			case NORMAL:

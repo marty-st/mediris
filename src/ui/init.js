@@ -70,6 +70,7 @@ function initLightsProperties(lights)
     lightsProperties[key] = {};
     lightsProperties[key].position = light.position;
     lightsProperties[key].positionVec = initVec3(light.position);
+    lightsProperties[key].intensity = light.intensity;
   }
 
   return lightsProperties;
@@ -160,6 +161,12 @@ function addLightsBindings(pane, UIData)
       const {x, y, z} = event.value;
       vec3.set(UIData.lights[key].positionVec, x, y, z);
     });
+
+    pane.addBinding(UIData.lights[key], "intensity",
+    {
+      min: 0,
+      max: 1,
+    })
   }
 }
 

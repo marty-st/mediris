@@ -12,19 +12,20 @@ export function createSceneEmpty()
 function getLightsFromUIData(UIData)
 {
   let lights = {
-    array: [],
+    lights_array: [],
   };
 
   for (const key in UIData.lights)
   {
     const light = UIData.lights[key];
 
-    lights.array.push({
+    lights.lights_array.push({
       position: light.positionVec,
+      intensity: light.intensity,
     });
   }
 
-  lights.array_size = lights.array.length;
+  lights.lights_array_size = lights.lights_array.length;
 
   return lights;
 }

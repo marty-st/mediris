@@ -60,12 +60,15 @@ const tf = {
 const lights = {
     keyLight: {
       position: {x: 0, y: 1, z: -1},
+      intensity: 1.0,
     },
     fillLight: {
-      position: {x: -1, y: 1, z: 0},
+      position: {x: 1, y: 0.75, z: 0},
+      intensity: 0.5,
     },
     backLight: {
       position: {x: 0, y: 1, z: 1},
+      intensity: 0.25,
     },
 };
 
@@ -133,6 +136,7 @@ window.onload = async function init()
   appControls = initAppControls();
   sceneEmpty = createSceneEmpty();
   sceneRaycast = createSceneRaycast(gl, volumeProgramInfo, camera, UIData);
+  console.log("sr", sceneRaycast.uniformBlock);
 
   loadingScreenImagePromise.then((loadingScreenImage) =>{
     const loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
@@ -215,6 +219,12 @@ function update(currentTime)
   sceneRaycast.uniforms.u_subsurface = UIData.subsurface;
   sceneRaycast.uniforms.u_sheen = UIData.sheen;
   sceneRaycast.uniforms.u_sheen_tint = UIData.sheenTint;
+  let i = 0;
+  for (const key in UIData.lights)
+  {
+    sceneRaycast.uniformBlock.uniforms.lights_array[i].intensity = UIData.lights[key].intensity;
+    ++i;
+  }
   
   controlCamera(mouse, cameraControls);
   updateCamera(camera, cameraControls, viewportMain, timeDelta);

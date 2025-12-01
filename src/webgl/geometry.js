@@ -59,7 +59,7 @@ export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimens
 function getTransferFunctionfromUIData(UIData)
 {
   let tf = { 
-    media: []
+    media_array: []
   };
 
   for (const key in UIData.transferFunction)
@@ -69,13 +69,13 @@ function getTransferFunctionfromUIData(UIData)
     if (!medium.enabled)
       continue;
 
-    tf.media.push({
+    tf.media_array.push({
       color: medium.colorVec,
       interval: medium.intervalVec,
     })
   }
 
-  tf.media_array_size = tf.media.length;
+  tf.media_array_size = tf.media_array.length;
 
   return tf;
 }

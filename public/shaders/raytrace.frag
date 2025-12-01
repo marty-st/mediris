@@ -34,6 +34,7 @@ struct Hit
 struct Light
 {
 	vec3 position;
+	float intensity;
 };
 
 struct Medium
@@ -73,8 +74,8 @@ uniform float u_default_step_size;
 uniform int u_shading_model;
 // Light
 uniform Lights {
-	int array_size;
-	Light array[MAX_LIGHT_ARRAY_SIZE];
+	int lights_array_size;
+	Light lights_array[MAX_LIGHT_ARRAY_SIZE];
 } lights;
 // Shading model
 uniform float u_roughness;
@@ -85,7 +86,7 @@ uniform float u_sheen_tint;
 uniform TransferFunction
 {
 	int media_array_size;
-	Medium media[MAX_TF_ARRAY_SIZE];
+	Medium media_array[MAX_TF_ARRAY_SIZE];
 } tf;
 // Camera uniforms
 uniform vec3 u_eye_position;
@@ -176,7 +177,7 @@ vec3 lambert_diffuse(vec4 medium_color, vec3 N, Light light)
 	vec3 L = normalize(light.position);
 	float NdotL = dot(N, L);
 
-	return NdotL * medium_color.rgb;
+	return light.intensity * NdotL * medium_color.rgb;
 }
 
 vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
@@ -232,7 +233,7 @@ vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
 	// TEMP: Scale PI by 0.5 to make image brighter
 	vec3 diffuse = (1.0 / (PI)) * mix(base_diffuse, subsurface_diffuse, u_subsurface) + sheen_color;
 
-	return medium_color.rgb * diffuse;
+	return light.intensity * medium_color.rgb * diffuse;
 }
 
 vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_travel_distance)
@@ -251,14 +252,14 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_tr
 			sample_point += ray_direction * u_step_size;
 			volume_travel_distance -= u_step_size;
 			continue;
-			// color += vec4(tf.media[0].color.rgb * tf.media[0].color..a, tf.media[0].color.a);
+			// color += vec4(tf.media_array[0].color.rgb * tf.media_array[0].color..a, tf.media_array[0].color.a);
 		}
 
 		// NOTE: Think about different color multiplier and opacity addition
 		for(int i = 0; i < tf.media_array_size; ++i)
 		{
-			vec2 medium_itv = tf.media[i].interval;
-			vec4 medium_color = tf.media[i].color;
+			vec2 medium_itv = tf.media_array[i].interval;
+			vec4 medium_color = tf.media_array[i].color;
 
 			if (float_sample_color.r >= medium_itv.x && float_sample_color.r < medium_itv.y)
 			{
@@ -270,15 +271,15 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_tr
 				switch(u_shading_model)
 				{
 					case DISNEY:
-						for (int l = 0; l < lights.array_size; ++l)
+						for (int l = 0; l < lights.lights_array_size; ++l)
 						{
-							diffuse_color += disney_diffuse(medium_color, sample_point, normal, lights.array[l]);
+							diffuse_color += disney_diffuse(medium_color, sample_point, normal, lights.lights_array[l]);
 						}
 						break;
 					case LAMBERT:
-						for (int l = 0; l < lights.array_size; ++l)
+						for (int l = 0; l < lights.lights_array_size; ++l)
 						{
-							diffuse_color += lambert_diffuse(medium_color, normal, lights.array[l]);
+							diffuse_color += lambert_diffuse(medium_color, normal, lights.lights_array[l]);
 						}
 						break;
 					case NORMAL:
