@@ -20,8 +20,6 @@ export function initCamera(viewport)
     // orbital camera attributes
     targetPosition: vec3.fromValues(0, 0, 0),
     distanceToTarget: null,
-    minPitch: glMatrix.toRadian(-89),
-    maxPitch: glMatrix.toRadian(89),
     rotateSensitivity: 0.005,
     rotateQuaternion: quat.create(),
     // shader uniforms
@@ -112,48 +110,34 @@ function updateProjectionInverseMatrix(camera, viewport)
   mat4.invert(camera.u_projection_inv, perspectiveMat);
 }
 
-// void CameraController::turn(float xoffset, float yoffset)
-// {
-//     if (xoffset == 0 && yoffset == 0)
-//         return;
-
-//     auto vertical_rot = glm::angleAxis(-yoffset, bound_node->getRotationAxisXWorld());
-//     auto horizontal_rot = glm::angleAxis(xoffset, glm::vec3(0.0f, 1.0f, 0.0f));
-
-//     auto R = glm::toMat3(glm::angleAxis(-yoffset, bound_node->getRotationAxisXWorld()));
-//     glm::vec3 rotated_y = glm::normalize(R * bound_node->getRotationAxisYWorld());
-    
-//     auto dprod = glm::dot(rotated_y, glm::vec3(0.0f, 1.0f, 0.0f));
-
-//     if (dprod > 0.0f)
-//     {
-//         bound_node->rotateRotationQuat(vertical_rot);
-//         bound_node->rotateRotationQuat(horizontal_rot);
-//     }
-// }
-
 function rotateCamera(camera, screenVector)
 {
   const [deltaX, deltaY] = screenVector;
+  const horizontalRotation = -deltaX * camera.rotateSensitivity;
+  const verticalRotation = deltaY * camera.rotateSensitivity;
 
-  // const viewMat = mat4.create();
-  // mat4.invert(viewMat, camera.u_view_inv);
-
-  // const cameraAxisX = vec3.fromValues(viewMat[0], viewMat[1], viewMat[2]);
-
-  // const verticalRotation = quat.create();
-  const horizontalRotation = quat.create();
-
-  // quat.setAxisAngle(verticalRotation, cameraAxisX, deltaY);
-  quat.setAxisAngle(horizontalRotation, [0, 1, 0], -deltaX * camera.rotateSensitivity);
-
-  // const cameraAxisY = vec3.fromValues(viewMat[3], viewMat[4], viewMat[5]);
-
-  quat.multiply(camera.rotateQuaternion, horizontalRotation, camera.rotateQuaternion);
+  // YAW
+  const horizontalRotationQuat = quat.create();
+  quat.setAxisAngle(horizontalRotationQuat, [0, 1, 0], horizontalRotation);
+  
+  // NOTE: This order multiplies in world space (needed for rotation around (0, 1, 0))
+  quat.multiply(camera.rotateQuaternion, horizontalRotationQuat, camera.rotateQuaternion);
   quat.normalize(camera.rotateQuaternion, camera.rotateQuaternion);
-  quat.rotateX(camera.rotateQuaternion, camera.rotateQuaternion, deltaY * camera.rotateSensitivity);
-  quat.normalize(camera.rotateQuaternion, camera.rotateQuaternion);
+  
+  // PITCH
+  const verticalRotationQuatCheck = quat.create();
+  quat.rotateX(verticalRotationQuatCheck, camera.rotateQuaternion, verticalRotation)
 
+  // pitch within <-90, 90> degree range check
+  const verticalRotationMatCheck = mat3.create();
+  mat3.fromQuat(verticalRotationMatCheck, verticalRotationQuatCheck);
+  const cameraAxisY = vec3.fromValues(verticalRotationMatCheck[3], verticalRotationMatCheck[4], verticalRotationMatCheck[5]);
+
+  if (vec3.dot(cameraAxisY, [0, 1, 0]) < 0)
+    return;
+
+  quat.rotateX(camera.rotateQuaternion, camera.rotateQuaternion, verticalRotation);
+  quat.normalize(camera.rotateQuaternion, camera.rotateQuaternion);
 }
 
 function moveCamera(camera, screenVector)
