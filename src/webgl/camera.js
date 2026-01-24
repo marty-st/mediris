@@ -1,6 +1,6 @@
 'use strict'
 
-import { vec3, mat4, glMatrix } from 'gl-matrix';
+import { vec3, mat3, mat4, quat, glMatrix } from 'gl-matrix';
 
 /**
  * Initializes the camera object. Contains values used in shader programs
@@ -20,11 +20,10 @@ export function initCamera(viewport)
     // orbital camera attributes
     targetPosition: vec3.fromValues(0, 0, 0),
     distanceToTarget: null,
-    yaw: 0,
-    pitch: 0,
     minPitch: glMatrix.toRadian(-89),
     maxPitch: glMatrix.toRadian(89),
     rotateSensitivity: 0.005,
+    rotateQuaternion: quat.create(),
     // shader uniforms
     u_eye_position: vec3.fromValues(1.5, 1.25, -1.5),
     u_view_inv: mat4.create(),
@@ -45,42 +44,49 @@ function initParametersFromPosition(camera)
   // Distance
   camera.distanceToTarget = vec3.distance(camera.u_eye_position, camera.targetPosition);
 
-  // direction from eye to target
-  const dir = vec3.create();
-  vec3.subtract(dir, camera.targetPosition, camera.u_eye_position);
-  const len = vec3.length(dir);
-  if (len > 1e-8) vec3.scale(dir, dir, 1 / len);
-  else vec3.set(dir, 0, 0, -1);
+  const cameraRight = vec3.create();
+  const cameraUp = vec3.fromValues(0, 1, 0);
+  // camera -Z
+  const cameraForward = vec3.create();
 
-  // Derive yaw & pitch from direction (forward = target - eye)
-  // forward = (fx, fy, fz)
-  // pitch = asin(fy)
-  // yaw = atan2(fx, -fz)  (convention: -Z forward at yaw=0)
-  const fy = Math.min(1, Math.max(-1, dir[1]));
-  camera.pitch = Math.asin(fy);
-  camera.yaw = Math.atan2(dir[0], -dir[2]);
+  vec3.subtract(cameraForward, camera.targetPosition, camera.u_eye_position);
+  vec3.normalize(cameraForward, cameraForward);
+
+  vec3.cross(cameraRight, cameraForward, cameraUp);
+  vec3.normalize(cameraRight, cameraRight);
+
+  // tilt up vector according to the forward vector
+  vec3.cross(cameraUp, cameraRight, cameraForward);
+
+
+  // NOTE: Use this method if implemented correctly.
+  // issue: https://github.com/toji/gl-matrix/issues/436
+  // quat.setAxes(camera.rotateQuaternion, cameraForward, cameraRight, cameraUp);
+
+  const cameraZ = vec3.create();
+  vec3.negate(cameraZ, cameraForward);
+  
+  const rotationMatrix = mat3.fromValues(
+    cameraRight[0], cameraRight[1], cameraRight[2], 
+    cameraUp[0], cameraUp[1], cameraUp[2], 
+    cameraZ[0], cameraZ[1], cameraZ[2]);
+
+  quat.fromMat3(camera.rotateQuaternion, rotationMatrix);
+
   // rebuild eye to ensure consistency
   updatePosition(camera);
 }
 
 function updatePosition(camera)
 {
-  const d = camera.distanceToTarget;
-  const cp = Math.cos(camera.pitch);
-  const sp = Math.sin(camera.pitch);
-  const sy = Math.sin(camera.yaw);
-  const cy = Math.cos(camera.yaw);
+  const rotateMatrix = mat3.create();
+  mat3.fromQuat(rotateMatrix, camera.rotateQuaternion);
 
-  // Forward (from eye toward target)
-  // Matches inverse of conversion used above
-  const fx = sy * cp;
-  const fy = sp;
-  const fz = -cy * cp;
+  const cameraZ = vec3.fromValues(rotateMatrix[6], rotateMatrix[7], rotateMatrix[8]);
+  vec3.normalize(cameraZ, cameraZ);
 
-  // eye = target - forward * distance
-  camera.u_eye_position[0] = camera.targetPosition[0] - fx * d;
-  camera.u_eye_position[1] = camera.targetPosition[1] - fy * d;
-  camera.u_eye_position[2] = camera.targetPosition[2] - fz * d;
+  // targetPosition + cameraZ * distanceToTarget
+  vec3.scaleAndAdd(camera.u_eye_position, camera.targetPosition, cameraZ, camera.distanceToTarget);
 }
 
 function updateViewInverseMatrix(camera)
@@ -106,23 +112,53 @@ function updateProjectionInverseMatrix(camera, viewport)
   mat4.invert(camera.u_projection_inv, perspectiveMat);
 }
 
-function moveCamera(camera, moveVector)
+// void CameraController::turn(float xoffset, float yoffset)
+// {
+//     if (xoffset == 0 && yoffset == 0)
+//         return;
+
+//     auto vertical_rot = glm::angleAxis(-yoffset, bound_node->getRotationAxisXWorld());
+//     auto horizontal_rot = glm::angleAxis(xoffset, glm::vec3(0.0f, 1.0f, 0.0f));
+
+//     auto R = glm::toMat3(glm::angleAxis(-yoffset, bound_node->getRotationAxisXWorld()));
+//     glm::vec3 rotated_y = glm::normalize(R * bound_node->getRotationAxisYWorld());
+    
+//     auto dprod = glm::dot(rotated_y, glm::vec3(0.0f, 1.0f, 0.0f));
+
+//     if (dprod > 0.0f)
+//     {
+//         bound_node->rotateRotationQuat(vertical_rot);
+//         bound_node->rotateRotationQuat(horizontal_rot);
+//     }
+// }
+
+function rotateCamera(camera, screenVector)
 {
-  const [deltaX, deltaY] = moveVector;
+  const [deltaX, deltaY] = screenVector;
 
-  camera.yaw   += deltaX * camera.rotateSensitivity;
-  camera.pitch += deltaY * camera.rotateSensitivity;
+  // const viewMat = mat4.create();
+  // mat4.invert(viewMat, camera.u_view_inv);
 
-  // clamp pitch
-  camera.pitch = Math.min(camera.maxPitch, Math.max(camera.minPitch, camera.pitch));
+  // const cameraAxisX = vec3.fromValues(viewMat[0], viewMat[1], viewMat[2]);
 
-  // wrap yaw to avoid float growth
-  const twoPI = Math.PI * 2;
-  if (camera.yaw > twoPI || camera.yaw < -twoPI)
-    camera.yaw = ((camera.yaw % twoPI) + twoPI) % twoPI;
+  // const verticalRotation = quat.create();
+  const horizontalRotation = quat.create();
 
-  updatePosition(camera);
-  updateViewInverseMatrix(camera);
+  // quat.setAxisAngle(verticalRotation, cameraAxisX, deltaY);
+  quat.setAxisAngle(horizontalRotation, [0, 1, 0], -deltaX * camera.rotateSensitivity);
+
+  // const cameraAxisY = vec3.fromValues(viewMat[3], viewMat[4], viewMat[5]);
+
+  quat.multiply(camera.rotateQuaternion, horizontalRotation, camera.rotateQuaternion);
+  quat.normalize(camera.rotateQuaternion, camera.rotateQuaternion);
+  quat.rotateX(camera.rotateQuaternion, camera.rotateQuaternion, deltaY * camera.rotateSensitivity);
+  quat.normalize(camera.rotateQuaternion, camera.rotateQuaternion);
+
+}
+
+function moveCamera(camera, screenVector)
+{
+  // TODO
 }
 
 function zoomCamera(camera, viewport, zoomDirection)
@@ -138,8 +174,17 @@ function zoomCamera(camera, viewport, zoomDirection)
 export function updateCamera(camera, cameraControls, viewport, timeDelta)
 {
   if (cameraControls.move)
-    moveCamera(camera, cameraControls.moveVector);
+  {
+    rotateCamera(camera, cameraControls.screenVector);
+    moveCamera(camera, cameraControls.screenVector);
+
+    updatePosition(camera);
+    updateViewInverseMatrix(camera);
+  }
 
   if (cameraControls.zoom)
+  {
     zoomCamera(camera, viewport, cameraControls.zoomDirection);
+    updateViewInverseMatrix(camera);
+  }
 }

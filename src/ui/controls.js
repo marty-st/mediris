@@ -118,7 +118,7 @@ export function initCameraControls()
   return {
     move: false,
     zoom: false,
-    moveVector: vec2.create(),
+    screenVector: vec2.create(),
     zoomDirection: null,
   }
 }
@@ -132,7 +132,7 @@ export function controlCamera(mouse, cameraControls)
   if (mouse.downButton === "primary")
   {
     cameraControls.move = true;
-    vec2.set(cameraControls.moveVector, mouse.xDelta, -mouse.yDelta);
+    vec2.set(cameraControls.screenVector, mouse.xDelta, -mouse.yDelta);
   }
 
   // zoom
@@ -149,7 +149,7 @@ export function resetCameraControls(cameraControls)
   cameraControls.move = false;
   cameraControls.zoom = false;
 
-  vec2.zero(cameraControls.moveVector);
+  vec2.zero(cameraControls.screenVector);
   cameraControls.zoomDirection = null;
 }
 
