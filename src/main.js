@@ -226,7 +226,7 @@ function update(currentTime)
     ++i;
   }
   
-  controlCamera(mouse, cameraControls);
+  controlCamera(mouse, keyboard, cameraControls);
   updateCamera(camera, cameraControls, viewportMain, timeDelta);
 
   controlApp(keyboard, appControls);

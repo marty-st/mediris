@@ -1,6 +1,8 @@
 'use strict'
 
-import { vec2 } from 'gl-matrix';
+import { vec2, vec3 } from 'gl-matrix';
+
+const CAMERA_KEYS = new Set(["w", "a", "s", "d", "r", "f", "W", "A", "S", "D", "R", "F"]);
 
 function getMouseButtonName(buttonCode)
 {
@@ -116,24 +118,72 @@ export function resetMouseControls(mouse)
 export function initCameraControls()
 {
   return {
-    move: false,
+    idle: true,
+    rotate: false,
+    translate: false,
     zoom: false,
-    screenVector: vec2.create(),
+    mouseVector: vec2.create(),
+    keyboardVector: vec3.create(),
     zoomDirection: null,
   }
 }
 
-export function controlCamera(mouse, cameraControls)
+function keyboardControlsCamera(keyboard)
 {
-  if (!mouse.move && !mouse.down && !mouse.scroll)
+  return keyboard.down.intersection(CAMERA_KEYS).size > 0;
+}
+
+export function controlCamera(mouse, keyboard, cameraControls)
+{
+  cameraControls.idle = !mouse.move && !mouse.down && !mouse.scroll && !keyboardControlsCamera(keyboard)
+
+  if (cameraControls.idle)
     return;
 
-  // move
-  if (mouse.downButton === "primary")
+  // rotate
+  if (mouse.downButton === "primary" && mouse.move)
   {
-    cameraControls.move = true;
-    vec2.set(cameraControls.screenVector, mouse.xDelta, -mouse.yDelta);
+    cameraControls.rotate = true;
+    vec2.set(cameraControls.mouseVector, mouse.xDelta, -mouse.yDelta);
   }
+
+  // move
+  let vector = [0, 0, 0];
+  for (const key of keyboard.down)
+  {
+    switch(key)
+    {
+      case "w":
+      case "W":
+        vector[2] -= 1;
+        break;
+      case "a":
+      case "A":
+        vector[0] -= 1;
+        break;
+      case "s":
+      case "S":
+        vector[2] += 1;
+        break;
+      case "d":
+      case "D":
+        vector[0] += 1;
+        break;
+      case "r":
+      case "R":
+        vector[1] += 1;
+        break;
+      case "f":
+      case "F":
+        vector[1] -= 1;
+        break;
+      default:
+        break;
+    }
+  }
+  vec3.copy(cameraControls.keyboardVector, vector);
+  if (vec3.length(cameraControls.keyboardVector) > 0)
+    cameraControls.translate = true;
 
   // zoom
   if (mouse.scroll)
@@ -146,10 +196,12 @@ export function controlCamera(mouse, cameraControls)
 export function resetCameraControls(cameraControls)
 {
 
-  cameraControls.move = false;
+  cameraControls.rotate = false;
+  cameraControls.translate = false;
   cameraControls.zoom = false;
 
-  vec2.zero(cameraControls.screenVector);
+  vec2.zero(cameraControls.mouseVector);
+  vec3.zero(cameraControls.keyboardVector);
   cameraControls.zoomDirection = null;
 }
 
@@ -187,9 +239,9 @@ export function initAppControls()
 
 export function controlApp(keyboard, appControls)
 {
-  if (keyboard.up.has("r"))
+  if (keyboard.up.has("t"))
     appControls.reloadShaders = true;
-  if (keyboard.up.has("R"))
+  if (keyboard.up.has("T"))
     appControls.reloadDicom = true;
 }
 

@@ -42,10 +42,10 @@ function initParametersFromPosition(camera)
   // Distance
   camera.distanceToTarget = vec3.distance(camera.u_eye_position, camera.targetPosition);
 
+  // Rotation
   const cameraRight = vec3.create();
   const cameraUp = vec3.fromValues(0, 1, 0);
-  // camera -Z
-  const cameraForward = vec3.create();
+  const cameraForward = vec3.create(); // camera -Z
 
   vec3.subtract(cameraForward, camera.targetPosition, camera.u_eye_position);
   vec3.normalize(cameraForward, cameraForward);
@@ -53,7 +53,7 @@ function initParametersFromPosition(camera)
   vec3.cross(cameraRight, cameraForward, cameraUp);
   vec3.normalize(cameraRight, cameraRight);
 
-  // tilt up vector according to the forward vector
+  // tilt up-vector according to the forward vector
   vec3.cross(cameraUp, cameraRight, cameraForward);
 
 
@@ -110,9 +110,9 @@ function updateProjectionInverseMatrix(camera, viewport)
   mat4.invert(camera.u_projection_inv, perspectiveMat);
 }
 
-function rotateCamera(camera, screenVector)
+function rotateCamera(camera, mouseVector)
 {
-  const [deltaX, deltaY] = screenVector;
+  const [deltaX, deltaY] = mouseVector;
   const horizontalRotation = -deltaX * camera.rotateSensitivity;
   const verticalRotation = deltaY * camera.rotateSensitivity;
 
@@ -140,9 +140,15 @@ function rotateCamera(camera, screenVector)
   quat.normalize(camera.rotateQuaternion, camera.rotateQuaternion);
 }
 
-function moveCamera(camera, screenVector)
+function moveCamera(camera, keyboardVector, timeDelta)
 {
-  // TODO
+  const rotateMatrix = mat3.create();
+  mat3.fromQuat(rotateMatrix, camera.rotateQuaternion);
+
+  const translationVectorWS = vec3.create();
+  vec3.transformMat3(translationVectorWS, keyboardVector, rotateMatrix);
+
+  vec3.scaleAndAdd(camera.targetPosition, camera.targetPosition, translationVectorWS, timeDelta);
 }
 
 function zoomCamera(camera, viewport, zoomDirection)
@@ -157,18 +163,24 @@ function zoomCamera(camera, viewport, zoomDirection)
 
 export function updateCamera(camera, cameraControls, viewport, timeDelta)
 {
-  if (cameraControls.move)
-  {
-    rotateCamera(camera, cameraControls.screenVector);
-    moveCamera(camera, cameraControls.screenVector);
+  if (cameraControls.idle)
+    return;
 
-    updatePosition(camera);
-    updateViewInverseMatrix(camera);
+  if (cameraControls.rotate)
+  {
+    rotateCamera(camera, cameraControls.mouseVector);
+  }
+
+  if (cameraControls.translate)
+  {
+    moveCamera(camera, cameraControls.keyboardVector, timeDelta);
   }
 
   if (cameraControls.zoom)
   {
     zoomCamera(camera, viewport, cameraControls.zoomDirection);
-    updateViewInverseMatrix(camera);
   }
+
+  updatePosition(camera);
+  updateViewInverseMatrix(camera);
 }
