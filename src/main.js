@@ -88,7 +88,7 @@ let previousTime = 0;
 /* --------------------- */
 
 // Load DICOM during module load
-const imageDataPromise = loadDicom('CT WB w-contrast 5.0 B30s');
+const imageDataPromise = loadDicom('CT WB w-contrast 5.0 B30s', true);
 // Load images for texture use
 const loadingScreenImagePromise = loadImage('loading.png');
 
@@ -136,7 +136,6 @@ window.onload = async function init()
   appControls = initAppControls();
   sceneEmpty = createSceneEmpty();
   sceneRaycast = createSceneRaycast(gl, volumeProgramInfo, camera, UIData);
-  console.log("sr", sceneRaycast.uniformBlock);
 
   loadingScreenImagePromise.then((loadingScreenImage) =>{
     const loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
@@ -203,6 +202,9 @@ function updateApp()
 {
   if (appControls.reloadShaders)
     reloadShaders();
+
+  // if (appControls.reloadDicom)
+    // use loadDicom(folder, useCache = false); 
 }
 
 /**
