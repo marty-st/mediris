@@ -114,9 +114,11 @@ window.onload = async function init()
   /* SHADER INITIALIZATION */
   /* --------------------- */
 
-  const loadingScreenProgramInfo = await createShaderProgram(gl, "fsquad", "fstexture");
-  const volumeProgramInfo = await createShaderProgram(gl, "fsquad", "raytrace");
-  const sphereProgramInfo = await createShaderProgram(gl, "fsquad", "sphere");
+  const useCachedShaderText = false;
+
+  const loadingScreenProgramInfo = await createShaderProgram(gl, "fsquad", "fstexture", useCachedShaderText);
+  const volumeProgramInfo = await createShaderProgram(gl, "fsquad", "raytrace", useCachedShaderText);
+  const sphereProgramInfo = await createShaderProgram(gl, "fsquad", "sphere", useCachedShaderText);
 
   /* --------------------- */
   /* -DATA INITIALIZATION- */
@@ -179,7 +181,7 @@ async function reloadShaders()
   const shaderName = UIData.mode == 0 ? "raytrace" : "sphere";
   const geometry = geometries[UIData.mode];
 
-  geometry.programInfo = await createShaderProgram(gl, "fsquad", shaderName);
+  geometry.programInfo = await createShaderProgram(gl, "fsquad", shaderName, false);
 
   if (geometry.uniformBlock)
   {
