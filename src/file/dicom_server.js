@@ -3,8 +3,12 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
+/* GLOBAL VARIABLES */
+
 const dataPath = './public/data/';
-const urlBase = '/data/'
+const urlBase = '/data/';
+
+/**/
 
 /**
  * 

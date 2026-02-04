@@ -1,11 +1,13 @@
 'use strict'
 
 /**
+ * FUNCTIONALITY OVERVIEW
+ * 
  * NOTE: The code in this file seems to be no longer supported
  * by the cornerstone libraries. It works but only partially.
  * No metadata are loaded (default value always selected).
  * 
- * TODO: docs
+ * ----------------------
  */
 
 import * as cornerstone from 'cornerstone-core';
@@ -13,14 +15,15 @@ import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import dicomParser from 'dicom-parser';
 import { getCache, setCache } from './cache';
 
-// Name of the Dicom database used for caching
+/* CONSTANTS */
+
+// Cache variables
 const DATABASE_NAME = "dicomCache";
-//
 const DATABASE_VERSION = 1;
-//
 const KEY_TYPE = "folderName";
-// 
 const STORE_NAME = "imageData";
+
+/**/
 
 // Wire externals
 cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
@@ -43,7 +46,7 @@ cornerstoneWADOImageLoader.configure({ useWebWorkers: false });
 
 
 /**
- * Ask server for list of files
+ * Asks server for list of files
  * @param {*} folderName direct name of the folder containing DICOM data
  * @returns a json-type object containing DICOM folder metadata and file names
  */
@@ -58,16 +61,18 @@ async function fetchDicomFileNames(folderName)
 
 /**
  * Helper function: loads imageIds in batches (limits network/CPU concurrency)
- * @param {*} imageIds 
- * @param {*} batchSize 
- * @param {*} onProgress 
- * @returns 
+ * @param {string[]} imageIds array of image identifiers to load
+ * @param {number} batchSize number of images to load concurrently (default: 6)
+ * @param {function} onProgress callback function called after each batch with (loaded, total) parameters
+ * @returns {Promise<Array>} array of loaded cornerstone image objects
  */ 
-async function loadInBatches(imageIds, batchSize = 6, onProgress) {
+async function loadInBatches(imageIds, batchSize = 6, onProgress) 
+{
   const images = [];
   let loaded = 0;
 
-  for (let i = 0; i < imageIds.length; i += batchSize) {
+  for (let i = 0; i < imageIds.length; i += batchSize) 
+  {
     const batch = imageIds.slice(i, i + batchSize).map(id => cornerstone.loadAndCacheImage(id));
     const results = await Promise.all(batch);
     images.push(...results);
@@ -81,9 +86,9 @@ async function loadInBatches(imageIds, batchSize = 6, onProgress) {
 }
 
 /**
- * 
- * @param {*} imageIds 
- * @returns 
+ * Loads all DICOM images from the provided image identifiers
+ * @param {string[]} imageIds array of cornerstone image identifiers to load
+ * @returns {Promise<Array>} array of loaded cornerstone image objects
  */
 async function loadImages(imageIds)
 {
@@ -108,9 +113,9 @@ async function loadImages(imageIds)
 }
 
 /**
- * 
- * @param {*} images 
- * @returns 
+ * Extracts the dimensions of the image volume from the loaded images
+ * @param {Array} images array of loaded cornerstone image objects
+ * @returns {{rows: number, cols: number, depth: number}} object containing the volume dimensions
  */
 function getDataDimensions(images)
 {
@@ -122,10 +127,10 @@ function getDataDimensions(images)
 }
 
 /**
- * 
- * @param {*} images 
- * @param {*} imageIds 
- * @returns 
+ * Extracts pixel metadata from DICOM images including bit depth and signedness
+ * @param {Array} images array of loaded cornerstone image objects
+ * @param {string[]} imageIds array of cornerstone image identifiers
+ * @returns {{bitsAllocated: number, pixelRepresentation: number}} object containing bits allocated and pixel representation (0=unsigned, 1=signed)
  */
 function getPixelMetaData(images, imageIds)
 {
@@ -155,10 +160,10 @@ function getPixelMetaData(images, imageIds)
 }
 
 /**
- * 
- * @param {*} bitsAllocated 
- * @param {*} pixelRepresentation 
- * @returns 
+ * Determines the appropriate TypedArray constructor for storing volume pixel data
+ * @param {number} bitsAllocated number of bits allocated per pixel (8, 16, or 32)
+ * @param {number} pixelRepresentation 0 for unsigned, 1 for signed pixel values
+ * @returns {typeof Float32Array} TypedArray constructor for the volume data
  */
 function defineVolumeArrayType(bitsAllocated, pixelRepresentation)
 {
@@ -174,22 +179,23 @@ function defineVolumeArrayType(bitsAllocated, pixelRepresentation)
 
 /**
  * Gathers pixel data for 3D texture into a single volume object
- * @param {*} images 
- * @param {*} dimensions 
- * @param {*} sliceSize 
- * @param {*} Typed 
- * @returns 
+ * @param {Array} images array of loaded cornerstone image objects
+ * @param {{rows: number, cols: number, depth: number}} dimensions object containing the volume dimensions
+ * @param {number} sliceSize number of pixels per slice (rows * cols)
+ * @param {typeof Float32Array} Typed TypedArray constructor for the volume data
+ * @returns {Float32Array} flattened volume array containing all slice pixel data
  */
 function createVolume(images, dimensions, sliceSize, Typed)
 {
   const volume = new Typed(sliceSize * dimensions.depth);
 
-  for (let z = 0; z < dimensions.depth; z++) {
+  for (let z = 0; z < dimensions.depth; ++z) 
+  {
     const slicePixelData = images[z].getPixelData(); // Typed array
 
-    if (slicePixelData.length !== sliceSize) {
+    if (slicePixelData.length !== sliceSize) 
       throw new Error(`Unexpected pixels in slice ${z}: ${slicePixelData.length} != ${sliceSize}`);
-    }
+
     volume.set(slicePixelData, z * sliceSize);
   }
 
@@ -197,10 +203,10 @@ function createVolume(images, dimensions, sliceSize, Typed)
 }
 
 /**
- * 
- * @param {*} imageIds 
- * @param {*} dimensions 
- * @returns 
+ * Extracts voxel spacing information from DICOM metadata
+ * @param {string[]} imageIds array of cornerstone image identifiers
+ * @param {{rows: number, cols: number, depth: number}} dimensions object containing the volume dimensions
+ * @returns {number[]} array of [dx, dy, dz] pixel/slice spacing values in mm
  */
 function getPixelSpacing(imageIds, dimensions)
 {
@@ -217,10 +223,12 @@ function getPixelSpacing(imageIds, dimensions)
 }
 
 /**
- * 
- * @param {*} imageIds 
- * @param {*} images 
- * @returns an object containing DICOM slices metadata and pixel volume
+ * Processes loaded DICOM images and extracts all relevant data for 3D rendering
+ * @param {string[]} imageIds array of cornerstone image identifiers
+ * @param {Array} images array of loaded cornerstone image objects
+ * @returns {{dimensions: {rows: number, cols: number, depth: number}, 
+ *            bitsAllocated: number, pixelRepresentation: number, spacing: number[], 
+ *            imageIds: string[], volume: Float32Array}} object containing DICOM slices metadata and pixel volume
  */
 function getImageData(imageIds, images)
 {
@@ -259,7 +267,8 @@ function getPixelDataRange(volume)
   let min = volume[0];
   let max = volume[0];
 
-  for (let i = 0; i < volume.length; ++i){
+  for (let i = 0; i < volume.length; ++i)
+  {
     const element = volume[i];
     if (element !== NaN)
     {
@@ -276,7 +285,7 @@ function getPixelDataRange(volume)
 
 /**
  * Fetches DICOM file names from a server, loads them into memory and returns their
- * relevant content
+ * relevant content.
  * @param {*} folderName direct name of the folder containing DICOM data
  * @param {*} useCache boolean determining whether to load and/or store image data from client-side browser cache 
  * @returns an object containing DICOM slices metadata and pixel volume 
@@ -285,7 +294,7 @@ export default async function loadDicom(folderName, useCache) {
 
   if (useCache)
   {
-    const cache = await getCache(DATABASE_NAME, KEY_TYPE, folderName, STORE_NAME);
+    const cache = await getCache(DATABASE_NAME, STORE_NAME, KEY_TYPE, folderName, DATABASE_VERSION);
     if (cache)
       return cache;
   }
@@ -299,7 +308,7 @@ export default async function loadDicom(folderName, useCache) {
 
   const imageData = getImageData(imageIds, images);
 
-  await setCache(DATABASE_NAME, DATABASE_VERSION, KEY_TYPE, folderName, STORE_NAME, imageData);
+  await setCache(DATABASE_NAME, STORE_NAME, KEY_TYPE, folderName, imageData, DATABASE_VERSION);
 
   return imageData;
 }
