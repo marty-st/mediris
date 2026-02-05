@@ -4,8 +4,12 @@ import { Pane } from 'tweakpane';
 import * as TweakpaneEssentialsPlugin from '@tweakpane/plugin-essentials';
 import { vec2, vec3, vec4 } from 'gl-matrix';
 
+/* ---------------------------------------------------------------------------------- */
+/* INTERNAL DATA STRUCTURE INITIALIZATION --------------------------------------------*/
+/* ---------------------------------------------------------------------------------- */
+
 /**
- * Helper function, creates a GPU-compatible representation of the transfer function interval
+ * Helper function, creates a GPU-compatible representation of the transfer function interval.
  * @param {*} medium transfer function medium object
  * @returns vec2 object containing the given interval
  */
@@ -15,8 +19,8 @@ function initIntervalVec(medium)
 }
 
 /**
- * Helper function, creates a GPU-compatible representation of the transfer function color
- * @param {*} medium transfer function medium object
+ * Helper function, creates a GPU-compatible representation of the transfer function color.
+ * @param {*} medium transfer function medium object, must contain attribute `color`
  * @returns vec4 object containing the given color
  */
 function initColorVec(medium)
@@ -25,7 +29,7 @@ function initColorVec(medium)
 }
 
 /**
- * Helper function, creates a GPU-compatible representation of a three element vector
+ * Helper function, creates a GPU-compatible representation of a three element vector.
  * @param {*} v object containing x,y,z properties
  * @returns vec3 object containing the given values
  */
@@ -35,10 +39,10 @@ function initVec3(v)
 }
 
 /**
- * Creates the transfer function property used by the UI. Creates duplicates of vector values
+ * Creates the `transferFunction` attribute for the UI object. Creates duplicates of vector values
  * in a GPU-compatible format so that they can be sent directly to the GPU as uniforms.
  * @param {*} tf object that defines the transfer function
- * @returns object used by UI library
+ * @returns object used by the UI library
  */
 function initTransferFunctionProperties(tf)
 {
@@ -59,6 +63,12 @@ function initTransferFunctionProperties(tf)
   return transferFunction;
 }
 
+/**
+ * Creates the `lights` attribute for the UI object. Creates duplicates of vector values
+ * in a GPU-compatible format so that they can be sent directly to the GPU as uniforms.
+ * @param {*} lights object that defines lights in a scene
+ * @returns object used by the UI library
+ */
 function initLightsProperties(lights)
 {
   let lightsProperties = {};
@@ -77,7 +87,7 @@ function initLightsProperties(lights)
 }
 
 /**
- * Creates an object that stores UI related data
+ * Creates an object that stores UI related data.
  * @param {*} tf object that defines the transfer function
  * @param {*} l object that defines lights in a scene
  * @returns mediator object between UI and the rest of the application
@@ -105,8 +115,12 @@ export function initUIData(tf, l)
   return UIData;
 }
 
+/* ------------------------------------------------------------------------- */
+/* TWEAKPANE INITIALIZATION ------------------------------------------------ */
+/* ------------------------------------------------------------------------- */
+
 /**
- * Creates a UI section for tuning of the transfer function
+ * Creates a UI section for tuning of the transfer function.
  * @param {*} pane Tweakpane global-state object
  * @param {*} UIData mediator object between UI and the rest of the application
  */
@@ -143,7 +157,7 @@ function addTransferFunctionBindings(pane, UIData)
 }
 
 /**
- * Creates a UI section for controlling the light sources
+ * Creates a UI section for controlling the light sources.
  * @param {*} pane Tweakpane global-state object
  * @param {*} UIData mediator object between UI and the rest of the application
  */
@@ -171,7 +185,7 @@ function addLightsBindings(pane, UIData)
 }
 
 /**
- * Initializes the context of Tweakpane UI elements for debugging purposes
+ * Initializes the context of Tweakpane UI elements for debugging purposes.
  * @param UIData object that reflects states of Tweakpane controlled variables
  * @returns `Pane`object
  */
@@ -208,11 +222,6 @@ export function initDebugUI(UIData)
   });
 
   addLightsBindings(pane, UIData);
-  // pane.addBinding(UIData, "light", { min: -1, max: 1 })
-  // .on('change', (event) => {
-  //   const {x, y, z} = event.value;
-  //   vec3.set(UIData.u_light, x, y, z);
-  // });
 
   pane.addBinding(UIData, "roughness", { min: 0, max: 1 });
   pane.addBinding(UIData, "subsurface", { min: 0, max: 1 });

@@ -2,8 +2,21 @@
 
 import { vec2, vec3 } from 'gl-matrix';
 
+/* CONSTANTS */
+
 const CAMERA_KEYS = new Set(["w", "a", "s", "d", "r", "f", "W", "A", "S", "D", "R", "F"]);
 
+/**/
+
+/* ----------------------------------------------------- */
+/* MOUSE CONTROLS -------------------------------------- */
+/* ----------------------------------------------------- */
+
+/**
+ * Converts event button code into a human-readable string.
+ * @param {*} buttonCode browser mouse event code 
+ * @returns string representing a mouse button
+ */
 function getMouseButtonName(buttonCode)
 {
   let buttonName = null;
@@ -25,6 +38,11 @@ function getMouseButtonName(buttonCode)
   return buttonName;
 }
 
+/**
+ * Creates a state object that tracks events for mouse input.
+ * @param {*} canvas HTML canvas element
+ * @returns a `mouse` object, contains mouse coordinates, pressed button, and other states 
+ */
 export function initMouseControls(canvas)
 {
   let mouse = {
@@ -103,10 +121,14 @@ export function initMouseControls(canvas)
   })
 
   return mouse;
-
 }
 
-// NOTE: This can be done using setTimeout, clearTimeout
+/**
+ * Resets the frame-dynamic states of `mouse`. 
+ * @param {*} mouse state object for mouse controls
+ */
+// NOTE: This can be done using setTimeout, clearTimeout but won't be synced
+// with the render loop
 export function resetMouseControls(mouse)
 {
   mouse.move = false;
@@ -115,6 +137,50 @@ export function resetMouseControls(mouse)
   mouse.upButton = null;
 }
 
+/* ----------------------------------------------------- */
+/* KEYBOARD CONTROLS ----------------------------------- */
+/* ----------------------------------------------------- */
+
+/**
+ * Creates a state object that tracks events for keyboard input.
+ * @returns a `keyboard` object, contains sets of pressed and released keys  
+ */
+export function initKeyboardControls()
+{
+  let keyboard = {
+    down: new Set(),
+    up: new Set(),
+  };
+
+  document.addEventListener("keydown", (event) => {
+    keyboard.down.add(event.key);
+  });
+
+  document.addEventListener("keyup", (event) => {
+    keyboard.up.add(event.key);
+    keyboard.down.delete(event.key);
+  });
+
+  return keyboard;
+}
+
+/**
+ * Resets the frame-dynamic states of `keyboard`. 
+ * @param {*} keyboard state object for keyboard controls
+ */
+export function resetKeyboardControls(keyboard)
+{
+  keyboard.up.clear();
+}
+
+/* ----------------------------------------------------- */
+/* CAMERA CONTROLS ------------------------------------- */
+/* ----------------------------------------------------- */
+
+/**
+ * Creates a state object that stores values for user camera movement.
+ * @returns `cameraControls` object, contains mouse & keyboard movement vectors, state booleans, etc.
+ */
 export function initCameraControls()
 {
   return {
@@ -128,11 +194,23 @@ export function initCameraControls()
   }
 }
 
+/**
+ * Determines whether camera-controlling keys are pressed or held.
+ * @param {*} keyboard state object for keyboard controls
+ * @returns `true` if any of the camera-controlling keys are pressed
+ */
 function keyboardControlsCamera(keyboard)
 {
   return keyboard.down.intersection(CAMERA_KEYS).size > 0;
 }
 
+/**
+ * Reads states of the `mouse` and `keyboard` objects and sets `cameraControls` accordingly, so 
+ * that it can be used to update the WebGL camera object.
+ * @param {*} mouse state object for mouse controls
+ * @param {*} keyboard state object for keyboard controls
+ * @param {*} cameraControls state object for camera controls
+ */
 export function controlCamera(mouse, keyboard, cameraControls)
 {
   cameraControls.idle = !mouse.move && !mouse.down && !mouse.scroll && !keyboardControlsCamera(keyboard)
@@ -193,6 +271,10 @@ export function controlCamera(mouse, keyboard, cameraControls)
   }
 }
 
+/**
+ * Resets the frame-dynamic states of `cameraControls`. 
+ * @param {*} cameraControls state object for camera controls
+ */
 export function resetCameraControls(cameraControls)
 {
 
@@ -205,30 +287,15 @@ export function resetCameraControls(cameraControls)
   cameraControls.zoomDirection = null;
 }
 
-export function initKeyboardControls()
-{
-  let keyboard = {
-    down: new Set(),
-    up: new Set(),
-  };
+/* ----------------------------------------------------- */
+/* APPLICATION CONTROLS -------------------------------- */
+/* ----------------------------------------------------- */
 
-  document.addEventListener("keydown", (event) => {
-    keyboard.down.add(event.key);
-  });
-
-  document.addEventListener("keyup", (event) => {
-    keyboard.up.add(event.key);
-    keyboard.down.delete(event.key);
-  });
-
-  return keyboard;
-}
-
-export function resetKeyboardControls(keyboard)
-{
-  keyboard.up.clear();
-}
-
+/**
+ * Creates a state object that stores values for general user control 
+ * of the application.
+ * @returns `appControls` object
+ */
 export function initAppControls()
 {
   return {
@@ -237,6 +304,12 @@ export function initAppControls()
   };
 }
 
+/**
+ * Reads states of the `keynoard` object and sets `appControls` accordingly, so 
+ * that it can be used in the application update loop.
+ * @param {*} keyboard state object for keyboard controls
+ * @param {*} appControls state object for application controls
+ */
 export function controlApp(keyboard, appControls)
 {
   if (keyboard.up.has("t"))
@@ -245,6 +318,10 @@ export function controlApp(keyboard, appControls)
     appControls.reloadDicom = true;
 }
 
+/**
+ * Resets the frame-dynamic states of `appControls`. 
+ * @param {*} appControls state object for application controls
+ */
 export function resetAppControls(appControls)
 {
   for (const value in appControls)
