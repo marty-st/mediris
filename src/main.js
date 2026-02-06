@@ -1,7 +1,7 @@
 'use strict'
 
-import loadDicom from './file/dicom.js';
 import * as twgl from 'twgl.js';
+import loadDicom from './file/dicom.js';
 import { initDebugUI, initUIData } from './ui/init.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
 import createShaderProgram from './webgl/program.js';
@@ -11,11 +11,20 @@ import { create2DTexture, createVolumeTexture } from './webgl/texture.js';
 import { createVolumeGeometry, createLoadingScreenGeometry, createSphereGeometry } from './webgl/geometry.js';
 import { updateCamera, initCamera } from './webgl/camera.js';
 import loadImage from './file/image.js';
-import { controlApp, controlCamera, initAppControls, initCameraControls, initKeyboardControls, initMouseControls, resetAppControls, resetCameraControls, resetKeyboardControls, resetMouseControls } from './ui/controls.js';
+import { 
+  controlApp, 
+  controlCamera, 
+  initAppControls, 
+  initCameraControls, 
+  initKeyboardControls, 
+  initMouseControls, 
+  resetAppControls, 
+  resetCameraControls, 
+  resetKeyboardControls, 
+  resetMouseControls 
+} from './ui/controls.js';
 
-/* --------------------- */
-/* --GLOBAL VARIABLES--- */
-/* --------------------- */
+/* GLOBAL VARIABLES */
 
 /** @type {HTMLCanvasElement} */    // for VSCode to know that canvas is an HTML Canvas Element
 let canvas = undefined;             // HTML <canvas> element 
@@ -75,28 +84,29 @@ const lights = {
 // Mediator object between Tweakpane and the rest of the application
 let UIData = initUIData(tf, lights);
 
+// Object for user control
 let mouse = undefined;
 let keyboard = undefined;
 let camera = undefined;
 let cameraControls = undefined;
 let appControls = undefined;
 
+// Elapsed time helper variable
 let previousTime = 0;
 
-/* --------------------- */
-/* ----FILE LOADING----- */
-/* --------------------- */
-
+// FILE PRELOAD
 // Load DICOM during module load
 const imageDataPromise = loadDicom('CT WB w-contrast 5.0 B30s', true);
 // Load images for texture use
 const loadingScreenImagePromise = loadImage('loading.png');
 
+/**/
+
 // Define WebGL window initialization
 window.onload = async function init()
 {
   /* --------------------- */
-  /* --UI INITIALIZATION-- */
+  /* UI INITIALIZATION --- */
   /* --------------------- */
 
   pane = initDebugUI(UIData);
@@ -121,7 +131,7 @@ window.onload = async function init()
   const sphereProgramInfo = await createShaderProgram(gl, "fsquad", "sphere", useCachedShaderText);
 
   /* --------------------- */
-  /* -DATA INITIALIZATION- */
+  /* DATA INITIALIZATION - */
   /* --------------------- */
 
   viewportMain = {
@@ -144,7 +154,7 @@ window.onload = async function init()
     geometries.push(createLoadingScreenGeometry(gl, loadingScreenProgramInfo, loadingScreenTexture));
 
     /* --------------------- */
-    /* -----RENDER LOAD----- */
+    /* RENDER LOAD SCREEN -- */
     /* --------------------- */
 
     render(gl, canvas, viewportMain, sceneEmpty, geometries);
@@ -166,7 +176,7 @@ window.onload = async function init()
     geometries.push(createSphereGeometry(gl, sphereProgramInfo, UIData));
 
     /* --------------------- */
-    /* -----RENDER LOOP----- */
+    /* RENDER LOOP --------- */
     /* --------------------- */
     
     // start render loop with the volume geometry loaded
@@ -174,6 +184,9 @@ window.onload = async function init()
   })
 }
 
+/**
+ * Reloads the shader programs by re-fetching their appropriate text files. Used for application development.
+ */
 async function reloadShaders()
 {
   // NOTE: Temporary manual solution, should be possible to make each geometry take care of its own shader
@@ -200,6 +213,9 @@ async function reloadShaders()
   console.log("Reloaded shaders");
 }
 
+/**
+ * Updates the application environment based on user input.
+ */
 function updateApp()
 {
   if (appControls.reloadShaders)
@@ -210,12 +226,17 @@ function updateApp()
 }
 
 /**
- * Updates variables throughout the render loop
+ * Updates variables and object states fpr each frame throughout the render loop.
+ * @param currentTime current application time in ms
  */
 function update(currentTime)
 {
   const timeDelta = 0.001 * (currentTime - previousTime);
+
+  // FPS Counter
   UIData.framesPerSecond = timeDelta > 0.0 ? 1.0 / timeDelta : 0.0;
+
+  // Shading model GUI updates
   sceneRaycast.uniforms.u_step_size = UIData.stepSize;
   sceneRaycast.uniforms.u_default_step_size = UIData.defaultStepSize;
   sceneRaycast.uniforms.u_shading_model = UIData.shadingModel;
@@ -223,6 +244,8 @@ function update(currentTime)
   sceneRaycast.uniforms.u_subsurface = UIData.subsurface;
   sceneRaycast.uniforms.u_sheen = UIData.sheen;
   sceneRaycast.uniforms.u_sheen_tint = UIData.sheenTint;
+
+  // Light properties GUI updates
   let i = 0;
   for (const key in UIData.lights)
   {
@@ -230,22 +253,25 @@ function update(currentTime)
     ++i;
   }
   
+  // User controls
   controlCamera(mouse, keyboard, cameraControls);
   updateCamera(camera, cameraControls, viewportMain, timeDelta);
-
   controlApp(keyboard, appControls);
   updateApp();
 
-  previousTime = currentTime;
+  // Reset controls for next frame
   resetMouseControls(mouse);
   resetKeyboardControls(keyboard);
   resetCameraControls(cameraControls);
   resetAppControls(appControls);
+
+  previousTime = currentTime;
 }
 
 /**
  * Main render loop called via requestAnimationFrame(). 
- * Actual rendering is forwarded to the main render() function
+ * Actual rendering is forwarded to the main render() function.
+ * @param {*} currentTime current application time in ms
  */
 function renderLoop(currentTime)
 {
