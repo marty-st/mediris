@@ -98,7 +98,7 @@ export async function getCache(databaseName, storeName, keyType, key, databaseVe
 
     cacheQuery.onsuccess = () => {
       db.close();
-      resolve(cacheQuery.result[storeName]);
+      resolve(cacheQuery.result?.[storeName] ?? null);
     };
   });
 }
