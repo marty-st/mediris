@@ -1,5 +1,12 @@
 'use strict'
 
+/**
+ * Creates a WebGL RGBA 2D texture from a browser-loaded image.
+ * @param {*} gl WebGL rendering context
+ * @param {*} image Image object stored in the browser
+ * @param {*} dimensions dimensions of the provided image
+ * @returns WebGL 2D texture object
+ */
 export function create2DTexture(gl, image, dimensions)
 {
   const texture = gl.createTexture();
@@ -28,7 +35,7 @@ export function create2DTexture(gl, image, dimensions)
 }
 
 /**
- * Creates a 3D texture from DICOM volume data
+ * Creates a WebGL 3D texture from DICOM volume data.
  * @param {*} gl WebGL rendering context
  * @param {*} volume volume data loaded from a DICOM file
  * @param {*} dimensions dimensions of provided volume
@@ -56,13 +63,13 @@ export function createVolumeTexture(gl, volume, dimensions)
     gl.texImage3D(
       gl.TEXTURE_3D,
       0,
-      gl.R16F,             // internalFormat
+      gl.R16F,                 // internalFormat
       dimensions.cols,
       dimensions.rows,
       dimensions.depth,
       0,
-      gl.RED,       // format
-      gl.FLOAT,    // type
+      gl.RED,                  // format
+      gl.FLOAT,                // type
       volume
     );
     

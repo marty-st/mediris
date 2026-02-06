@@ -3,30 +3,30 @@
 import * as twgl from 'twgl.js';
 
 /**
- * 
+ * Initializes WebGL canvas.
  * @returns `canvas` - HTML element
  */
 export function initGLCanvas()
 {
   let canvas = document.getElementById('webgl-canvas');
-  if (!canvas) {
+
+  if (!canvas)
     alert('Cannot find WebGL canvas :(')
-  }
 
   return canvas;
 }
 
 /**
- * 
+ * Initializes WebGL2 context.
  * @param {*} canvas HTML canvas element
  * @returns `gl` - WebGL rendering context
  */
 export function initGLContext(canvas)
 {
   let gl = canvas.getContext('webgl2');
-  if (!gl) {
+
+  if (!gl) 
     alert('WebGL2 is not supported!')
-  }
 
   gl.enable(gl.SCISSOR_TEST);
 
@@ -54,5 +54,5 @@ export function initGLStates(gl)
   twgl.setDefaults({
       attribPrefix: "i_",
     }
-   );
+  );
 }

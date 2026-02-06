@@ -3,9 +3,11 @@
 import * as twgl from 'twgl.js';
 
 /**
- * Main render function
+ * Main render function. Iteratively renders provided geometries.
  * @param {*} gl WebGL rendering context
  * @param {*} canvas HTML canvas element
+ * @param {*} viewport object containing width and height, and leftX and bottomY attributes
+ * @param {*} scene object with scene settings, i.e. lights, camera, shading uniforms.
  * @param {*} geometries Array of `geometry` objects
  */
 export default function render(gl, canvas, viewport, scene, geometries)
