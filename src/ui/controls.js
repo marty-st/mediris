@@ -213,7 +213,7 @@ function keyboardControlsCamera(keyboard)
  */
 export function controlCamera(mouse, keyboard, cameraControls)
 {
-  cameraControls.idle = !mouse.move && !mouse.down && !mouse.scroll && !keyboardControlsCamera(keyboard)
+  cameraControls.idle = !mouse.down && !mouse.scroll && !keyboardControlsCamera(keyboard)
 
   if (cameraControls.idle)
     return;
