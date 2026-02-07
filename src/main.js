@@ -116,8 +116,9 @@ window.onload = async function init()
   /* --------------------- */
   
   canvas = initGLCanvas();  
-  gl = initGLContext(canvas);
   setOutputResolution(canvas);
+  
+  gl = initGLContext(canvas);
   initGLStates(gl);
   
   /* --------------------- */

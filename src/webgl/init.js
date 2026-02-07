@@ -28,8 +28,6 @@ export function initGLContext(canvas)
   if (!gl) 
     alert('WebGL2 is not supported!')
 
-  gl.enable(gl.SCISSOR_TEST);
-
   return gl;
 }
 
@@ -51,6 +49,8 @@ export function setOutputResolution(canvas)
 export function initGLStates(gl)
 {
   gl.clearColor(0.25,0.25,0.25,1.0);
+  gl.enable(gl.SCISSOR_TEST);
+
   twgl.setDefaults({
       attribPrefix: "i_",
     }
