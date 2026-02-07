@@ -2,7 +2,7 @@
 
 import * as twgl from 'twgl.js';
 import loadDicom from './file/dicom.js';
-import { initDebugUI, initGUIData } from './ui/init.js';
+import { initDebugGUI, initGUIData } from './ui/gui.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
 import createShaderProgram from './webgl/program.js';
 import { createSceneEmpty, createSceneRaycast } from './webgl/scene.js';
@@ -109,7 +109,7 @@ window.onload = async function init()
   /* UI INITIALIZATION --- */
   /* --------------------- */
 
-  pane = initDebugUI(GUIData);
+  pane = initDebugGUI(GUIData);
 
   /* --------------------- */
   /* CANVAS INITIALIZATION */

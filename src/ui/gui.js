@@ -39,10 +39,10 @@ function initVec3(v)
 }
 
 /**
- * Creates the `transferFunction` attribute for the UI object. Creates duplicates of vector values
+ * Creates the `transferFunction` attribute for the GUI object. Creates duplicates of vector values
  * in a GPU-compatible format so that they can be sent directly to the GPU as uniforms.
  * @param {*} tf object that defines the transfer function
- * @returns object used by the UI library
+ * @returns object used by the GUI library
  */
 function initTransferFunctionProperties(tf)
 {
@@ -64,10 +64,10 @@ function initTransferFunctionProperties(tf)
 }
 
 /**
- * Creates the `lights` attribute for the UI object. Creates duplicates of vector values
+ * Creates the `lights` attribute for the GUI object. Creates duplicates of vector values
  * in a GPU-compatible format so that they can be sent directly to the GPU as uniforms.
  * @param {*} lights object that defines lights in a scene
- * @returns object used by the UI library
+ * @returns object used by the GUI library
  */
 function initLightsProperties(lights)
 {
@@ -87,10 +87,10 @@ function initLightsProperties(lights)
 }
 
 /**
- * Creates an object that stores UI related data.
+ * Creates an object that stores GUI related data.
  * @param {*} tf object that defines the transfer function
  * @param {*} l object that defines lights in a scene
- * @returns mediator object between UI and the rest of the application
+ * @returns mediator object between GUI and the rest of the application
  */
 export function initGUIData(tf, l)
 {
@@ -120,7 +120,7 @@ export function initGUIData(tf, l)
 /* ------------------------------------------------------------------------- */
 
 /**
- * Creates a UI section for tuning of the transfer function.
+ * Creates a GUI section for tuning of the transfer function.
  * @param {*} pane Tweakpane global-state object
  * @param {*} GUIData mediator object between GUI and the rest of the application
  */
@@ -157,7 +157,7 @@ function addTransferFunctionBindings(pane, GUIData)
 }
 
 /**
- * Creates a UI section for controlling the light sources.
+ * Creates a GUI section for controlling the light sources.
  * @param {*} pane Tweakpane global-state object
  * @param {*} GUIData mediator object between GUI and the rest of the application
  */
@@ -185,11 +185,11 @@ function addLightsBindings(pane, GUIData)
 }
 
 /**
- * Initializes the context of Tweakpane UI elements for debugging purposes.
+ * Initializes the context of Tweakpane GUI elements for debugging purposes.
  * @param GUIData object that reflects states of Tweakpane controlled variables
  * @returns `Pane`object
  */
-export function initDebugUI(GUIData)
+export function initDebugGUI(GUIData)
 {
   const pane = new Pane();
 
