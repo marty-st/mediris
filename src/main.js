@@ -3,6 +3,7 @@
 import * as twgl from 'twgl.js';
 import loadDicom from './file/dicom.js';
 import { initDebugGUI, initGUIData } from './ui/gui.js';
+import { initUI, control, resetControls } from './ui/manager.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
 import createShaderProgram from './webgl/program.js';
 import { createSceneEmpty, createSceneRaycast } from './webgl/scene.js';
@@ -11,18 +12,6 @@ import { create2DTexture, createVolumeTexture } from './webgl/texture.js';
 import { createVolumeGeometry, createLoadingScreenGeometry, createSphereGeometry } from './webgl/geometry.js';
 import { updateCamera, initCamera } from './webgl/camera.js';
 import loadImage from './file/image.js';
-import { 
-  controlApp, 
-  controlCamera, 
-  initAppControls, 
-  initCameraControls, 
-  initKeyboardControls, 
-  initMouseControls, 
-  resetAppControls, 
-  resetCameraControls, 
-  resetKeyboardControls, 
-  resetMouseControls 
-} from './ui/controls.js';
 
 /* GLOBAL VARIABLES */
 
@@ -72,24 +61,19 @@ const lights = {
     },
 };
 
-// Mediator object between Tweakpane and the rest of the application
-let GUIData = initGUIData(tf, lights);
-
 /** @type {HTMLCanvasElement} */    // for VSCode to know that canvas is an HTML Canvas Element
 let canvas = undefined;             // HTML <canvas> element 
 let gl = undefined;                 // WebGL rendering context element
 let pane = undefined;               // Tweakpane rendering window
-let sceneEmpty = undefined;         // Object with empty settings for scenes with no additional spec
-let sceneRaycast = undefined;       // object with raycast scene settings
+let scene = undefined;              // Current scene object
 let geometries = [];                // array of rendered objects
 let viewportMain = undefined;       // main viewport position and dimensions
-
-// Object for user control
-let mouse = undefined;
-let keyboard = undefined;
 let camera = undefined;
-let cameraControls = undefined;
-let appControls = undefined;
+
+// Mediator object between Tweakpane and the rest of the application
+let GUIData = undefined;
+// Wrapper object for the UI controls & GUI, managed by the UI manager
+let UI = undefined;
 
 // Elapsed time helper variable
 let previousTime = 0;
@@ -106,21 +90,23 @@ const loadingScreenImagePromise = loadImage('loading.png');
 window.onload = async function init()
 {
   /* --------------------- */
-  /* UI INITIALIZATION --- */
-  /* --------------------- */
-
-  pane = initDebugGUI(GUIData);
-
-  /* --------------------- */
   /* CANVAS INITIALIZATION */
   /* --------------------- */
   
   canvas = initGLCanvas();  
   setOutputResolution(canvas);
-
+  
   gl = initGLContext(canvas);
   initGLStates(gl);
   
+  /* --------------------- */
+  /* UI INITIALIZATION --- */
+  /* --------------------- */
+
+  GUIData = initGUIData(tf, lights);
+  pane = initDebugGUI(GUIData);
+  UI = initUI(canvas, GUIData);
+
   /* --------------------- */
   /* SHADER INITIALIZATION */
   /* --------------------- */
@@ -142,13 +128,11 @@ window.onload = async function init()
     height: canvas.height,
   };
 
-  mouse = initMouseControls(canvas);
-  keyboard = initKeyboardControls();
   camera = initCamera(viewportMain);
-  cameraControls = initCameraControls();
-  appControls = initAppControls();
-  sceneEmpty = createSceneEmpty();
-  sceneRaycast = createSceneRaycast(gl, volumeProgramInfo, camera, GUIData);
+
+  const sceneEmpty = createSceneEmpty();
+  const sceneRaycast = createSceneRaycast(gl, volumeProgramInfo, camera, GUIData);
+  scene = sceneRaycast;
 
   loadingScreenImagePromise.then((loadingScreenImage) =>{
     const loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
@@ -219,10 +203,10 @@ async function reloadShaders()
  */
 function updateApp()
 {
-  if (appControls.reloadShaders)
+  if (UI.appControls.reloadShaders)
     reloadShaders();
 
-  // if (appControls.reloadDicom)
+  // if (UI.appControls.reloadDicom)
     // use loadDicom(folder, useCache = false); 
 }
 
@@ -238,33 +222,29 @@ function update(currentTime)
   GUIData.framesPerSecond = timeDelta > 0.0 ? 1.0 / timeDelta : 0.0;
 
   // Shading model GUI updates
-  sceneRaycast.uniforms.u_step_size = GUIData.stepSize;
-  sceneRaycast.uniforms.u_default_step_size = GUIData.defaultStepSize;
-  sceneRaycast.uniforms.u_shading_model = GUIData.shadingModel;
-  sceneRaycast.uniforms.u_roughness = GUIData.roughness;
-  sceneRaycast.uniforms.u_subsurface = GUIData.subsurface;
-  sceneRaycast.uniforms.u_sheen = GUIData.sheen;
-  sceneRaycast.uniforms.u_sheen_tint = GUIData.sheenTint;
+  scene.uniforms.u_step_size = GUIData.stepSize;
+  scene.uniforms.u_default_step_size = GUIData.defaultStepSize;
+  scene.uniforms.u_shading_model = GUIData.shadingModel;
+  scene.uniforms.u_roughness = GUIData.roughness;
+  scene.uniforms.u_subsurface = GUIData.subsurface;
+  scene.uniforms.u_sheen = GUIData.sheen;
+  scene.uniforms.u_sheen_tint = GUIData.sheenTint;
 
   // Light properties GUI updates
   let i = 0;
   for (const key in GUIData.lights)
   {
-    sceneRaycast.uniformBlock.uniforms.lights_array[i].intensity = GUIData.lights[key].intensity;
+    scene.uniformBlock.uniforms.lights_array[i].intensity = GUIData.lights[key].intensity;
     ++i;
   }
   
   // User controls
-  controlCamera(mouse, keyboard, cameraControls);
-  updateCamera(camera, cameraControls, viewportMain, timeDelta);
-  controlApp(keyboard, appControls);
+  control(UI);
+
+  updateCamera(camera, UI.cameraControls, viewportMain, timeDelta);
   updateApp();
 
-  // Reset controls for next frame
-  resetMouseControls(mouse);
-  resetKeyboardControls(keyboard);
-  resetCameraControls(cameraControls);
-  resetAppControls(appControls);
+  resetControls(UI);
 
   previousTime = currentTime;
 }
@@ -278,7 +258,7 @@ function renderLoop(currentTime)
 {
   update(currentTime);
 
-  render(gl, canvas, viewportMain, sceneRaycast, geometries.slice(GUIData.mode, GUIData.mode + 1));
+  render(gl, canvas, viewportMain, scene, geometries.slice(GUIData.mode, GUIData.mode + 1));
 
   requestAnimationFrame(renderLoop);
 }
