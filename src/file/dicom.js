@@ -290,7 +290,7 @@ function getPixelDataRange(volume)
  * @param {*} useCache boolean determining whether to load and/or store image data from client-side browser cache 
  * @returns an object containing DICOM slices metadata and pixel volume 
  */
-export default async function loadDicom(folderName, useCache) {
+export default async function loadDicom(folderName, useCache = false) {
 
   if (useCache)
   {

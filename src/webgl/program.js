@@ -41,7 +41,7 @@ function parseShaderNames(vertexShaderName, fragmentShaderName)
  * 
  * Additionaly `fragmentShaderName` does NOT need to be specified if it shares its name with the vertex shader.
  */
-export default async function createShaderProgram(gl, vertexShaderName, fragmentShaderName, useCache)
+export default async function createShaderProgram(gl, vertexShaderName, fragmentShaderName, useCache = false)
 {
   const { 
     vertexShaderNameParsed, 
