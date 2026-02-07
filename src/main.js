@@ -2,7 +2,7 @@
 
 import * as twgl from 'twgl.js';
 import loadDicom from './file/dicom.js';
-import { initDebugUI, initUIData } from './ui/init.js';
+import { initDebugUI, initGUIData } from './ui/init.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
 import createShaderProgram from './webgl/program.js';
 import { createSceneEmpty, createSceneRaycast } from './webgl/scene.js';
@@ -25,15 +25,6 @@ import {
 } from './ui/controls.js';
 
 /* GLOBAL VARIABLES */
-
-/** @type {HTMLCanvasElement} */    // for VSCode to know that canvas is an HTML Canvas Element
-let canvas = undefined;             // HTML <canvas> element 
-let gl = undefined;                 // WebGL rendering context element
-let pane = undefined;               // Tweakpane rendering window
-let sceneEmpty = undefined;         // Object with empty settings for scenes with no additional spec
-let sceneRaycast = undefined;       // object with raycast scene settings
-let geometries = [];                // array of rendered objects
-let viewportMain = undefined;       // main viewport position and dimensions
 
 // HU units are usually defined in the range <-1000, 3000>,
 // however, the data loads in unsigned short format, so
@@ -82,7 +73,16 @@ const lights = {
 };
 
 // Mediator object between Tweakpane and the rest of the application
-let UIData = initUIData(tf, lights);
+let GUIData = initGUIData(tf, lights);
+
+/** @type {HTMLCanvasElement} */    // for VSCode to know that canvas is an HTML Canvas Element
+let canvas = undefined;             // HTML <canvas> element 
+let gl = undefined;                 // WebGL rendering context element
+let pane = undefined;               // Tweakpane rendering window
+let sceneEmpty = undefined;         // Object with empty settings for scenes with no additional spec
+let sceneRaycast = undefined;       // object with raycast scene settings
+let geometries = [];                // array of rendered objects
+let viewportMain = undefined;       // main viewport position and dimensions
 
 // Object for user control
 let mouse = undefined;
@@ -109,7 +109,7 @@ window.onload = async function init()
   /* UI INITIALIZATION --- */
   /* --------------------- */
 
-  pane = initDebugUI(UIData);
+  pane = initDebugUI(GUIData);
 
   /* --------------------- */
   /* CANVAS INITIALIZATION */
@@ -117,7 +117,7 @@ window.onload = async function init()
   
   canvas = initGLCanvas();  
   setOutputResolution(canvas);
-  
+
   gl = initGLContext(canvas);
   initGLStates(gl);
   
@@ -137,9 +137,9 @@ window.onload = async function init()
 
   viewportMain = {
     leftX: 0,
-    bottomY: UIData.mode == 2 ? canvas.height * 0.5 : 0,
+    bottomY: 0,
     width: canvas.width,
-    height: UIData.mode == 2 ? canvas.height * 0.5 : canvas.height,
+    height: canvas.height,
   };
 
   mouse = initMouseControls(canvas);
@@ -148,7 +148,7 @@ window.onload = async function init()
   cameraControls = initCameraControls();
   appControls = initAppControls();
   sceneEmpty = createSceneEmpty();
-  sceneRaycast = createSceneRaycast(gl, volumeProgramInfo, camera, UIData);
+  sceneRaycast = createSceneRaycast(gl, volumeProgramInfo, camera, GUIData);
 
   loadingScreenImagePromise.then((loadingScreenImage) =>{
     const loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
@@ -173,8 +173,8 @@ window.onload = async function init()
     // Remove loading screen
     geometries.pop();
 
-    geometries.push(createVolumeGeometry(gl, volumeProgramInfo, volumeTexture, dimensions, UIData));
-    geometries.push(createSphereGeometry(gl, sphereProgramInfo, UIData));
+    geometries.push(createVolumeGeometry(gl, volumeProgramInfo, volumeTexture, dimensions, GUIData));
+    geometries.push(createSphereGeometry(gl, sphereProgramInfo, GUIData));
 
     /* --------------------- */
     /* RENDER LOOP --------- */
@@ -192,8 +192,8 @@ async function reloadShaders()
 {
   // NOTE: Temporary manual solution, should be possible to make each geometry take care of its own shader
   // TODO: refactor
-  const shaderName = UIData.mode == 0 ? "raytrace" : "sphere";
-  const geometry = geometries[UIData.mode];
+  const shaderName = GUIData.mode == 0 ? "raytrace" : "sphere";
+  const geometry = geometries[GUIData.mode];
 
   geometry.programInfo = await createShaderProgram(gl, "fsquad", shaderName, false);
 
@@ -204,7 +204,7 @@ async function reloadShaders()
     
   }
 
-  if (UIData.mode == 0 && sceneRaycast.uniformBlock)
+  if (GUIData.mode == 0 && sceneRaycast.uniformBlock)
   {
     const blockName = sceneRaycast.uniformBlock.info.name;
     sceneRaycast.uniformBlock.info = twgl.createUniformBlockInfo(gl, geometry.programInfo, blockName);
@@ -235,22 +235,22 @@ function update(currentTime)
   const timeDelta = 0.001 * (currentTime - previousTime);
 
   // FPS Counter
-  UIData.framesPerSecond = timeDelta > 0.0 ? 1.0 / timeDelta : 0.0;
+  GUIData.framesPerSecond = timeDelta > 0.0 ? 1.0 / timeDelta : 0.0;
 
   // Shading model GUI updates
-  sceneRaycast.uniforms.u_step_size = UIData.stepSize;
-  sceneRaycast.uniforms.u_default_step_size = UIData.defaultStepSize;
-  sceneRaycast.uniforms.u_shading_model = UIData.shadingModel;
-  sceneRaycast.uniforms.u_roughness = UIData.roughness;
-  sceneRaycast.uniforms.u_subsurface = UIData.subsurface;
-  sceneRaycast.uniforms.u_sheen = UIData.sheen;
-  sceneRaycast.uniforms.u_sheen_tint = UIData.sheenTint;
+  sceneRaycast.uniforms.u_step_size = GUIData.stepSize;
+  sceneRaycast.uniforms.u_default_step_size = GUIData.defaultStepSize;
+  sceneRaycast.uniforms.u_shading_model = GUIData.shadingModel;
+  sceneRaycast.uniforms.u_roughness = GUIData.roughness;
+  sceneRaycast.uniforms.u_subsurface = GUIData.subsurface;
+  sceneRaycast.uniforms.u_sheen = GUIData.sheen;
+  sceneRaycast.uniforms.u_sheen_tint = GUIData.sheenTint;
 
   // Light properties GUI updates
   let i = 0;
-  for (const key in UIData.lights)
+  for (const key in GUIData.lights)
   {
-    sceneRaycast.uniformBlock.uniforms.lights_array[i].intensity = UIData.lights[key].intensity;
+    sceneRaycast.uniformBlock.uniforms.lights_array[i].intensity = GUIData.lights[key].intensity;
     ++i;
   }
   
@@ -278,7 +278,7 @@ function renderLoop(currentTime)
 {
   update(currentTime);
 
-  render(gl, canvas, viewportMain, sceneRaycast, geometries.slice(UIData.mode, UIData.mode + 1));
+  render(gl, canvas, viewportMain, sceneRaycast, geometries.slice(GUIData.mode, GUIData.mode + 1));
 
   requestAnimationFrame(renderLoop);
 }

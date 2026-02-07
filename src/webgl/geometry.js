@@ -57,10 +57,10 @@ export function createLoadingScreenGeometry(gl, shaderProgramInfo, texture)
  * @param {*} shaderProgramInfo associated shader program
  * @param {*} volumeTexture volume data 3D texture
  * @param {*} dimensions dimensions of provided volume texture
- * @param {*} UIData object with UI-controlled variables
+ * @param {*} GUIData mediator object between GUI and the rest of the application
  * @returns geometry object of the volume for individual slice rendering
  */
-export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimensions, UIData)
+export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimensions, GUIData)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
@@ -71,7 +71,7 @@ export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimens
     programInfo: shaderProgramInfo, 
     uniforms: {
       u_volume_texture: volumeTexture,
-      u_slice_number: UIData.slice,
+      u_slice_number: GUIData.slice,
       u_slice_count: dimensions.depth,
     }
   };
@@ -79,19 +79,19 @@ export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimens
 
 /**
  * Creates a transfer function object that can be mapped by twgl.js to a Uniform Block on the GPU.
- * @param {*} UIData object with UI-controlled variables
+ * @param {*} GUIData mediator object between GUI and the rest of the application
  * @returns transfer function object with the same exact structure as defined in the shader
  */
-function getTransferFunctionfromUIData(UIData)
+function getTransferFunctionfromGUIData(GUIData)
 {
   let tf = { 
     media_array: [],
     media_array_size: 0
   };
 
-  for (const key in UIData.transferFunction)
+  for (const key in GUIData.transferFunction)
   {
-    const medium = UIData.transferFunction[key];
+    const medium = GUIData.transferFunction[key];
 
     if (!medium.enabled)
       continue;
@@ -113,11 +113,11 @@ function getTransferFunctionfromUIData(UIData)
  * @param {*} shaderProgramInfo associated shader program
  * @param {*} volumeTexture volume data 3D texture
  * @param {*} dimensions dimensions of provided volume texture
- * @param {*} UIData object with UI-controlled variables
+ * @param {*} GUIData mediator object between GUI and the rest of the application
  * @param {*} camera object with camera-related uniforms
  * @returns geometry object of the volume for 3D volume rendering
  */
-export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimensions, UIData)
+export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimensions, GUIData)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
@@ -137,7 +137,7 @@ export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimen
     // Transfer Function
     uniformBlock: {
       info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "TransferFunction"),
-      uniforms: getTransferFunctionfromUIData(UIData),
+      uniforms: getTransferFunctionfromGUIData(GUIData),
     },
   };
 }
@@ -148,7 +148,7 @@ export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimen
  * @param {*} shaderProgramInfo associated shader program
  * @returns geometry object of the sphere
  */
-export function createSphereGeometry(gl, shaderProgramInfo, UIData)
+export function createSphereGeometry(gl, shaderProgramInfo, GUIData)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
@@ -160,7 +160,7 @@ export function createSphereGeometry(gl, shaderProgramInfo, UIData)
     // Transfer Function
     uniformBlock: {
       info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "TransferFunction"),
-      uniforms: getTransferFunctionfromUIData(UIData),
+      uniforms: getTransferFunctionfromGUIData(GUIData),
     },
   };
 }

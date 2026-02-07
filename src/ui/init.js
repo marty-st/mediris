@@ -5,7 +5,7 @@ import * as TweakpaneEssentialsPlugin from '@tweakpane/plugin-essentials';
 import { vec2, vec3, vec4 } from 'gl-matrix';
 
 /* ---------------------------------------------------------------------------------- */
-/* INTERNAL DATA STRUCTURE INITIALIZATION --------------------------------------------*/
+/* INTERNAL GUI DATA STRUCTURE INITIALIZATION --------------------------------------------*/
 /* ---------------------------------------------------------------------------------- */
 
 /**
@@ -92,9 +92,9 @@ function initLightsProperties(lights)
  * @param {*} l object that defines lights in a scene
  * @returns mediator object between UI and the rest of the application
  */
-export function initUIData(tf, l)
+export function initGUIData(tf, l)
 {
-  let UIData = {
+  let GUIData = {
     framesPerSecond: 0,
     mode: 0,
     // Ray Tracing
@@ -112,7 +112,7 @@ export function initUIData(tf, l)
     transferFunction: initTransferFunctionProperties(tf),
   };
 
-  return UIData;
+  return GUIData;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -122,18 +122,18 @@ export function initUIData(tf, l)
 /**
  * Creates a UI section for tuning of the transfer function.
  * @param {*} pane Tweakpane global-state object
- * @param {*} UIData mediator object between UI and the rest of the application
+ * @param {*} GUIData mediator object between GUI and the rest of the application
  */
-function addTransferFunctionBindings(pane, UIData)
+function addTransferFunctionBindings(pane, GUIData)
 {
   const folderTF = pane.addFolder({ title: "Transfer Function" });
 
-  for (const key in UIData.transferFunction)
+  for (const key in GUIData.transferFunction)
   {
-    if (!UIData.transferFunction[key].enabled)
+    if (!GUIData.transferFunction[key].enabled)
       continue;
 
-    folderTF.addBinding(UIData.transferFunction[key], "interval", {
+    folderTF.addBinding(GUIData.transferFunction[key], "interval", {
       label: key,
       min: 0,
       max: 4095,
@@ -141,17 +141,17 @@ function addTransferFunctionBindings(pane, UIData)
     })
     .on('change', (event) => {
       const { min, max } = event.value;
-      vec2.set(UIData.transferFunction[key].intervalVec, min, max);
+      vec2.set(GUIData.transferFunction[key].intervalVec, min, max);
     });
 
-    folderTF.addBinding(UIData.transferFunction[key], "color", {
+    folderTF.addBinding(GUIData.transferFunction[key], "color", {
       color: { type: "float" },
       picker: "inline",
       expanded: false,
     })
     .on('change', (event) => {
       const { r, g, b, a } = event.value;
-      vec4.set(UIData.transferFunction[key].colorVec, r, g, b, a);
+      vec4.set(GUIData.transferFunction[key].colorVec, r, g, b, a);
     });  
   }
 }
@@ -159,13 +159,13 @@ function addTransferFunctionBindings(pane, UIData)
 /**
  * Creates a UI section for controlling the light sources.
  * @param {*} pane Tweakpane global-state object
- * @param {*} UIData mediator object between UI and the rest of the application
+ * @param {*} GUIData mediator object between GUI and the rest of the application
  */
-function addLightsBindings(pane, UIData)
+function addLightsBindings(pane, GUIData)
 {
-  for (const key in UIData.lights)
+  for (const key in GUIData.lights)
   {
-    pane.addBinding(UIData.lights[key], "position", 
+    pane.addBinding(GUIData.lights[key], "position", 
     { 
       label: key,
       min: -1, 
@@ -173,10 +173,10 @@ function addLightsBindings(pane, UIData)
     })
     .on('change', (event) => {
       const {x, y, z} = event.value;
-      vec3.set(UIData.lights[key].positionVec, x, y, z);
+      vec3.set(GUIData.lights[key].positionVec, x, y, z);
     });
 
-    pane.addBinding(UIData.lights[key], "intensity",
+    pane.addBinding(GUIData.lights[key], "intensity",
     {
       min: 0,
       max: 1,
@@ -186,16 +186,16 @@ function addLightsBindings(pane, UIData)
 
 /**
  * Initializes the context of Tweakpane UI elements for debugging purposes.
- * @param UIData object that reflects states of Tweakpane controlled variables
+ * @param GUIData object that reflects states of Tweakpane controlled variables
  * @returns `Pane`object
  */
-export function initDebugUI(UIData)
+export function initDebugUI(GUIData)
 {
   const pane = new Pane();
 
   pane.registerPlugin(TweakpaneEssentialsPlugin);
 
-  pane.addBinding(UIData, "framesPerSecond", {
+  pane.addBinding(GUIData, "framesPerSecond", {
         readonly: true,
         label: "FPS",
         view: "graph",
@@ -203,16 +203,16 @@ export function initDebugUI(UIData)
         max: 200
     });
 
-  pane.addBinding(UIData, "mode", {
+  pane.addBinding(GUIData, "mode", {
     options: {
       main: 0,
       debugShader: 1,
     }
   });
 
-  pane.addBinding(UIData, "stepSize", {min: 0.0001, max: 0.01, step: 0.0001});
-  pane.addBinding(UIData, "defaultStepSize", {min: 0.0001, max: 0.01, step: 0.0001});
-  pane.addBinding(UIData, "shadingModel", { 
+  pane.addBinding(GUIData, "stepSize", {min: 0.0001, max: 0.01, step: 0.0001});
+  pane.addBinding(GUIData, "defaultStepSize", {min: 0.0001, max: 0.01, step: 0.0001});
+  pane.addBinding(GUIData, "shadingModel", { 
     options: {
       Disney: 0,
       Lambert: 1,
@@ -221,14 +221,14 @@ export function initDebugUI(UIData)
     } 
   });
 
-  addLightsBindings(pane, UIData);
+  addLightsBindings(pane, GUIData);
 
-  pane.addBinding(UIData, "roughness", { min: 0, max: 1 });
-  pane.addBinding(UIData, "subsurface", { min: 0, max: 1 });
-  pane.addBinding(UIData, "sheen", { min: 0, max: 1 });
-  pane.addBinding(UIData, "sheenTint", { min: 0, max: 1 });
+  pane.addBinding(GUIData, "roughness", { min: 0, max: 1 });
+  pane.addBinding(GUIData, "subsurface", { min: 0, max: 1 });
+  pane.addBinding(GUIData, "sheen", { min: 0, max: 1 });
+  pane.addBinding(GUIData, "sheenTint", { min: 0, max: 1 });
 
-  addTransferFunctionBindings(pane, UIData);
+  addTransferFunctionBindings(pane, GUIData);
 
   return pane;
 }
