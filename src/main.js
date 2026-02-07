@@ -78,6 +78,11 @@ let UI = undefined;
 // Elapsed time helper variable
 let previousTime = 0;
 
+// Shader program file names
+const loadingScreenShaderNames = {vert: "fsquad", frag: "fstexture"};
+const mainShaderNames = {vert: "fsquad", frag: "raytrace"};
+const debugShaderNames = {vert: "fsquad", frag: "sphere"};
+
 // FILE PRELOAD
 // Load DICOM during module load
 const imageDataPromise = loadDicom('CT WB w-contrast 5.0 B30s', true);
@@ -113,9 +118,9 @@ window.onload = async function init()
 
   const useCachedShaderText = false;
 
-  const loadingScreenProgramInfo = await createShaderProgram(gl, "fsquad", "fstexture", useCachedShaderText);
-  const volumeProgramInfo = await createShaderProgram(gl, "fsquad", "raytrace", useCachedShaderText);
-  const sphereProgramInfo = await createShaderProgram(gl, "fsquad", "sphere", useCachedShaderText);
+  const loadingScreenProgramInfo = await createShaderProgram(gl, loadingScreenShaderNames.vert, loadingScreenShaderNames.frag, useCachedShaderText);
+  const volumeProgramInfo = await createShaderProgram(gl, mainShaderNames.vert, mainShaderNames.frag, useCachedShaderText);
+  const sphereProgramInfo = await createShaderProgram(gl, debugShaderNames.vert, debugShaderNames.frag, useCachedShaderText);
 
   /* --------------------- */
   /* DATA INITIALIZATION - */
@@ -136,7 +141,7 @@ window.onload = async function init()
 
   loadingScreenImagePromise.then((loadingScreenImage) =>{
     const loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
-    geometries.push(createLoadingScreenGeometry(gl, loadingScreenProgramInfo, loadingScreenTexture));
+    geometries.push(createLoadingScreenGeometry(gl, loadingScreenProgramInfo, loadingScreenShaderNames, loadingScreenTexture));
 
     /* --------------------- */
     /* RENDER LOAD SCREEN -- */
@@ -157,8 +162,8 @@ window.onload = async function init()
     // Remove loading screen
     geometries.pop();
 
-    geometries.push(createVolumeGeometry(gl, volumeProgramInfo, volumeTexture, dimensions, GUIData));
-    geometries.push(createSphereGeometry(gl, sphereProgramInfo, GUIData));
+    geometries.push(createVolumeGeometry(gl, volumeProgramInfo, mainShaderNames, volumeTexture, dimensions, GUIData));
+    geometries.push(createSphereGeometry(gl, sphereProgramInfo, debugShaderNames, GUIData));
 
     /* --------------------- */
     /* RENDER LOOP --------- */
@@ -174,26 +179,22 @@ window.onload = async function init()
  */
 async function reloadShaders()
 {
-  // NOTE: Temporary manual solution, should be possible to make each geometry take care of its own shader
-  // TODO: refactor
-  const shaderName = GUIData.mode == 0 ? "raytrace" : "sphere";
   const geometry = geometries[GUIData.mode];
+  const shader = geometry.shaderFileNames;
 
-  geometry.programInfo = await createShaderProgram(gl, "fsquad", shaderName, false);
+  geometry.programInfo = await createShaderProgram(gl, shader.vert, shader.frag, false);
 
   if (geometry.uniformBlock)
   {
     const blockName = geometry.uniformBlock.info.name;
     geometry.uniformBlock.info = twgl.createUniformBlockInfo(gl, geometry.programInfo, blockName);
-    
   }
 
-  if (GUIData.mode == 0 && sceneRaycast.uniformBlock)
+  if (scene.uniformBlock)
   {
-    const blockName = sceneRaycast.uniformBlock.info.name;
-    sceneRaycast.uniformBlock.info = twgl.createUniformBlockInfo(gl, geometry.programInfo, blockName);
+    const blockName = scene.uniformBlock.info.name;
+    scene.uniformBlock.info = twgl.createUniformBlockInfo(gl, geometry.programInfo, blockName);
   }
-
 
   console.log("Reloaded shaders");
 }

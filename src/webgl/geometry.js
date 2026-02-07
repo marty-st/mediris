@@ -33,10 +33,11 @@ const fullScreenQuadArrays = {
  * Creates a geometry object compatible with the rendering pipeline.
  * @param {*} gl WebGL rendering context
  * @param {*} shaderProgramInfo associated shader program
+ * @param {*} shaderFileNames contains file names of associated shaders for reload purposes
  * @param {*} texture image shown on the screen when loading screen is displayed
  * @returns geometry of the loading screen (full screen quad with a texture)
  */
-export function createLoadingScreenGeometry(gl, shaderProgramInfo, texture)
+export function createLoadingScreenGeometry(gl, shaderProgramInfo, shaderFileNames, texture)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
@@ -44,7 +45,8 @@ export function createLoadingScreenGeometry(gl, shaderProgramInfo, texture)
   return {
     bufferInfo: fullScreenQuadBufferInfo, 
     vao: emptyVAO, 
-    programInfo: shaderProgramInfo, 
+    programInfo: shaderProgramInfo,
+    shaderFileNames: shaderFileNames,
     uniforms: {
       u_texture: texture,
     }
@@ -55,6 +57,7 @@ export function createLoadingScreenGeometry(gl, shaderProgramInfo, texture)
  * Creates a geometry object compatible with the rendering pipeline.
  * @param {*} gl WebGL rendering context
  * @param {*} shaderProgramInfo associated shader program
+ * @param {*} shaderFileNames contains file names of associated shaders for reload purposes
  * @param {*} volumeTexture volume data 3D texture
  * @param {*} dimensions dimensions of provided volume texture
  * @param {*} GUIData mediator object between GUI and the rest of the application
@@ -111,13 +114,14 @@ function getTransferFunctionfromGUIData(GUIData)
  * Creates a geometry object compatible with the rendering pipeline.
  * @param {*} gl WebGL rendering context
  * @param {*} shaderProgramInfo associated shader program
+ * @param {*} shaderFileNames contains file names of associated shaders for reload purposes
  * @param {*} volumeTexture volume data 3D texture
  * @param {*} dimensions dimensions of provided volume texture
  * @param {*} GUIData mediator object between GUI and the rest of the application
  * @param {*} camera object with camera-related uniforms
  * @returns geometry object of the volume for 3D volume rendering
  */
-export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimensions, GUIData)
+export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, volumeTexture, dimensions, GUIData)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
@@ -128,6 +132,7 @@ export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimen
     bufferInfo: fullScreenQuadBufferInfo, 
     vao: emptyVAO, 
     programInfo: shaderProgramInfo, 
+    shaderFileNames: shaderFileNames,
     uniforms: {
       // Volume Data
       u_volume_texture: volumeTexture,
@@ -148,7 +153,7 @@ export function createVolumeGeometry(gl, shaderProgramInfo, volumeTexture, dimen
  * @param {*} shaderProgramInfo associated shader program
  * @returns geometry object of the sphere
  */
-export function createSphereGeometry(gl, shaderProgramInfo, GUIData)
+export function createSphereGeometry(gl, shaderProgramInfo, shaderFileNames, GUIData)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
@@ -156,7 +161,8 @@ export function createSphereGeometry(gl, shaderProgramInfo, GUIData)
   return {
     bufferInfo: fullScreenQuadBufferInfo, 
     vao: emptyVAO, 
-    programInfo: shaderProgramInfo, 
+    programInfo: shaderProgramInfo,
+    shaderFileNames: shaderFileNames,
     // Transfer Function
     uniformBlock: {
       info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "TransferFunction"),
