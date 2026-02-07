@@ -66,7 +66,6 @@ let canvas = undefined;             // HTML <canvas> element
 let gl = undefined;                 // WebGL rendering context element
 let pane = undefined;               // Tweakpane rendering window
 let scene = undefined;              // Current scene object
-let geometries = [];                // array of rendered objects
 let viewportMain = undefined;       // main viewport position and dimensions
 let camera = undefined;
 
@@ -141,13 +140,13 @@ window.onload = async function init()
 
   loadingScreenImagePromise.then((loadingScreenImage) =>{
     const loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
-    geometries.push(createLoadingScreenGeometry(gl, loadingScreenProgramInfo, loadingScreenShaderNames, loadingScreenTexture));
+    const loadingScreenGeometry = [createLoadingScreenGeometry(gl, loadingScreenProgramInfo, loadingScreenShaderNames, loadingScreenTexture)];
 
     /* --------------------- */
     /* RENDER LOAD SCREEN -- */
     /* --------------------- */
 
-    render(gl, canvas, viewportMain, sceneEmpty, geometries);
+    render(gl, canvas, viewportMain, sceneEmpty, loadingScreenGeometry);
   })
 
   // Asynchronously load DICOM to display later
@@ -159,11 +158,8 @@ window.onload = async function init()
 
     const volumeTexture = createVolumeTexture(gl, volume, dimensions);
 
-    // Remove loading screen
-    geometries.pop();
-
-    geometries.push(createVolumeGeometry(gl, volumeProgramInfo, mainShaderNames, volumeTexture, dimensions, GUIData));
-    geometries.push(createSphereGeometry(gl, sphereProgramInfo, debugShaderNames, GUIData));
+    scene.geometries.push(createVolumeGeometry(gl, volumeProgramInfo, mainShaderNames, volumeTexture, dimensions, GUIData));
+    scene.geometries.push(createSphereGeometry(gl, sphereProgramInfo, debugShaderNames, GUIData));
 
     /* --------------------- */
     /* RENDER LOOP --------- */
@@ -179,21 +175,24 @@ window.onload = async function init()
  */
 async function reloadShaders()
 {
-  const geometry = geometries[GUIData.mode];
-  const shader = geometry.shaderFileNames;
-
-  geometry.programInfo = await createShaderProgram(gl, shader.vert, shader.frag, false);
-
-  if (geometry.uniformBlock)
+  for (const geometry of scene.geometries)
   {
-    const blockName = geometry.uniformBlock.info.name;
-    geometry.uniformBlock.info = twgl.createUniformBlockInfo(gl, geometry.programInfo, blockName);
+    const shader = geometry.shaderFileNames;
+  
+    geometry.programInfo = await createShaderProgram(gl, shader.vert, shader.frag, false);
+  
+    if (geometry.uniformBlock)
+    {
+      const blockName = geometry.uniformBlock.info.name;
+      geometry.uniformBlock.info = twgl.createUniformBlockInfo(gl, geometry.programInfo, blockName);
+    }
   }
-
-  if (scene.uniformBlock)
+  
+  // Uniforms and UBOs are shared by all geometries in a scene, hence only needs to be set once
+  if (scene.geometries?.length > 0 && scene.uniformBlock)
   {
     const blockName = scene.uniformBlock.info.name;
-    scene.uniformBlock.info = twgl.createUniformBlockInfo(gl, geometry.programInfo, blockName);
+    scene.uniformBlock.info = twgl.createUniformBlockInfo(gl, scene.geometries[0].programInfo, blockName);
   }
 
   console.log("Reloaded shaders");
@@ -259,7 +258,7 @@ function renderLoop(currentTime)
 {
   update(currentTime);
 
-  render(gl, canvas, viewportMain, scene, geometries.slice(GUIData.mode, GUIData.mode + 1));
+  render(gl, canvas, viewportMain, scene, scene.geometries.slice(GUIData.mode, GUIData.mode + 1));
 
   requestAnimationFrame(renderLoop);
 }

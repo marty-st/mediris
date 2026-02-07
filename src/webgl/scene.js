@@ -54,13 +54,12 @@ function createLightsUBOFromGUIData(GUIData)
 export function createSceneRaycast(gl, shaderProgramInfo, camera, GUIData)
 {
   return {
+    geometries: [],
     uniforms: {
       // Ray Tracing
       u_step_size: GUIData.stepSize,
       u_default_step_size: GUIData.defaultStepSize,
       u_shading_model: GUIData.shadingModel,
-      // Light
-      u_light: { position: GUIData.u_light },
       // Camera
       u_eye_position: camera.u_eye_position,
       u_view_inv: camera.u_view_inv,
@@ -71,6 +70,7 @@ export function createSceneRaycast(gl, shaderProgramInfo, camera, GUIData)
       u_sheen: GUIData.sheen,
       u_sheen_tint: GUIData.sheenTint,
     },
+    // Lights
     uniformBlock: {
       info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "Lights"),
       uniforms: createLightsUBOFromGUIData(GUIData),
