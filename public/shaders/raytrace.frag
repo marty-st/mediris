@@ -213,7 +213,7 @@ float fresnel_schlick(float value)
 vec3 lambert_diffuse(vec4 medium_color, vec3 N, Light light)
 {
 	vec3 L = normalize(light.position);
-	float NdotL = dot(N, L);
+	float NdotL = max(dot(N, L), 0.0);
 
 	return light.intensity * NdotL * medium_color.rgb;
 }
