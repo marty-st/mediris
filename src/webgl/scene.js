@@ -57,6 +57,7 @@ export function createSceneRaycast(gl, shaderProgramInfo, camera, GUIData)
     geometries: [],
     uniforms: {
       // Ray Tracing
+      u_mode: GUIData.mode,
       u_step_size: GUIData.stepSize,
       u_default_step_size: GUIData.defaultStepSize,
       u_shading_model: GUIData.shadingModel,

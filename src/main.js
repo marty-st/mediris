@@ -9,7 +9,7 @@ import createShaderProgram from './webgl/program.js';
 import { createSceneEmpty, createSceneRaycast } from './webgl/scene.js';
 import render from './webgl/render.js';
 import { create2DTexture, createVolumeTexture } from './webgl/texture.js';
-import { createVolumeGeometry, createLoadingScreenGeometry, createSphereGeometry } from './webgl/geometry.js';
+import { createVolumeGeometry, createLoadingScreenGeometry } from './webgl/geometry.js';
 import { updateCamera, initCamera } from './webgl/camera.js';
 import loadImage from './file/image.js';
 import { deleteCache } from './file/cache.js';
@@ -81,7 +81,6 @@ let previousTime = 0;
 // Shader program file names
 const loadingScreenShaderNames = {vert: "fsquad", frag: "fstexture"};
 const mainShaderNames = {vert: "fsquad", frag: "raytrace"};
-const debugShaderNames = {vert: "fsquad", frag: "sphere"};
 
 // FILE PRELOAD
 // Load DICOM during module load
@@ -120,7 +119,6 @@ window.onload = async function init()
 
   const loadingScreenProgramInfo = await createShaderProgram(gl, loadingScreenShaderNames.vert, loadingScreenShaderNames.frag, useCachedShaderText);
   const volumeProgramInfo = await createShaderProgram(gl, mainShaderNames.vert, mainShaderNames.frag, useCachedShaderText);
-  const sphereProgramInfo = await createShaderProgram(gl, debugShaderNames.vert, debugShaderNames.frag, useCachedShaderText);
 
   /* --------------------- */
   /* DATA INITIALIZATION - */
@@ -160,7 +158,6 @@ window.onload = async function init()
     const volumeTexture = createVolumeTexture(gl, volume, dimensions);
 
     scene.geometries.push(createVolumeGeometry(gl, volumeProgramInfo, mainShaderNames, volumeTexture, dimensions, GUIData));
-    scene.geometries.push(createSphereGeometry(gl, sphereProgramInfo, debugShaderNames, GUIData));
 
     /* --------------------- */
     /* RENDER LOOP --------- */
@@ -226,6 +223,7 @@ function update(currentTime)
   GUIData.framesPerSecond = timeDelta > 0.0 ? 1.0 / timeDelta : 0.0;
 
   // Shading model GUI updates
+  scene.uniforms.u_mode = GUIData.mode;
   scene.uniforms.u_step_size = GUIData.stepSize;
   scene.uniforms.u_default_step_size = GUIData.defaultStepSize;
   scene.uniforms.u_shading_model = GUIData.shadingModel;
@@ -262,7 +260,7 @@ function renderLoop(currentTime)
 {
   update(currentTime);
 
-  render(gl, canvas, viewportMain, scene, scene.geometries.slice(GUIData.mode, GUIData.mode + 1));
+  render(gl, canvas, viewportMain, scene, scene.geometries);
 
   requestAnimationFrame(renderLoop);
 }

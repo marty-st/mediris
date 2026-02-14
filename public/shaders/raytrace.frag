@@ -51,6 +51,10 @@ const int MAX_LIGHT_ARRAY_SIZE = 5;
 const float AIR_UPPER_LIMIT = 50.0;
 const RayIntersectionData no_intersection = RayIntersectionData(1e20, vec3(0.0), vec3(0.0));
 const Hit miss = Hit(1e20, 1e20, vec3(0.0), vec3(0.0));
+// Render mode
+const int DICOM = 0;
+const int SPHERE_DEBUG = 1;
+// Shading model
 const int DISNEY = 0;
 const int LAMBERT = 1;
 const int NORMAL = 2;
@@ -62,6 +66,8 @@ in VaryingData var;
 
 /* --------UNIFORMS--------- */
 /* ------------------------- */
+// Render mode
+uniform int u_mode;
 // Volume data texture
 uniform sampler3D u_volume_texture;
 // Bounding box lower left corner
@@ -133,11 +139,43 @@ Hit ray_cube_intersection(const Ray ray, const vec3 bbox_min, const vec3 bbox_ma
 	return Hit(tmin, tmax, interesection, vec3(0.0));
 }
 
+Hit ray_sphere_intersection(Ray ray, vec3 center, float radius)
+{
+	float tmin = -1e20;
+	float tmax = 1e20;
+
+	vec3 oc = ray.origin - center;
+	float b = dot(oc, ray.direction);
+	float c = dot(oc, oc) - radius*radius;
+	float det = b*b - c;
+
+	if (det < 0.0)
+		return miss;
+
+	tmin = -b - sqrt(det);
+
+	if (tmin < 0.0)
+		tmin = 0.0;
+
+	tmax = -b + sqrt(det);
+
+	vec3 intersection = ray.origin + tmin * ray.direction;
+
+	return Hit(tmin, tmax, intersection, normalize(intersection - center));
+}
+
 // Evaluates the intersections of the ray with the scene objects and returns the closest hit.
 Hit evaluate(const Ray ray)
 {	
-	Hit closest_hit = ray_cube_intersection(ray, u_bbox_min, u_bbox_max);
-  return closest_hit;
+	switch(u_mode)
+	{
+		case DICOM:
+			return ray_cube_intersection(ray, u_bbox_min, u_bbox_max);
+		case SPHERE_DEBUG:
+			return ray_sphere_intersection(ray, vec3(0.0), 1.0);
+		default:
+			return Hit(0.0, 0.0, vec3(0.0), vec3(0.0));
+	}
 }
 
 vec4 sample_voxel(vec3 sample_point)
@@ -236,14 +274,92 @@ vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
 	return light.intensity * medium_color.rgb * diffuse;
 }
 
-vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_travel_distance)
+vec3 shade_diffuse(vec4 medium_color, vec3 sample_point, vec3 normal)
+{
+	vec3 diffuse_color = vec3(0.0); 
+
+	switch(u_shading_model)
+	{
+		case DISNEY:
+			for (int l = 0; l < lights.lights_array_size; ++l)
+			{
+				diffuse_color += disney_diffuse(medium_color, sample_point, normal, lights.lights_array[l]);
+			}
+			break;
+		case LAMBERT:
+			for (int l = 0; l < lights.lights_array_size; ++l)
+			{
+				diffuse_color += lambert_diffuse(medium_color, normal, lights.lights_array[l]);
+			}
+			break;
+		case NORMAL:
+			diffuse_color = vec3((normal + 1.0) * 0.5);
+			break;
+		case POSITION:
+			diffuse_color = sample_point;
+			break;
+	}
+
+	return diffuse_color;
+}
+
+vec4 get_sample_color(vec3 sample_point)
+{
+	switch(u_mode)
+	{
+		case DICOM:
+			return sample_voxel(sample_point);
+		case SPHERE_DEBUG:
+			return vec4(tf.media_array[tf.media_array_size - 1].interval.x);
+	}
+}
+
+vec2 get_medium_interval(int index)
+{
+	switch(u_mode)
+	{
+		case DICOM:
+			return tf.media_array[index].interval;
+		case SPHERE_DEBUG:
+			return tf.media_array[tf.media_array_size - 1].interval; // TODO: index of 1 selected medium
+	}
+}
+
+vec4 get_medium_color(int index)
+{
+	switch(u_mode)
+	{
+		case DICOM:
+			return tf.media_array[index].color;
+		case SPHERE_DEBUG:
+			return tf.media_array[tf.media_array_size - 1].color; // TODO: index of 1 selected medium
+	}
+}
+
+vec3 get_shading_normal(vec3 sample_point, vec3 surface_normal)
+{
+	vec3 result = surface_normal;
+	switch(u_mode)
+	{
+		case DICOM:
+			result = compute_gradient(sample_point, u_default_step_size);
+			break;
+		case SPHERE_DEBUG:
+			result = surface_normal;
+			break;
+	}
+
+	return normalize(result);
+}
+
+vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_normal, float volume_travel_distance)
 {
 	vec3 sample_point = first_interesection;
 	vec4 color = vec4(0.0);
 
 	while (volume_travel_distance >= 0.0 && color.a < 1.0)
 	{
-		vec4 float_sample_color = sample_voxel(sample_point);
+		vec4 float_sample_color = get_sample_color(sample_point);
 
 		// AIR SKIP 
 		// TODO: read the value from a uniform
@@ -258,43 +374,20 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_tr
 		// NOTE: Think about different color multiplier and opacity addition
 		for(int i = 0; i < tf.media_array_size; ++i)
 		{
-			vec2 medium_itv = tf.media_array[i].interval;
-			vec4 medium_color = tf.media_array[i].color;
+			vec2 medium_itv = get_medium_interval(i);
+			vec4 medium_color = get_medium_color(i);
 
-			if (float_sample_color.r >= medium_itv.x && float_sample_color.r < medium_itv.y)
-			{
-				vec3 gradient = compute_gradient(sample_point, u_default_step_size);
-				vec3 normal = normalize(gradient);	
-				
-				vec3 diffuse_color = vec3(0.0); 
+			if (float_sample_color.r < medium_itv.x || float_sample_color.r >= medium_itv.y)
+				continue;
 
-				switch(u_shading_model)
-				{
-					case DISNEY:
-						for (int l = 0; l < lights.lights_array_size; ++l)
-						{
-							diffuse_color += disney_diffuse(medium_color, sample_point, normal, lights.lights_array[l]);
-						}
-						break;
-					case LAMBERT:
-						for (int l = 0; l < lights.lights_array_size; ++l)
-						{
-							diffuse_color += lambert_diffuse(medium_color, normal, lights.lights_array[l]);
-						}
-						break;
-					case NORMAL:
-						diffuse_color = vec3((normal + 1.0) * 0.5);
-						break;
-					case POSITION:
-						diffuse_color = sample_point;
-						break;
-				}
+			vec3 normal = get_shading_normal(sample_point, surface_normal);
+			
+			vec3 diffuse_color = shade_diffuse(medium_color, sample_point, normal);
 
-				// TODO: alpha should be consistent for all step sizes so: alpha = medium_alpha * (step size / reference step size)
-				float available_alpha = min(medium_color.a, 1.0 - color.a);
-				color += vec4(diffuse_color * available_alpha, available_alpha);
-				break;
-			}
+			// TODO: alpha should be consistent for all step sizes so: alpha = medium_alpha * (step size / reference step size)
+			float available_alpha = min(medium_color.a, 1.0 - color.a);
+			color += vec4(diffuse_color * available_alpha, available_alpha);
+			break;
 		}
 
 		sample_point += ray_direction * u_step_size;
@@ -323,7 +416,7 @@ vec4 trace(Ray ray)
 		if (hit.t_first == miss.t_first)
 			break;
     
-		color += sample_volume(ray.direction, hit.intersection, hit.t_last - hit.t_first);
+		color += sample_volume(ray.direction, hit.intersection, hit.normal, hit.t_last - hit.t_first);
   }
 
 	vec4 background_color = vec4(0.15, 0.2, 0.2, 1.0);
