@@ -134,3 +134,28 @@ export async function setCache(databaseName, storeName, keyType, key, data, data
     transaction.oncomplete = () => db.close();
   });
 }
+
+/**
+ * Deletes all databases related to the application.
+ * NOTE: Deleting object stores inside databases may only occur on database version update. That would
+ * require extra handling of the versioning system. Currently version = 1 is always assumed.
+ */
+export async function deleteCache()
+{
+  // If individual database deletion is needed:
+
+  // const deleteRequest = indexedDB.deleteDatabase(name);
+  // request.onerror = function(event) {
+  //   console.log("Error deleting database", name);
+  // };
+
+  // request.onsuccess = function(event) {
+  //   console.log(name, "database deleted successfully.");
+  // };
+
+  // NOTE: unsure whether this works in all browsers
+  // https://gist.github.com/rmehner/b9a41d9f659c9b1c3340
+  const dbs = await indexedDB.databases()
+  dbs.forEach(db => { indexedDB.deleteDatabase(db.name) })
+  console.log("Cache deleted.");
+}

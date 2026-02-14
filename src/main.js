@@ -12,6 +12,7 @@ import { create2DTexture, createVolumeTexture } from './webgl/texture.js';
 import { createVolumeGeometry, createLoadingScreenGeometry, createSphereGeometry } from './webgl/geometry.js';
 import { updateCamera, initCamera } from './webgl/camera.js';
 import loadImage from './file/image.js';
+import { deleteCache } from './file/cache.js';
 
 /* GLOBAL VARIABLES */
 
@@ -208,6 +209,9 @@ function updateApp()
 
   // if (UI.appControls.reloadDicom)
     // use loadDicom(folder, useCache = false); 
+
+  if (UI.appControls.deleteCache)
+    deleteCache();
 }
 
 /**

@@ -301,6 +301,7 @@ export function initAppControls()
   return {
     reloadShaders: false,
     reloadDicom: false,
+    deleteCache: false,
   };
 }
 
@@ -316,6 +317,8 @@ export function controlApp(keyboard, appControls)
     appControls.reloadShaders = true;
   if (keyboard.up.has("T"))
     appControls.reloadDicom = true;
+  if (keyboard.up.has("c"))
+    appControls.deleteCache = true;
 }
 
 /**
