@@ -9,107 +9,18 @@ import { vec2, vec3, vec4 } from 'gl-matrix';
 /* ---------------------------------------------------------------------------------- */
 
 /**
- * Helper function, creates a GPU-compatible representation of the transfer function interval.
- * @param {*} medium transfer function medium object
- * @returns vec2 object containing the given interval
- */
-function initIntervalVec(medium)
-{
-  return vec2.fromValues(medium.interval.min, medium.interval.max);
-}
-
-/**
- * Helper function, creates a GPU-compatible representation of the transfer function color.
- * @param {*} medium transfer function medium object, must contain attribute `color`
- * @returns vec4 object containing the given color
- */
-function initColorVec(medium)
-{
-  return vec4.fromValues(medium.color.r, medium.color.g, medium.color.b, medium.color.a);
-}
-
-/**
- * Helper function, creates a GPU-compatible representation of a three element vector.
- * @param {*} v object containing x,y,z properties
- * @returns vec3 object containing the given values
- */
-function initVec3(v)
-{
-  return vec3.fromValues(v.x, v.y, v.z);
-}
-
-/**
- * Creates the `transferFunction` attribute for the GUI object. Creates duplicates of vector values
- * in a GPU-compatible format so that they can be sent directly to the GPU as uniforms.
- * @param {*} tf object that defines the transfer function
- * @returns object used by the GUI library
- */
-function initTransferFunctionProperties(tf)
-{
-  let transferFunction = {};
-
-  for (const key in tf)
-  {
-    const medium = tf[key];
-
-    transferFunction[key] = {};
-    transferFunction[key].enabled = medium.enabled;
-    transferFunction[key].interval = medium.interval;
-    transferFunction[key].color = medium.color;
-    transferFunction[key].intervalVec = initIntervalVec(medium);
-    transferFunction[key].colorVec = initColorVec(medium);
-  }
-
-  return transferFunction;
-}
-
-/**
- * Creates the `lights` attribute for the GUI object. Creates duplicates of vector values
- * in a GPU-compatible format so that they can be sent directly to the GPU as uniforms.
- * @param {*} lights object that defines lights in a scene
- * @returns object used by the GUI library
- */
-function initLightsProperties(lights)
-{
-  let lightsProperties = {};
-
-  for (const key in lights)
-  {
-    const light = lights[key];
-
-    lightsProperties[key] = {};
-    lightsProperties[key].position = light.position;
-    lightsProperties[key].positionVec = initVec3(light.position);
-    lightsProperties[key].intensity = light.intensity;
-  }
-
-  return lightsProperties;
-}
-
-/**
  * Creates an object that stores GUI related data.
- * @param {*} tf object that defines the transfer function
- * @param {*} l object that defines lights in a scene
+ * @param {*} appData object with application data
  * @returns mediator object between GUI and the rest of the application
  */
-export function initGUIData(tf, l)
+export function initGUIData(appData)
 {
   let GUIData = {
     framesPerSecond: 0,
-    mode: 0,
-    // Ray Tracing
-    defaultStepSize: 0.0025,
-    stepSize: 0.0025,
-    shadingModel: 0,
-    // Lights
-    lights: initLightsProperties(l),
-    // Shading Model
-    roughness: 0.1,
-    subsurface: 0.0,
-    sheen: 0.0,
-    sheenTint: 0.0,
-    // Transfer Function
-    transferFunction: initTransferFunctionProperties(tf),
+    // App Data
+    settings: appData.settings,
+    lights: appData.environment.lights,
+    transferFunction: appData.transferFunction,
   };
 
   return GUIData;
@@ -203,16 +114,17 @@ export function initDebugGUI(GUIData)
         max: 200
     });
 
-  pane.addBinding(GUIData, "mode", {
+  pane.addBinding(GUIData.settings.uniforms.general, "u_mode", {
     options: {
       main: 0,
       debugShader: 1,
     }
   });
 
-  pane.addBinding(GUIData, "stepSize", {min: 0.0001, max: 0.01, step: 0.0001});
-  pane.addBinding(GUIData, "defaultStepSize", {min: 0.0001, max: 0.01, step: 0.0001});
-  pane.addBinding(GUIData, "shadingModel", { 
+  // Ray Tracing
+  pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_step_size", {min: 0.0001, max: 0.01, step: 0.0001});
+  pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_default_step_size", {min: 0.0001, max: 0.01, step: 0.0001});
+  pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_shading_model", { 
     options: {
       Disney: 0,
       Lambert: 1,
@@ -223,10 +135,11 @@ export function initDebugGUI(GUIData)
 
   addLightsBindings(pane, GUIData);
 
-  pane.addBinding(GUIData, "roughness", { min: 0, max: 1 });
-  pane.addBinding(GUIData, "subsurface", { min: 0, max: 1 });
-  pane.addBinding(GUIData, "sheen", { min: 0, max: 1 });
-  pane.addBinding(GUIData, "sheenTint", { min: 0, max: 1 });
+  // Shading Model
+  pane.addBinding(GUIData.settings.uniforms.shadingModel, "u_roughness", { min: 0, max: 1 });
+  pane.addBinding(GUIData.settings.uniforms.shadingModel, "u_subsurface", { min: 0, max: 1 });
+  pane.addBinding(GUIData.settings.uniforms.shadingModel, "u_sheen", { min: 0, max: 1 });
+  pane.addBinding(GUIData.settings.uniforms.shadingModel, "u_sheen_tint", { min: 0, max: 1 });
 
   addTransferFunctionBindings(pane, GUIData);
 

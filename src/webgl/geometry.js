@@ -60,10 +60,10 @@ export function createLoadingScreenGeometry(gl, shaderProgramInfo, shaderFileNam
  * @param {*} shaderFileNames contains file names of associated shaders for reload purposes
  * @param {*} volumeTexture volume data 3D texture
  * @param {*} dimensions dimensions of provided volume texture
- * @param {*} GUIData mediator object between GUI and the rest of the application
+ * @param {*} appData object with application data - settings, environment, etc.
  * @returns geometry object of the volume for individual slice rendering
  */
-export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimensions, GUIData)
+export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimensions, appData)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
@@ -74,7 +74,7 @@ export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimens
     programInfo: shaderProgramInfo, 
     uniforms: {
       u_volume_texture: volumeTexture,
-      u_slice_number: GUIData.slice,
+      u_slice_number: appData.settings.slice,
       u_slice_count: dimensions.depth,
     }
   };
@@ -82,19 +82,19 @@ export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimens
 
 /**
  * Creates a transfer function object that can be mapped by twgl.js to a Uniform Block on the GPU.
- * @param {*} GUIData mediator object between GUI and the rest of the application
+ * @param {*} appData object with application data - settings, environment, etc.
  * @returns transfer function object with the same exact structure as defined in the shader
  */
-function getTransferFunctionfromGUIData(GUIData)
+function getTransferFunctionfromAppData(appData)
 {
   let tf = { 
     media_array: [],
     media_array_size: 0
   };
 
-  for (const key in GUIData.transferFunction)
+  for (const key in appData.transferFunction)
   {
-    const medium = GUIData.transferFunction[key];
+    const medium = appData.transferFunction[key];
 
     if (!medium.enabled)
       continue;
@@ -117,11 +117,11 @@ function getTransferFunctionfromGUIData(GUIData)
  * @param {*} shaderFileNames contains file names of associated shaders for reload purposes
  * @param {*} volumeTexture volume data 3D texture
  * @param {*} dimensions dimensions of provided volume texture
- * @param {*} GUIData mediator object between GUI and the rest of the application
+ * @param {*} appData object with application data - settings, environment, etc.
  * @param {*} camera object with camera-related uniforms
  * @returns geometry object of the volume for 3D volume rendering
  */
-export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, volumeTexture, dimensions, GUIData)
+export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, volumeTexture, dimensions, appData)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
@@ -142,7 +142,7 @@ export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, vol
     // Transfer Function
     uniformBlock: {
       info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "TransferFunction"),
-      uniforms: getTransferFunctionfromGUIData(GUIData),
+      uniforms: getTransferFunctionfromAppData(appData),
     },
   };
 }
@@ -151,9 +151,11 @@ export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, vol
  * Creates a simple debug sphere.
  * @param {*} gl WebGL rendering context
  * @param {*} shaderProgramInfo associated shader program
+ * @param {*} shaderFileNames contains file names of associated shaders for reload purposes
+ * @param {*} appData object with application data - settings, environment, etc.
  * @returns geometry object of the sphere
  */
-export function createSphereGeometry(gl, shaderProgramInfo, shaderFileNames, GUIData)
+export function createSphereGeometry(gl, shaderProgramInfo, shaderFileNames, appData)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
@@ -166,7 +168,7 @@ export function createSphereGeometry(gl, shaderProgramInfo, shaderFileNames, GUI
     // Transfer Function
     uniformBlock: {
       info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "TransferFunction"),
-      uniforms: getTransferFunctionfromGUIData(GUIData),
+      uniforms: getTransferFunctionfromAppData(appData),
     },
   };
 }

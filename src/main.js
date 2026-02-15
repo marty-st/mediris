@@ -1,6 +1,5 @@
 'use strict'
 
-import * as twgl from 'twgl.js';
 import loadDicom from './file/dicom.js';
 import { initDebugGUI, initGUIData } from './ui/gui.js';
 import { initUI, control, resetControls } from './ui/manager.js';
@@ -10,9 +9,10 @@ import { createSceneEmpty, createSceneRaycast } from './webgl/scene.js';
 import render from './webgl/render.js';
 import { create2DTexture, createVolumeTexture } from './webgl/texture.js';
 import { createVolumeGeometry, createLoadingScreenGeometry } from './webgl/geometry.js';
-import { updateCamera, initCamera } from './webgl/camera.js';
+import { initCamera } from './webgl/camera.js';
 import loadImage from './file/image.js';
-import { deleteCache } from './file/cache.js';
+import { initAppData } from './app/data.js';
+import { updateApp } from './app/manager.js';
 
 /* GLOBAL VARIABLES */
 
@@ -62,21 +62,54 @@ const lights = {
     },
 };
 
+// Application time keeping
+const time = {
+  current: 0,
+  previous: 0,
+  delta: 0,
+};
+
+// Application environment data
+const environment = {
+  time: time,
+  camera: undefined,
+  viewport: undefined,    // Viewport position and dimensions
+  scene: undefined,       // Current scene object
+  lights: lights 
+};
+
+// Application settings
+const settings = {
+  uniforms: {
+    general: {
+      u_mode: 0,
+    },
+    rayTracing: {
+      u_default_step_size: 0.0025,
+      u_step_size: 0.0025,
+      u_shading_model: 0,
+    },
+    shadingModel: {
+      u_roughness: 0.1,
+      u_subsurface: 0.0,
+      u_sheen: 0.0,
+      u_sheen_tint: 0.0,
+    },
+  },
+}
+
 /** @type {HTMLCanvasElement} */    // for VSCode to know that canvas is an HTML Canvas Element
 let canvas = undefined;             // HTML <canvas> element 
 let gl = undefined;                 // WebGL rendering context element
 let pane = undefined;               // Tweakpane rendering window
-let scene = undefined;              // Current scene object
-let viewportMain = undefined;       // main viewport position and dimensions
-let camera = undefined;
+
+// Application data
+const appData = initAppData(settings, environment, tf);
 
 // Mediator object between Tweakpane and the rest of the application
 let GUIData = undefined;
 // Wrapper object for the UI controls & GUI, managed by the UI manager
 let UI = undefined;
-
-// Elapsed time helper variable
-let previousTime = 0;
 
 // Shader program file names
 const loadingScreenShaderNames = {vert: "fsquad", frag: "fstexture"};
@@ -107,7 +140,7 @@ window.onload = async function init()
   /* UI INITIALIZATION --- */
   /* --------------------- */
 
-  GUIData = initGUIData(tf, lights);
+  GUIData = initGUIData(appData);
   pane = initDebugGUI(GUIData);
   UI = initUI(canvas, GUIData);
 
@@ -124,18 +157,18 @@ window.onload = async function init()
   /* DATA INITIALIZATION - */
   /* --------------------- */
 
-  viewportMain = {
+  appData.environment.viewport = {
     leftX: 0,
     bottomY: 0,
     width: canvas.width,
     height: canvas.height,
   };
 
-  camera = initCamera(viewportMain);
+  appData.environment.camera = initCamera(appData.environment.viewport);
 
   const sceneEmpty = createSceneEmpty();
-  const sceneRaycast = createSceneRaycast(gl, volumeProgramInfo, camera, GUIData);
-  scene = sceneRaycast;
+  const sceneRaycast = createSceneRaycast(gl, volumeProgramInfo, appData.settings.uniforms, appData.environment);
+  appData.environment.scene = sceneRaycast;
 
   loadingScreenImagePromise.then((loadingScreenImage) =>{
     const loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
@@ -145,7 +178,7 @@ window.onload = async function init()
     /* RENDER LOAD SCREEN -- */
     /* --------------------- */
 
-    render(gl, canvas, viewportMain, sceneEmpty, loadingScreenGeometry);
+    render(gl, canvas, appData.environment.viewport, sceneEmpty, loadingScreenGeometry);
   })
 
   // Asynchronously load DICOM to display later
@@ -157,7 +190,7 @@ window.onload = async function init()
 
     const volumeTexture = createVolumeTexture(gl, volume, dimensions);
 
-    scene.geometries.push(createVolumeGeometry(gl, volumeProgramInfo, mainShaderNames, volumeTexture, dimensions, GUIData));
+    appData.environment.scene.geometries.push(createVolumeGeometry(gl, volumeProgramInfo, mainShaderNames, volumeTexture, dimensions, appData));
 
     /* --------------------- */
     /* RENDER LOOP --------- */
@@ -169,86 +202,27 @@ window.onload = async function init()
 }
 
 /**
- * Reloads the shader programs by re-fetching their appropriate text files. Used for application development.
- */
-async function reloadShaders()
-{
-  for (const geometry of scene.geometries)
-  {
-    const shader = geometry.shaderFileNames;
-  
-    geometry.programInfo = await createShaderProgram(gl, shader.vert, shader.frag, false);
-  
-    if (geometry.uniformBlock)
-    {
-      const blockName = geometry.uniformBlock.info.name;
-      geometry.uniformBlock.info = twgl.createUniformBlockInfo(gl, geometry.programInfo, blockName);
-    }
-  }
-  
-  // Uniforms and UBOs are shared by all geometries in a scene, hence only needs to be set once
-  if (scene.geometries?.length > 0 && scene.uniformBlock)
-  {
-    const blockName = scene.uniformBlock.info.name;
-    scene.uniformBlock.info = twgl.createUniformBlockInfo(gl, scene.geometries[0].programInfo, blockName);
-  }
-
-  console.log("Reloaded shaders");
-}
-
-/**
- * Updates the application environment based on user input.
- */
-function updateApp()
-{
-  if (UI.appControls.reloadShaders)
-    reloadShaders();
-
-  // if (UI.appControls.reloadDicom)
-    // use loadDicom(folder, useCache = false); 
-
-  if (UI.appControls.deleteCache)
-    deleteCache();
-}
-
-/**
  * Updates variables and object states fpr each frame throughout the render loop.
  * @param currentTime current application time in ms
  */
 function update(currentTime)
 {
-  const timeDelta = 0.001 * (currentTime - previousTime);
+  const time = appData.environment.time;
+  time.current = currentTime;
+  time.delta = 0.001 * (time.current - time.previous);
 
   // FPS Counter
-  GUIData.framesPerSecond = timeDelta > 0.0 ? 1.0 / timeDelta : 0.0;
-
-  // Shading model GUI updates
-  scene.uniforms.u_mode = GUIData.mode;
-  scene.uniforms.u_step_size = GUIData.stepSize;
-  scene.uniforms.u_default_step_size = GUIData.defaultStepSize;
-  scene.uniforms.u_shading_model = GUIData.shadingModel;
-  scene.uniforms.u_roughness = GUIData.roughness;
-  scene.uniforms.u_subsurface = GUIData.subsurface;
-  scene.uniforms.u_sheen = GUIData.sheen;
-  scene.uniforms.u_sheen_tint = GUIData.sheenTint;
-
-  // Light properties GUI updates
-  let i = 0;
-  for (const key in GUIData.lights)
-  {
-    scene.uniformBlock.uniforms.lights_array[i].intensity = GUIData.lights[key].intensity;
-    ++i;
-  }
+  GUIData.framesPerSecond = time.delta > 0.0 ? 1.0 / time.delta : 0.0;
   
   // User controls
   control(UI);
 
-  updateCamera(camera, UI.cameraControls, viewportMain, timeDelta);
-  updateApp();
+  // State updates
+  updateApp(appData, UI);
 
   resetControls(UI);
 
-  previousTime = currentTime;
+  time.previous = time.current;
 }
 
 /**
@@ -260,7 +234,7 @@ function renderLoop(currentTime)
 {
   update(currentTime);
 
-  render(gl, canvas, viewportMain, scene, scene.geometries);
+  render(gl, canvas, appData.environment.viewport, appData.environment.scene, appData.environment.scene.geometries);
 
   requestAnimationFrame(renderLoop);
 }
