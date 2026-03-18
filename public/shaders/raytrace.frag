@@ -59,6 +59,7 @@ const int DISNEY = 0;
 const int LAMBERT = 1;
 const int NORMAL = 2;
 const int POSITION = 3;
+const int CUBEMAP = 4;
 
 /* ----------INPUT---------- */
 /* ------------------------- */
@@ -68,6 +69,8 @@ in VaryingData var;
 /* ------------------------- */
 // Render mode
 uniform int u_mode;
+// Cube Map texture
+uniform samplerCube u_cube_map_texture;
 // Volume data texture
 uniform sampler3D u_volume_texture;
 // Bounding box lower left corner
@@ -297,6 +300,9 @@ vec3 shade_diffuse(vec4 medium_color, vec3 sample_point, vec3 normal)
 			break;
 		case POSITION:
 			diffuse_color = sample_point;
+			break;
+		case CUBEMAP:
+			diffuse_color = vec3(texture(u_cube_map_texture, normal));
 			break;
 	}
 

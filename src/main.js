@@ -7,10 +7,10 @@ import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from '
 import createShaderProgram from './webgl/program.js';
 import { createSceneEmpty, createSceneRaycast } from './webgl/scene.js';
 import render from './webgl/render.js';
-import { create2DTexture, createVolumeTexture } from './webgl/texture.js';
+import { create2DTexture, createCubeMapTexture, createVolumeTexture } from './webgl/texture.js';
 import { createVolumeGeometry, createLoadingScreenGeometry } from './webgl/geometry.js';
 import { initCamera } from './webgl/camera.js';
-import loadImage from './file/image.js';
+import { loadImage, loadImagesCubeMap } from './file/image.js';
 import { initAppData } from './app/data.js';
 import { updateApp } from './app/manager.js';
 
@@ -82,12 +82,12 @@ const environment = {
 const settings = {
   uniforms: {
     general: {
-      u_mode: 0,
+      u_mode: 1, // 0 = Volume Data, 1 = Debug Sphere
     },
     rayTracing: {
       u_default_step_size: 0.0025,
       u_step_size: 0.0025,
-      u_shading_model: 0,
+      u_shading_model: 4, // 0 = Disney, 1 = Lambert, 2 = normal, 3 = position, 4 = cubemap
     },
     shadingModel: {
       u_roughness: 0.1,
@@ -120,6 +120,7 @@ const mainShaderNames = {vert: "fsquad", frag: "raytrace"};
 const imageDataPromise = loadDicom('CT WB w-contrast 5.0 B30s', true);
 // Load images for texture use
 const loadingScreenImagePromise = loadImage('loading.png');
+const cubeMapImagesPromise = loadImagesCubeMap("frozendusk", "jpg");
 
 /**/
 
@@ -157,6 +158,8 @@ window.onload = async function init()
   /* DATA INITIALIZATION - */
   /* --------------------- */
 
+  appData.context = {canvas, gl, pane};
+
   appData.environment.viewport = {
     leftX: 0,
     bottomY: 0,
@@ -179,18 +182,22 @@ window.onload = async function init()
     /* --------------------- */
 
     render(gl, canvas, appData.environment.viewport, sceneEmpty, loadingScreenGeometry);
-  })
+  });
+
+  let cubeMapTexture;
+  cubeMapImagesPromise.then((cubeMapImages) => {
+    cubeMapTexture = createCubeMapTexture(gl, cubeMapImages, { width: 512, height: 512 });
+  });
 
   // Asynchronously load DICOM to display later
   imageDataPromise.then((imageData) => {
 
-    console.log("DICOM:", imageData);
     const dimensions = imageData.dimensions;
     const volume = imageData.volume;
 
     const volumeTexture = createVolumeTexture(gl, volume, dimensions);
 
-    appData.environment.scene.geometries.push(createVolumeGeometry(gl, volumeProgramInfo, mainShaderNames, volumeTexture, dimensions, appData));
+    appData.environment.scene.geometries.push(createVolumeGeometry(gl, volumeProgramInfo, mainShaderNames, volumeTexture, cubeMapTexture, dimensions, appData));
 
     /* --------------------- */
     /* RENDER LOOP --------- */
@@ -198,7 +205,7 @@ window.onload = async function init()
     
     // start render loop with the volume geometry loaded
     this.requestAnimationFrame(renderLoop);
-  })
+  });
 }
 
 /**

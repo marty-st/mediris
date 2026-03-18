@@ -130,6 +130,7 @@ export function initDebugGUI(GUIData)
       Lambert: 1,
       normal: 2,
       position: 3,
+      cubemap: 4,
     } 
   });
 
