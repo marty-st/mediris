@@ -103,6 +103,7 @@ function initEnvironmentProperties(environment)
 export function initAppData(settings, environment, transferFunction)
 {
   return {
+    context: null,
     settings: settings,
     environment: initEnvironmentProperties(environment),
     transferFunction: initTransferFunctionProperties(transferFunction),

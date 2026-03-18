@@ -1,12 +1,15 @@
 'use strict'
 
+import createShaderProgram from './program';
+
 import * as twgl from 'twgl.js';
 
 /**
  * Reloads the shader programs by re-fetching their appropriate text files. Used for application development.
+ *  @param {*} gl WebGL rendering context
  *  @param {*} scene object with scene data - uniforms, geometries, shader file names
  */
-export async function reloadShaders(scene)
+export async function reloadShaders(gl, scene)
 {
   for (const geometry of scene.geometries)
   {

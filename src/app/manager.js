@@ -13,7 +13,7 @@ import { updateSceneFloatUniforms, updateSceneLights } from '../webgl/scene.js';
 function updateAppFromUI(appData, UI)
 {
   if (UI.appControls.reloadShaders)
-    reloadShaders(appData.environment.scene);
+    reloadShaders(appData.context.gl, appData.environment.scene);
 
   // if (UI.appControls.reloadDicom)
     // use loadDicom(folder, useCache = false); 
