@@ -88,6 +88,55 @@ export function createVolumeTexture(gl, volume, dimensions)
     // );
 
     gl.bindTexture(gl.TEXTURE_3D, null);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4); // reset to default value
 
     return volumeTexture;
+}
+
+/**
+ * 
+ * @param {*} gl WebGL rendering context
+ * @param {*} images array of six images, one for each cube side
+ * @param {*} dimensions dimensions of a single image
+ */
+export function createCubeMapTexture(gl, images, dimensions)
+{
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+
+  const faces = [
+    gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+    gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+    gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+    gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+    gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+    gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+  ];
+
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+
+  for (let i = 0 ; i < faces.length; ++i)
+  {
+    gl.texImage2D(
+      faces[i], 
+      0,
+      gl.RGBA,
+      dimensions.width,
+      dimensions.height,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      images[i]
+    );
+  }
+
+  gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+
+  return texture;
 }
