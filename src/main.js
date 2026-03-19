@@ -90,10 +90,18 @@ const settings = {
       u_shading_model: 4, // 0 = Disney, 1 = Lambert, 2 = normal, 3 = position, 4 = cubemap
     },
     shadingModel: {
-      u_roughness: 0.1,
+      // diffuse model
+      u_roughness: 0.5,
       u_subsurface: 0.0,
       u_sheen: 0.0,
-      u_sheen_tint: 0.0,
+      u_sheen_tint: 0.5,
+      // specular model
+      u_specular: 0.5,
+      u_specular_tint: 0.0,
+      u_anisotropic: 0.0,
+      u_metallic: 0.0,
+      u_clearcoat: 0.0,
+      u_clearcoat_gloss: 1.0,
     },
   },
 }
@@ -122,6 +130,7 @@ const imageDataPromise = loadDicom('CT WB w-contrast 5.0 B30s', true);
 const loadingScreenImagePromise = loadImage('loading.png');
 const cubeMapImagesPromise = loadImagesCubeMap("frozendusk", "jpg");
 const lightMapImagesPromise = loadImagesCubeMap("greyscalegorilla_abstract26", "png");
+const materialImagePromise = loadImage('Stylized_Water_001_basecolor.png');
 
 /**/
 
@@ -195,6 +204,11 @@ window.onload = async function init()
     areaLightTexture = createCubeMapTexture(gl, areaLightImages, { width: 1024, height: 1024 });
   });
 
+  let materialTexture;
+  materialImagePromise.then((materialImage) => {
+    materialTexture = create2DTexture(gl, materialImage, { width: 4096, height: 4096 });
+  });
+
   // Asynchronously load DICOM to display later
   imageDataPromise.then((imageData) => {
 
@@ -203,7 +217,7 @@ window.onload = async function init()
 
     const volumeTexture = createVolumeTexture(gl, volume, dimensions);
 
-    appData.environment.scene.geometries.push(createVolumeGeometry(gl, volumeProgramInfo, mainShaderNames, volumeTexture, areaLightTexture, dimensions, appData));
+    appData.environment.scene.geometries.push(createVolumeGeometry(gl, volumeProgramInfo, mainShaderNames, volumeTexture, materialTexture, cubeMapTexture, dimensions, appData));
 
     /* --------------------- */
     /* RENDER LOOP --------- */

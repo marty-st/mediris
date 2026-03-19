@@ -137,10 +137,10 @@ export function initDebugGUI(GUIData)
   addLightsBindings(pane, GUIData);
 
   // Shading Model
-  pane.addBinding(GUIData.settings.uniforms.shadingModel, "u_roughness", { min: 0, max: 1 });
-  pane.addBinding(GUIData.settings.uniforms.shadingModel, "u_subsurface", { min: 0, max: 1 });
-  pane.addBinding(GUIData.settings.uniforms.shadingModel, "u_sheen", { min: 0, max: 1 });
-  pane.addBinding(GUIData.settings.uniforms.shadingModel, "u_sheen_tint", { min: 0, max: 1 });
+  for (const key in GUIData.settings.uniforms.shadingModel)
+  {
+    pane.addBinding(GUIData.settings.uniforms.shadingModel, key, { min: 0, max: 1 });
+  }
 
   addTransferFunctionBindings(pane, GUIData);
 

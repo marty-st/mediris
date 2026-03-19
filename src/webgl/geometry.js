@@ -122,7 +122,7 @@ function getTransferFunctionfromAppData(appData)
  * @param {*} camera object with camera-related uniforms
  * @returns geometry object of the volume for 3D volume rendering
  */
-export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, volumeTexture, cubeMapTexture, dimensions, appData)
+export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, volumeTexture, materialTexture, cubeMapTexture, dimensions, appData)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
@@ -135,6 +135,7 @@ export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, vol
     programInfo: shaderProgramInfo, 
     shaderFileNames: shaderFileNames,
     uniforms: {
+      u_material_texture: materialTexture,
       u_cube_map_texture: cubeMapTexture,
       // Volume Data
       u_volume_texture: volumeTexture,

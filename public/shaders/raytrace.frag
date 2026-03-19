@@ -69,6 +69,8 @@ in VaryingData var;
 /* ------------------------- */
 // Render mode
 uniform int u_mode;
+// Material texture
+uniform sampler2D u_material_texture;
 // Cube Map texture
 uniform samplerCube u_cube_map_texture;
 // Volume data texture
@@ -91,6 +93,12 @@ uniform float u_roughness;
 uniform float u_subsurface;
 uniform float u_sheen;
 uniform float u_sheen_tint;
+uniform float u_specular;
+uniform float u_specular_tint;
+uniform float u_anisotropic;
+uniform float u_metallic;
+uniform float u_clearcoat;
+uniform float u_clearcoat_gloss;
 // Transfer Function
 uniform TransferFunction
 {
@@ -205,12 +213,56 @@ vec3 compute_gradient(vec3 sample_point, float delta)
 	return -vec3(x_pos - x_neg, y_pos - y_neg, z_pos - z_neg) / (2.0 * delta);
 }
 
+float sqr(float x) 
+{ 
+	return x * x; 
+}
+
 float fresnel_schlick(float value)
 {
 	// equivalent to pow(1 - value, 5.0) with less multiplication instructions
 	float clamped = clamp(1.0 - value, 0.0, 1.0);
 	float value2 = clamped * clamped;
 	return value2 * value2 * value; 
+}
+
+float GTR1(float NdotH, float a)
+{
+	if (a >= 1.0) 
+		return 1.0 / PI;
+
+	float a2 = a*a;
+	float t = 1.0 + (a2 - 1.0) * NdotH * NdotH;
+	return (a2 - 1.0) / (PI * log(a2) * t);
+}
+
+float GTR2(float NdotH, float a)
+{
+	float a2 = a * a;
+	float t = 1.0 + (a2 - 1.0) * NdotH * NdotH;
+	return a2 / (PI * t * t);
+}
+
+float smithG_GGX(float NdotV, float alphaG)
+{
+    float a = alphaG * alphaG;
+    float b = NdotV * NdotV;
+    return 1.0 / (NdotV + sqrt(a + b - a * b));
+}
+
+float GTR2_aniso(float NdotH, float HdotX, float HdotY, float ax, float ay)
+{
+    return 1.0 / (PI * ax * ay * sqr( sqr(HdotX / ax) + sqr(HdotY / ay) + NdotH * NdotH));
+}
+
+float smithG_GGX_aniso(float NdotV, float VdotX, float VdotY, float ax, float ay)
+{
+    return 1.0 / (NdotV + sqrt( sqr(VdotX * ax) + sqr(VdotY * ay) + sqr(NdotV) ));
+}
+
+vec3 mon2lin(vec3 color)
+{
+    return vec3(pow(color[0], 2.2), pow(color[1], 2.2), pow(color[2], 2.2));
 }
 
 vec3 lambert_diffuse(vec4 medium_color, vec3 N, Light light)
@@ -266,6 +318,9 @@ vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
 	// NOTE: sheen seems to behave oddly. Perhaps because of the transparency of the rendered data (color accumulates under the surface)
 	// The resulting image gets brighter as a whole as sheen and sheen tint values increase 
 
+	// medium_color.rgb = 3.0 * mon2lin(medium_color.rgb);
+	// medium_color = texture(u_material_texture, abs(N.xy));
+
 	float luminescence = 0.3 * medium_color.r + 0.6 * medium_color.g  + 0.1 * medium_color.b; // approximation
 	vec3 tint_comp = luminescence > 0.0 ? medium_color.rgb / luminescence : vec3(1.0);
 	vec3 sheen_comp = mix(vec3(1.0), tint_comp, u_sheen_tint);
@@ -274,7 +329,31 @@ vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
 	vec3 sheen_color = FH * u_sheen * sheen_comp;
 
 	vec3 diffuse = medium_color.rgb * (1.0 / PI) * mix(base_diffuse, subsurface_diffuse, u_subsurface) + sheen_color;
-	return light.intensity * diffuse * NdotL;
+
+	float NdotH = dot(N,H);
+	// surface tangent and bitanget for anisotropy:
+	// TODO: use different vector when N is equal to the up/down vector
+	vec3 X = normalize(cross(N, vec3(0.0, 1.0, 0.0)));
+	vec3 Y = normalize(cross(N, X));
+	vec3 specular0_comp = mix(u_specular * 0.08 * mix(vec3(1.0), tint_comp, u_specular_tint), medium_color.rgb, u_metallic);
+	// specular
+	float aspect = sqrt(1.0 - u_anisotropic * 0.9);
+	float ax = max(0.001, sqr(u_roughness) / aspect);
+	float ay = max(0.001, sqr(u_roughness) * aspect);
+	float Ds = GTR2_aniso(NdotH, dot(H, X), dot(H, Y), ax, ay);
+	// float FH = fresnel_schlick(LdotH);
+	vec3 Fs = mix(specular0_comp, vec3(1.0), FH);
+	float Gs;
+	Gs  = smithG_GGX_aniso(NdotL, dot(L, X), dot(L, Y), ax, ay);
+	Gs *= smithG_GGX_aniso(NdotV, dot(V, X), dot(V, Y), ax, ay);
+
+	// clearcoat (ior = 1.5 -> F0 = 0.04)
+	float Dr = GTR1(NdotH, mix(0.1, 0.001, u_clearcoat_gloss));
+	float Fr = mix(0.04, 1.0, FH);
+	float Gr = smithG_GGX(NdotL, 0.25) * smithG_GGX(NdotV, 0.25);
+
+	// TODO: environment mapping
+	return light.intensity * NdotL * (diffuse * (1.0 - u_metallic) + Gs * Fs * Ds + 0.25 * u_clearcoat * Gr * Fr * Dr);
 }
 
 vec3 shade_diffuse(vec4 medium_color, vec3 sample_point, vec3 normal)
