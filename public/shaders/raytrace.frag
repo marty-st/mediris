@@ -245,6 +245,8 @@ vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
 		return vec3(0.0);
 	}
 
+	NdotV = clamp(NdotV, 0.0, 1.0);
+
 	float FD90 = 0.5 + 2.0 * u_roughness * LdotH * LdotH;
 	// NOTE: ? This is the rewritten formula from the Disney 2012 paper, however not equivalent to the code below, possibly for cases
 	// where dot product is < 0 -> needs to be clamped?
