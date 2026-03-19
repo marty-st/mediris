@@ -273,8 +273,8 @@ vec3 disney_diffuse(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
 	float FH = fresnel_schlick(LdotH);
 	vec3 sheen_color = FH * u_sheen * sheen_comp;
 
-	vec3 diffuse = (1.0 / (PI)) * mix(base_diffuse, subsurface_diffuse, u_subsurface) + sheen_color;
-	return light.intensity * medium_color.rgb * diffuse * NdotL;
+	vec3 diffuse = medium_color.rgb * (1.0 / PI) * mix(base_diffuse, subsurface_diffuse, u_subsurface) + sheen_color;
+	return light.intensity * diffuse * NdotL;
 }
 
 vec3 shade_diffuse(vec4 medium_color, vec3 sample_point, vec3 normal)
