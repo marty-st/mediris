@@ -30,7 +30,7 @@ const hu = {
   muscle: { min: 35 + C, max: 55 + C },
   softTissueContrast: { min: 100 + C, max: 300 + C },
   boneCancellous: { min: 300 + C, max: 400 + C },
-  boneCortical: { min: 350 + C, max: 1900 + C },
+  boneCortical: { min: 350 + C, max: 1900 + C }, // USE min: -75 for skin layer
 
 };
 
@@ -121,6 +121,7 @@ const imageDataPromise = loadDicom('CT WB w-contrast 5.0 B30s', true);
 // Load images for texture use
 const loadingScreenImagePromise = loadImage('loading.png');
 const cubeMapImagesPromise = loadImagesCubeMap("frozendusk", "jpg");
+const lightMapImagesPromise = loadImagesCubeMap("greyscalegorilla_abstract26", "png");
 
 /**/
 
@@ -189,6 +190,11 @@ window.onload = async function init()
     cubeMapTexture = createCubeMapTexture(gl, cubeMapImages, { width: 512, height: 512 });
   });
 
+  let areaLightTexture;
+  lightMapImagesPromise.then((areaLightImages) => {
+    areaLightTexture = createCubeMapTexture(gl, areaLightImages, { width: 1024, height: 1024 });
+  });
+
   // Asynchronously load DICOM to display later
   imageDataPromise.then((imageData) => {
 
@@ -197,7 +203,7 @@ window.onload = async function init()
 
     const volumeTexture = createVolumeTexture(gl, volume, dimensions);
 
-    appData.environment.scene.geometries.push(createVolumeGeometry(gl, volumeProgramInfo, mainShaderNames, volumeTexture, cubeMapTexture, dimensions, appData));
+    appData.environment.scene.geometries.push(createVolumeGeometry(gl, volumeProgramInfo, mainShaderNames, volumeTexture, areaLightTexture, dimensions, appData));
 
     /* --------------------- */
     /* RENDER LOOP --------- */
