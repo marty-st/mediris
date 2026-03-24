@@ -123,7 +123,7 @@ export function initDebugGUI(GUIData)
 
   // Ray Tracing
   pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_step_size", {min: 0.0001, max: 0.01, step: 0.0001});
-  pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_default_step_size", {min: 0.0001, max: 0.01, step: 0.0001});
+  pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_default_step_size", {min: 0.0001, max: 0.1, step: 0.001});
   const modelBinding = pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_shading_model", { 
     options: {
       stylized: 0,
