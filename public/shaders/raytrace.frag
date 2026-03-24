@@ -426,67 +426,86 @@ vec3 shade_disney(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
 	return light.intensity * NdotL * (diffuse * (1.0 - u_metallic) + Gs * Fs * Ds + 0.25 * u_clearcoat * Gr * Fr * Dr);
 }
 
-// // inputs from varying, textures, or previous pass
-// vec3 l, n, v, t, b; float kappa;
-// // shading parameters
-// float alpha, tau, beta, gamma, lambda, mu, chi;
-// // beta(c) and gamma(f, c) are computed on CPU
-// vec3 color;
-
+// u: S^2 X S^2 X S^2 -> [0, PI]
 float u(vec3 sample_point, vec3 n, vec3 l, vec3 v)
 {
+	// Anisotropy of the specular highlight
 	vec3 help_vector = abs(n.y) > 0.99999999 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
 	vec3 t = normalize(cross(n, help_vector));
 	vec3 b = normalize(cross(n, t));
-	// TODO: compute curvature
-	float kappa = compute_curvature(sample_point);
-
 	vec3 h = normalize(l + v);
 	float eta = dot(l, v) * 0.5 + 0.5;
 	float S_l = u_lambda >= 0.0 
 		? 1.0 / (1.0 - u_lambda) * eta + (1.0 - eta)
 		: 1.0 / (1.0 / (1.0 + u_lambda) * eta + (1.0 - eta));
 
+		// Q: should tangent space t,b,n be used?
 		vec3 ht = dot(h, t) * t;
 		vec3 hb = dot(h, b) * b;
 		vec3 hn = dot(h, n) * n;
 
 		h = normalize(S_l * ht + 1.0 / S_l * hb + hn);
-
 		v = reflect(-l, h);
+
+		// Light response d_alpha
 		vec3 r = reflect(-v, n);
 		vec3 d = normalize((1.0 - u_alpha) * n + u_alpha * r);
 
-		float tau = u_tau + (u_mu * tanh(kappa * u_chi));
-		return clamp(acos(dot(d, l)) - tau, 0.0, PI);
+	// Curvature
+	float kappa = compute_curvature(sample_point);
+
+	// Offset tau based on local surface curvature
+	float tau = u_tau + (u_mu * tanh(kappa * u_chi));
+
+	// angular response u
+	return clamp(acos(dot(d, l)) - tau, 0.0, PI);
 }
 
-float I(float x)
+// I: [0, PI] -> [0, 1]
+float I(float u)
 {
-	return pow(max(u_beta + (1.0 - u_beta) * cos(x), 0.0), u_gamma);
+	return pow(max(u_beta + (1.0 - u_beta) * cos(u), 0.0), u_gamma);
 }
 
 vec4 shade_stylized(vec4 medium_color, vec3 sample_point, vec3 n, Light light)
 {
-	// parameters:
-	// n normal
-	// l light vector
-	// v view vector
-	// d_alpha - reference direction for light movement
-	// tau - user controlled [0, PI]
-	// r reflected view vector around the surface normal
-	// alpha - use controlled [0, 1] interpolated diffuse (0) and specular (1) shading
+	// description:
+	// n 				normal
+	// l 				light vector
+	// v 				view vector
+	// r 				reflected view vector around the surface normal
 
-	// u(n, l, v) = clamp(acos(d_alpha * l) - tau, 0, PI)
-	// d_alpha = ((1- alpha) * n + alpha * r) / length((1- alpha) * n + alpha * r)
+	// u(n,l,v)	[0, PI] angular parametrization, parameters: alpha, tau, lambda, mu, chi
+	// alpha 		[0, 1] user controlled, interpolated diffuse (0) and specular (1) shading
+	// tau 			[-PI or 0, PI] user controlled  extent of a shading primitive
+	// lambda		<-1, 1> user controlled anisotropy
+	// mu				<-INF, INF> magnitude of surface enhancement
+	// chi			<-INF, INF> slope of transition between concave (kappa < 0) and convec (kappa > 0) features
+	// d_alpha 	reference direction for light movement
+
+	// K(u)			[0, 1] color profile uses u as a parameter for a color ramp
+
+	// I(u)			[0, 1] intensity profile = alpha value, parameters: beta, gamma
+	// beta			[-0.5, 0.5] allows to extend primitive intensity toward the interval [0.5*PI, PI]
+	// gamma		<0, INF> intensity fall of rate
+
 	vec3 l = normalize(light.position);
 	vec3 v = normalize(u_eye_position - sample_point);
-	float NdotL = max(dot(n, l), 0.0);
 
+	float u = u(sample_point, n, l, v);
+	float I = I(u);
 	// TODO: use a color ramp
-	float contribution = I(u(sample_point, n, l, v));
-	return vec4(light.intensity * NdotL * medium_color.rgb * contribution, contribution);
+	// NOTE: possible to use color ramps for concave/convex transitions
+	// PI - u is a fake color ramp
+	// NOTE: use alpha = I for layering
+	return vec4(light.intensity * I * medium_color.rgb * (PI - u) / PI, 1.0);
+
+	// test curvature
 	// return vec4(vec3(compute_curvature(sample_point)), 1.0);
+	// test u()
+	// return vec4(vec3(u(sample_point, n, l, v)) / PI, 1.0);
+	// test I()
+	// return vec4(vec3(I), 1.0);
 }
 
 
@@ -497,7 +516,7 @@ vec4 shade(vec4 medium_color, vec3 sample_point, vec3 normal)
 	switch(u_shading_model)
 	{
 		case STYLIZED:
-			for (int l = 0; l < lights.lights_array_size; ++l)
+			for (int l = 0; l < 1; ++l)
 			{
 				color += shade_stylized(medium_color, sample_point, normal, lights.lights_array[l]);
 			}
@@ -509,7 +528,7 @@ vec4 shade(vec4 medium_color, vec3 sample_point, vec3 normal)
 			}
 			break;
 		case BLINN_PHONG:
-			for (int l = 0; l < lights.lights_array_size; ++l)
+			for (int l = 0; l < 1; ++l)
 			{
 				color += vec4(shade_blinn_phong(medium_color, sample_point, normal, lights.lights_array[l]), 1.0);
 			}

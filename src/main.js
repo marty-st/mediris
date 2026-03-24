@@ -30,7 +30,7 @@ const hu = {
   muscle: { min: 35 + C, max: 55 + C },
   softTissueContrast: { min: 100 + C, max: 300 + C },
   boneCancellous: { min: 300 + C, max: 400 + C },
-  boneCortical: { min: 350 + C, max: 1900 + C }, // USE min: -75 for skin layer
+  boneCortical: { min: -440 + C, max: 1900 + C }, // USE min: -440 for skin layer, 350 for the bone
 
 };
 
@@ -91,13 +91,13 @@ const settings = {
     },
     shadingModel: {
       stylized: {
-        u_alpha: 0.5,
-        u_tau: 0.2,
-        u_lambda: 0.3,
-        u_mu: 10,
-        u_chi: 100,
-        u_beta: 0.6,
-        u_gamma: 0.1,
+        u_alpha: 0.0,
+        u_tau: 0.3,
+        u_lambda: 0.0,
+        u_mu: 0.4,
+        u_chi: 10,
+        u_beta: 0,
+        u_gamma: 2,
       },
       disney: {
         // diffuse model
