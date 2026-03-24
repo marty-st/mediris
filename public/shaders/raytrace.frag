@@ -518,5 +518,12 @@ void main()
 
   vec4 color = trace(Ray(ray_origin, ray_direction));
 
+	// Tone Mapping
+	// color.rgb = color.rgb / (color.rgb + vec3(1.0));
+
+	// Gamma Correction
+	float gamma = 2.2;
+	color.rgb = pow(color.rgb, vec3(1.0 / gamma));
+
 	o_color = color;
 }
