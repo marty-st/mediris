@@ -87,21 +87,39 @@ const settings = {
     rayTracing: {
       u_default_step_size: 0.0025,
       u_step_size: 0.0025,
-      u_shading_model: 4, // 0 = Disney, 1 = Lambert, 2 = normal, 3 = position, 4 = cubemap
+      u_shading_model: 0, // 0 = Stylized, 1 = Disney, 2 = Blinn-Phong, 3 = Lambert, 4 = normal, 5 = position, 6 = cubemap
     },
     shadingModel: {
-      // diffuse model
-      u_roughness: 0.5,
-      u_subsurface: 0.0,
-      u_sheen: 0.0,
-      u_sheen_tint: 0.5,
-      // specular model
-      u_specular: 0.5,
-      u_specular_tint: 0.0,
-      u_anisotropic: 0.0,
-      u_metallic: 0.0,
-      u_clearcoat: 0.0,
-      u_clearcoat_gloss: 1.0,
+      stylized: {
+        u_alpha: 0.5,
+        u_tau: 0.2,
+        u_lambda: 0.3,
+        u_mu: 10,
+        u_chi: 100,
+        u_beta: 0.6,
+        u_gamma: 0.1,
+      },
+      disney: {
+        // diffuse model
+        u_roughness: 0.5,
+        u_subsurface: 0.0,
+        u_sheen: 0.0,
+        u_sheen_tint: 0.5,
+        // specular model
+        u_specular: 0.5,
+        u_specular_tint: 0.0,
+        u_anisotropic: 0.0,
+        u_metallic: 0.0,
+        u_clearcoat: 0.0,
+        u_clearcoat_gloss: 1.0,
+      },
+      blinnPhong: {
+        u_shininess: 100.0,
+      },
+      lambert: {},
+      normal: {},
+      position: {},
+      cubemap: {},
     },
   },
 }

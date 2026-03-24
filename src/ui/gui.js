@@ -124,23 +124,52 @@ export function initDebugGUI(GUIData)
   // Ray Tracing
   pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_step_size", {min: 0.0001, max: 0.01, step: 0.0001});
   pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_default_step_size", {min: 0.0001, max: 0.01, step: 0.0001});
-  pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_shading_model", { 
+  const modelBinding = pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_shading_model", { 
     options: {
-      Disney: 0,
-      Lambert: 1,
-      normal: 2,
-      position: 3,
-      cubemap: 4,
+      stylized: 0,
+      disney: 1,
+      blinnPhong: 2, 
+      lambert: 3,
+      normal: 4,
+      position: 5,
+      cubemap: 6,
     } 
   });
 
   addLightsBindings(pane, GUIData);
 
   // Shading Model
-  for (const key in GUIData.settings.uniforms.shadingModel)
+  const shadingModelBindings = {};
+  for (const model in GUIData.settings.uniforms.shadingModel)
   {
-    pane.addBinding(GUIData.settings.uniforms.shadingModel, key, { min: 0, max: 1 });
+    shadingModelBindings[model] = [];
+    for (const key in GUIData.settings.uniforms.shadingModel[model])
+    {
+      const uniformBinding = pane.addBinding(GUIData.settings.uniforms.shadingModel[model], key, { min: 0, max: 1});
+      const modelIndex = Object.keys(shadingModelBindings).length - 1;
+      // Show only default
+      uniformBinding.hidden = modelIndex !== GUIData.settings.uniforms.rayTracing.u_shading_model;
+
+      shadingModelBindings[model].push(uniformBinding);
+    }
   }
+
+  // Toggle visibility based on selected model
+  modelBinding.on('change', (event) => {    
+    // Hide all first
+    for (const model in shadingModelBindings) {
+      shadingModelBindings[model].forEach(uniformBinding => {
+        uniformBinding.hidden = true;
+      });
+    }
+    
+    // Show only the selected model's bindings
+    const modelName = Object.keys(GUIData.settings.uniforms.shadingModel)[event.value];
+      shadingModelBindings[modelName].forEach(uniformBinding => {
+        uniformBinding.hidden = false;
+      });
+
+  });
 
   addTransferFunctionBindings(pane, GUIData);
 

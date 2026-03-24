@@ -43,13 +43,20 @@ export async function reloadShaders(gl, scene)
  */
 export function updateSceneFloatUniforms(scene, uniforms)
 {
+  // TODO: rewrite to use recursion instead of spaghetti code
   for (const values of Object.values(uniforms)) 
   {
     for (const key in values) 
     {
       const value = values[key]; 
+
+      if (typeof value === 'object')
+      {
+        for (const innerKey in value)
+          scene.uniforms[innerKey] = value[innerKey];
+      }
       
-      if (typeof value !== 'object' || value === null) 
+      else if (typeof value !== 'object' || value === null) 
         scene.uniforms[key] = value;
     }
   }
@@ -127,7 +134,7 @@ export function createSceneRaycast(gl, shaderProgramInfo, uniforms, environment)
     uniforms: {
       ...uniforms.general,
       ...uniforms.rayTracing,
-      ...uniforms.shadingModel,
+      ...Object.assign({}, ...Object.values(uniforms.shadingModel)),
       // Camera
       u_eye_position: environment.camera.u_eye_position,
       u_view_inv: environment.camera.u_view_inv,
