@@ -74,15 +74,17 @@ function addTransferFunctionBindings(pane, GUIData)
  */
 function addLightsBindings(pane, GUIData)
 {
+  const folderLights = pane.addFolder({ title: "Lights" });
+
   for (const key in GUIData.lights)
   {
-    const lightToggle = pane.addBinding(GUIData.lights[key], "enabled", 
+    const lightToggle = folderLights.addBinding(GUIData.lights[key], "enabled", 
     {
       label: "toggle " + key,
     })
     
     
-    const lightPosition = pane.addBinding(GUIData.lights[key], "position", 
+    const lightPosition = folderLights.addBinding(GUIData.lights[key], "position", 
     { 
       label: key,
       min: -1, 
@@ -93,7 +95,7 @@ function addLightsBindings(pane, GUIData)
       vec3.set(GUIData.lights[key].positionVec, x, y, z);
     });
 
-    const lightIntensity = pane.addBinding(GUIData.lights[key], "intensity",
+    const lightIntensity = folderLights.addBinding(GUIData.lights[key], "intensity",
     {
       min: 0,
       max: 1,
@@ -130,6 +132,8 @@ function addShadingModelBindings(pane, GUIData, modelBinding)
     u_clearcoat_gloss: {min: 0, max: 1},
     u_shininess: {min: 0, max: 1000},
   };
+
+  const folderSM = pane.addFolder({ title: "Shading Model" });
   
   const shadingModelBindings = {};
   for (const model in GUIData.settings.uniforms.shadingModel)
@@ -137,7 +141,7 @@ function addShadingModelBindings(pane, GUIData, modelBinding)
     shadingModelBindings[model] = [];
     for (const key in GUIData.settings.uniforms.shadingModel[model])
     {
-      const uniformBinding = pane.addBinding(
+      const uniformBinding = folderSM.addBinding(
         GUIData.settings.uniforms.shadingModel[model], 
         key, 
         { min: intervals[key].min, max: intervals[key].max}
@@ -196,10 +200,11 @@ export function initDebugGUI(GUIData)
   });
 
   // Ray Tracing
-  pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_step_size", {min: 0.0001, max: 0.01, step: 0.0001});
-  pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_gradient_delta", {min: 0.0001, max: 0.05, step: 0.001});
-  pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_curvature_delta_multiplier", {min: 0.5, max: 6.0, step: 0.1});
-  const modelBinding = pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_shading_model", { 
+  const folderRT = pane.addFolder({ title: "Ray Tracing" });
+  folderRT.addBinding(GUIData.settings.uniforms.rayTracing, "u_step_size", {min: 0.0001, max: 0.01, step: 0.0001});
+  folderRT.addBinding(GUIData.settings.uniforms.rayTracing, "u_gradient_delta", {min: 0.0001, max: 0.05, step: 0.001});
+  folderRT.addBinding(GUIData.settings.uniforms.rayTracing, "u_curvature_delta_multiplier", {min: 0.5, max: 6.0, step: 0.1});
+  const modelBinding = folderRT.addBinding(GUIData.settings.uniforms.rayTracing, "u_shading_model", { 
     options: {
       stylized: 0,
       disney: 1,
