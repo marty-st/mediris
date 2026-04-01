@@ -185,7 +185,8 @@ export function initDebugGUI(GUIData)
 
   // Ray Tracing
   pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_step_size", {min: 0.0001, max: 0.01, step: 0.0001});
-  pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_default_step_size", {min: 0.0001, max: 0.05, step: 0.001});
+  pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_gradient_delta", {min: 0.0001, max: 0.05, step: 0.001});
+  pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_curvature_delta_multiplier", {min: 0.5, max: 6.0, step: 0.1});
   const modelBinding = pane.addBinding(GUIData.settings.uniforms.rayTracing, "u_shading_model", { 
     options: {
       stylized: 0,

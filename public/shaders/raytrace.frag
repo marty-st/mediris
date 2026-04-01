@@ -83,7 +83,8 @@ uniform vec3 u_bbox_min;
 uniform vec3 u_bbox_max;
 // Ray Tracing
 uniform float u_step_size;
-uniform float u_default_step_size;
+uniform float u_gradient_delta;
+uniform float u_curvature_delta_multiplier;
 uniform int u_shading_model;
 // Light
 uniform Lights {
@@ -252,8 +253,8 @@ float compute_curvature(vec3 sample_point)
 	if (u_mode == SPHERE_DEBUG)
 		return 1.0;
 
-	vec3  g = compute_gradient(sample_point, u_default_step_size);
-	mat3  H = compute_hessian(sample_point, 2.0 * u_default_step_size);
+	vec3  g = compute_gradient(sample_point, u_gradient_delta);
+	mat3  H = compute_hessian(sample_point, u_curvature_delta_multiplier * u_gradient_delta);
 
 	float gx = g.x, gy = g.y, gz = g.z;
 	float g2 = dot(g, g);        // |∇F|²
@@ -516,7 +517,7 @@ vec4 shade(vec4 medium_color, vec3 sample_point, vec3 normal)
 	switch(u_shading_model)
 	{
 		case STYLIZED:
-			for (int l = 0; l < 1; ++l)
+			for (int l = 0; l < lights.lights_array_size; ++l)
 			{
 				color += shade_stylized(medium_color, sample_point, normal, lights.lights_array[l]);
 			}
@@ -528,7 +529,7 @@ vec4 shade(vec4 medium_color, vec3 sample_point, vec3 normal)
 			}
 			break;
 		case BLINN_PHONG:
-			for (int l = 0; l < 1; ++l)
+			for (int l = 0; l < lights.lights_array_size; ++l)
 			{
 				color += vec4(shade_blinn_phong(medium_color, sample_point, normal, lights.lights_array[l]), 1.0);
 			}
@@ -592,7 +593,7 @@ vec3 get_shading_normal(vec3 sample_point, vec3 surface_normal)
 	switch(u_mode)
 	{
 		case DICOM:
-			result = -compute_gradient(sample_point, u_default_step_size);
+			result = -compute_gradient(sample_point, u_gradient_delta);
 			break;
 		case SPHERE_DEBUG:
 			result = surface_normal;
@@ -633,6 +634,8 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 			vec3 normal = get_shading_normal(sample_point, surface_normal);
 			
 			color += shade(medium_color, sample_point, normal);
+			// TODO: Return only if not using volume shading
+			return color;
 
 			// TODO: alpha should be consistent for all step sizes so: alpha = medium_alpha * (step size / reference step size)
 			// float available_alpha = min(medium_color.a, 1.0 - color.a);

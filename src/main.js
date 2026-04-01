@@ -85,19 +85,20 @@ const settings = {
       u_mode: 1, // 0 = Volume Data, 1 = Debug Sphere
     },
     rayTracing: {
-      u_default_step_size: 0.0025,
       u_step_size: 0.0025,
+      u_gradient_delta: 0.0025,
+      u_curvature_delta_multiplier: 4.0,
       u_shading_model: 0, // 0 = Stylized, 1 = Disney, 2 = Blinn-Phong, 3 = Lambert, 4 = normal, 5 = position, 6 = cubemap
     },
     shadingModel: {
       stylized: {
         u_alpha: 0.0,
-        u_tau: 0.3,
+        u_tau: 0.0,
         u_lambda: 0.0,
         u_mu: 0.4,
-        u_chi: 10,
+        u_chi: 0.2,
         u_beta: 0,
-        u_gamma: 2,
+        u_gamma: 1,
       },
       disney: {
         // diffuse model
