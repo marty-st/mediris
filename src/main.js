@@ -51,14 +51,17 @@ const lights = {
     keyLight: {
       position: {x: 0, y: 1, z: -1},
       intensity: 1.0,
+      enabled: true,
     },
     fillLight: {
       position: {x: 1, y: 0.75, z: 0},
       intensity: 0.5,
+      enabled: true,
     },
     backLight: {
       position: {x: 0, y: 1, z: 1},
       intensity: 0.25,
+      enabled: true,
     },
 };
 

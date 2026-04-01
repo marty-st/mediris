@@ -76,7 +76,13 @@ function addLightsBindings(pane, GUIData)
 {
   for (const key in GUIData.lights)
   {
-    pane.addBinding(GUIData.lights[key], "position", 
+    const lightToggle = pane.addBinding(GUIData.lights[key], "enabled", 
+    {
+      label: "toggle " + key,
+    })
+    
+    
+    const lightPosition = pane.addBinding(GUIData.lights[key], "position", 
     { 
       label: key,
       min: -1, 
@@ -87,10 +93,16 @@ function addLightsBindings(pane, GUIData)
       vec3.set(GUIData.lights[key].positionVec, x, y, z);
     });
 
-    pane.addBinding(GUIData.lights[key], "intensity",
+    const lightIntensity = pane.addBinding(GUIData.lights[key], "intensity",
     {
       min: 0,
       max: 1,
+    })
+
+    lightToggle
+    .on('change', (event) => {
+      lightPosition.hidden = !event.value;
+      lightIntensity.hidden = !event.value;
     })
   }
 }

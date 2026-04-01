@@ -63,19 +63,15 @@ export function updateSceneFloatUniforms(scene, uniforms)
 }
 
 /**
- * Updates float-type light properties as these are passed by value upon scene initialization and are NOT
- * synchronized with the rest of the application, which takes data from the appData object.
+ * Updates light properties as some of their attributes are passed by value upon scene initialization
+ * and are NOT synchronized with the rest of the application, which takes data from the appData object.
  * @param {*} scene object with scene data - uniforms, geometries, shader file names
  * @param {*} lights object with light data
  */
 export function updateSceneLights(scene, lights)
 {
-  let i = 0;
-  for (const key in lights)
-  {
-    scene.uniformBlock.uniforms.lights_array[i].intensity = lights[key].intensity;
-    ++i;
-  }
+  const lightsUBO = createLightsUBOFromAppData(lights);
+  scene.uniformBlock.uniforms = lightsUBO;
 }
 
 /**
@@ -84,26 +80,29 @@ export function updateSceneLights(scene, lights)
  * @param {*} environment object with environment data - lights, camera, scene, etc.
  * @returns object containing an array with per-light data and the array size
  */
-function createLightsUBOFromAppData(environment)
+function createLightsUBOFromAppData(lights)
 {
-  let lights = {
+  let lightsUBO = {
     lights_array: [],
     lights_array_size: 0
   };
 
-  for (const key in environment.lights)
+  for (const key in lights)
   {
-    const light = environment.lights[key];
+    const light = lights[key];
 
-    lights.lights_array.push({
+    if (!light.enabled)
+      continue;
+
+    lightsUBO.lights_array.push({
       position: light.positionVec,
       intensity: light.intensity,
     });
   }
 
-  lights.lights_array_size = lights.lights_array.length;
+  lightsUBO.lights_array_size = lightsUBO.lights_array.length;
 
-  return lights;
+  return lightsUBO;
 }
 
 /**
@@ -143,7 +142,7 @@ export function createSceneRaycast(gl, shaderProgramInfo, uniforms, environment)
     // Lights
     uniformBlock: {
       info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "Lights"),
-      uniforms: createLightsUBOFromAppData(environment),
+      uniforms: createLightsUBOFromAppData(environment.lights),
     },
   };
 

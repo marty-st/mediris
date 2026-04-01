@@ -75,6 +75,7 @@ function initLightsProperties(lights)
     lightsProperties[key].position = light.position;
     lightsProperties[key].positionVec = initVec3(light.position);
     lightsProperties[key].intensity = light.intensity;
+    lightsProperties[key].enabled = light.enabled;
   }
 
   return lightsProperties;
