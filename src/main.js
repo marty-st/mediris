@@ -135,16 +135,9 @@ const settings = {
   },
 }
 
-/** @type {HTMLCanvasElement} */    // for VSCode to know that canvas is an HTML Canvas Element
-let canvas = undefined;             // HTML <canvas> element 
-let gl = undefined;                 // WebGL rendering context element
-let pane = undefined;               // Tweakpane rendering window
-
 // Application data
 const appData = initAppData(settings, environment, tf);
 
-// Mediator object between Tweakpane and the rest of the application
-let GUIData = undefined;
 // Wrapper object for the UI controls & GUI, managed by the UI manager
 let UI = undefined;
 
@@ -170,18 +163,19 @@ window.onload = async function init()
   /* CANVAS INITIALIZATION */
   /* --------------------- */
   
-  canvas = initGLCanvas();  
+  /** @type {HTMLCanvasElement} */      // for VSCode to know that canvas is an HTML Canvas Element
+  const canvas = initGLCanvas();        // HTML <canvas> element 
   setOutputResolution(canvas);
   
-  gl = initGLContext(canvas);
+  const gl = initGLContext(canvas);     // WebGL rendering context element
   initGLStates(gl);
   
   /* --------------------- */
   /* UI INITIALIZATION --- */
   /* --------------------- */
 
-  GUIData = initGUIData(appData);
-  pane = initDebugGUI(GUIData);
+  const GUIData = initGUIData(appData); // Mediator object between Tweakpane and the rest of the application
+  const pane = initDebugGUI(GUIData);   // Tweakpane rendering window
   UI = initUI(canvas, GUIData);
 
   /* --------------------- */
@@ -266,7 +260,7 @@ function update(currentTime)
   time.delta = 0.001 * (time.current - time.previous);
 
   // FPS Counter
-  GUIData.framesPerSecond = time.delta > 0.0 ? 1.0 / time.delta : 0.0;
+  UI.GUIData.framesPerSecond = time.delta > 0.0 ? 1.0 / time.delta : 0.0;
   
   // User controls
   control(UI);
@@ -288,7 +282,7 @@ function renderLoop(currentTime)
 {
   update(currentTime);
 
-  render(gl, canvas, appData.environment.viewport, appData.environment.scene, appData.environment.scene.geometries);
+  render(appData.context.gl, appData.context.canvas, appData.environment.viewport, appData.environment.scene, appData.environment.scene.geometries);
 
   requestAnimationFrame(renderLoop);
 }
