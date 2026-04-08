@@ -49,6 +49,10 @@ const float PI = 3.14159265358979323846;
 const int MAX_TF_ARRAY_SIZE = 20;
 const int MAX_LIGHT_ARRAY_SIZE = 5;
 const float AIR_UPPER_LIMIT = 50.0;
+const vec3 UP_VECTOR = vec3(0.0, 1.0, 0.0);
+const vec4 GROUND_COLOR = vec4(0.15, 0.2, 0.2, 1.0);
+const vec4 SKY_COLOR = vec4(0.36f, 0.64f, 0.64f, 1.0f);
+const vec4 DIRECTION_COLOR = vec4(0.54f, 0.25f, 0.5f, 1.0f);
 const RayIntersectionData no_intersection = RayIntersectionData(1e20, vec3(0.0), vec3(0.0));
 const Hit miss = Hit(1e20, 1e20, vec3(0.0), vec3(0.0));
 // Render mode
@@ -403,7 +407,7 @@ vec3 shade_disney(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
 
 	float NdotH = dot(N,H);
 	// surface tangent and bitanget for anisotropy:
-	vec3 help_vector = abs(N.y) > 0.99999999 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
+	vec3 help_vector = abs(N.y) > 0.99999999 ? vec3(1.0, 0.0, 0.0) : UP_VECTOR;
 	vec3 X = normalize(cross(N, help_vector));
 	vec3 Y = normalize(cross(N, X));
 	vec3 specular0_comp = mix(u_specular * 0.08 * mix(vec3(1.0), tint_comp, u_specular_tint), medium_color.rgb, u_metallic);
@@ -431,7 +435,7 @@ vec3 shade_disney(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
 float u(vec3 sample_point, vec3 n, vec3 l, vec3 v)
 {
 	// Anisotropy of the specular highlight
-	vec3 help_vector = abs(n.y) > 0.99999999 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
+	vec3 help_vector = abs(n.y) > 0.99999999 ? vec3(1.0, 0.0, 0.0) : UP_VECTOR;
 	vec3 t = normalize(cross(n, help_vector));
 	vec3 b = normalize(cross(n, t));
 	vec3 h = normalize(l + v);
@@ -672,7 +676,9 @@ vec4 trace(Ray ray)
 		color += sample_volume(ray.direction, hit.intersection, hit.normal, hit.t_last - hit.t_first);
   }
 
-	vec4 background_color = vec4(0.15, 0.2, 0.2, 1.0);
+	vec4 background_color = ray.direction.y > 0.0 ? SKY_COLOR: GROUND_COLOR;
+	background_color = mix(vec4(0.7, 0.7, 0.7, 1.0), background_color, smoothstep(0.0, 1.0, abs(ray.direction.y)));
+	background_color = mix(background_color, DIRECTION_COLOR, max(ray.direction.x, 0.0));
 	if (color.a == 0.0)
 		color = background_color;
 
