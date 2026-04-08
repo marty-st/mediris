@@ -14,6 +14,13 @@ import { loadImage, loadImagesCubeMap } from './file/image.js';
 import { initAppData } from './app/data.js';
 import { updateApp } from './app/manager.js';
 
+/* CONSTANTS */
+
+const CACHE = true;
+const NO_CACHE = false;
+
+/**/
+
 /* GLOBAL VARIABLES */
 
 // HU units are usually defined in the range <-1000, 3000>,
@@ -147,7 +154,7 @@ const mainShaderNames = {vert: "fsquad", frag: "raytrace"};
 
 // FILE PRELOAD
 // Load DICOM during module load
-const imageDataPromise = loadDicom('CT WB w-contrast 5.0 B30s', true);
+const imageDataPromise = loadDicom('CT WB w-contrast 5.0 B30s', CACHE);
 // Load images for texture use
 const loadingScreenImagePromise = loadImage('loading.png');
 const cubeMapImagesPromise = loadImagesCubeMap("frozendusk", "jpg");
@@ -181,10 +188,8 @@ window.onload = async function init()
   /* SHADER INITIALIZATION */
   /* --------------------- */
 
-  const useCachedShaderText = false;
-
-  const loadingScreenProgramInfo = await createShaderProgram(gl, loadingScreenShaderNames.vert, loadingScreenShaderNames.frag, useCachedShaderText);
-  const volumeProgramInfo = await createShaderProgram(gl, mainShaderNames.vert, mainShaderNames.frag, useCachedShaderText);
+  const loadingScreenProgramInfo = await createShaderProgram(gl, loadingScreenShaderNames.vert, loadingScreenShaderNames.frag, NO_CACHE);
+  const volumeProgramInfo = await createShaderProgram(gl, mainShaderNames.vert, mainShaderNames.frag, NO_CACHE);
 
   /* --------------------- */
   /* DATA INITIALIZATION - */
