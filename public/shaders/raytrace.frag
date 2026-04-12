@@ -619,6 +619,8 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 	vec3 sample_point = first_interesection;
 	vec4 color = vec4(0.0);
 
+	bool skin_colored = false;
+
 	while (volume_travel_distance >= 0.0 && color.a < 1.0)
 	{
 		vec4 float_sample_color = get_sample_color(sample_point);
@@ -644,9 +646,20 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 
 			vec3 normal = get_shading_normal(sample_point, surface_normal);
 			
-			color += shade(medium_color, sample_point, normal);
+			// TODO: do systematically
+			if (!skin_colored)
+			{
+				color += shade(medium_color, sample_point, normal);
+				skin_colored = true;
+			}
+			else
+			{
+				color += vec4(0.9f, 0.7f, 0.47f, 1.0f) * (1.0 - color.a) * u_step_size;
+				return color;
+			}
 			// TODO: Return only if not using volume shading
-			return color;
+			// return color;
+
 
 			// TODO: alpha should be consistent for all step sizes so: alpha = medium_alpha * (step size / reference step size)
 			// float available_alpha = min(medium_color.a, 1.0 - color.a);
