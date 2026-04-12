@@ -3,6 +3,7 @@
 import createShaderProgram from './program';
 
 import * as twgl from 'twgl.js';
+import { vec3, mat4 } from 'gl-matrix';
 
 /**
  * Reloads the shader programs by re-fetching their appropriate text files. Used for application development.
@@ -67,10 +68,11 @@ export function updateSceneFloatUniforms(scene, uniforms)
  * and are NOT synchronized with the rest of the application, which takes data from the appData object.
  * @param {*} scene object with scene data - uniforms, geometries, shader file names
  * @param {*} lights object with light data
+ * @param {*} camera camera object
  */
-export function updateSceneLights(scene, lights)
+export function updateSceneLights(scene, lights, camera)
 {
-  const lightsUBO = createLightsUBOFromAppData(lights);
+  const lightsUBO = createLightsUBOFromAppData(lights, camera.u_view_inv);
   scene.uniformBlock.uniforms = lightsUBO;
 }
 
@@ -78,9 +80,10 @@ export function updateSceneLights(scene, lights)
  * Transforms information about user-controlled light properties into a GPU compatible
  * format (UBO). 
  * @param {*} environment object with environment data - lights, camera, scene, etc.
+ * @param {*} cameraInvViewMat camera inverse view matrix
  * @returns object containing an array with per-light data and the array size
  */
-function createLightsUBOFromAppData(lights)
+function createLightsUBOFromAppData(lights, cameraInvViewMat)
 {
   let lightsUBO = {
     lights_array: [],
@@ -94,8 +97,14 @@ function createLightsUBOFromAppData(lights)
     if (!light.enabled)
       continue;
 
+    const lightPosition = vec3.clone(light.positionVec);
+
+    // NOTE: I don't like that this happens here
+    if (light.relativeToCamera && cameraInvViewMat)
+      vec3.transformMat4(lightPosition, lightPosition, cameraInvViewMat);
+
     lightsUBO.lights_array.push({
-      position: light.positionVec,
+      position: lightPosition,
       intensity: light.intensity,
     });
   }

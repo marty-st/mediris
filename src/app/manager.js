@@ -32,5 +32,5 @@ export function updateApp(appData, UI)
   updateAppFromUI(appData, UI);
   updateCamera(appData.environment.camera, UI.cameraControls, appData.environment.viewport, appData.environment.time.delta);
   updateSceneFloatUniforms(appData.environment.scene, appData.settings.uniforms);
-  updateSceneLights(appData.environment.scene, appData.environment.lights);
+  updateSceneLights(appData.environment.scene, appData.environment.lights, appData.environment.camera);
 }

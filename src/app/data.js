@@ -37,16 +37,19 @@ const lights = {
     keyLight: {
       position: {x: 0, y: 1, z: -1},
       intensity: 1.0,
-      enabled: true,
+      relativeToCamera: false,
+      enabled: false,
     },
     fillLight: {
       position: {x: 1, y: 0.75, z: 0},
       intensity: 0.5,
-      enabled: true,
+      relativeToCamera: false,
+      enabled: false,
     },
     backLight: {
-      position: {x: 0, y: 1, z: 1},
-      intensity: 0.25,
+      position: {x: 0, y: 0, z: -10}, // -10 hopes to be far enough to be behind the volume
+      intensity: 1.0,
+      relativeToCamera: true,
       enabled: true,
     },
 };
@@ -81,13 +84,13 @@ const settings = {
     },
     shadingModel: {
       stylized: {
-        u_alpha: 0.0,
-        u_tau: 0.0,
+        u_alpha: 0.05,
+        u_tau: -1.0,
         u_lambda: 0.0,
-        u_mu: 0.4,
-        u_chi: 0.2,
-        u_beta: 0,
-        u_gamma: 1,
+        u_mu: 0.0,
+        u_chi: 1.0,
+        u_beta: 0.5,
+        u_gamma: 0.4,
       },
       disney: {
         // diffuse model
@@ -191,6 +194,7 @@ function initLightsProperties(lights)
     lightsProperties[key].position = light.position;
     lightsProperties[key].positionVec = initVec3(light.position);
     lightsProperties[key].intensity = light.intensity;
+    lightsProperties[key].relativeToCamera = light.relativeToCamera;
     lightsProperties[key].enabled = light.enabled;
   }
 
