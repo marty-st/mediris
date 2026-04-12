@@ -87,8 +87,8 @@ function addLightsBindings(pane, GUIData)
     const lightPosition = folderLights.addBinding(GUIData.lights[key], "position", 
     { 
       label: key,
-      min: -1, 
-      max: 1,
+      min: -10, 
+      max: 10,
     })
     .on('change', (event) => {
       const {x, y, z} = event.value;
@@ -101,6 +101,11 @@ function addLightsBindings(pane, GUIData)
       max: 1,
     })
 
+    // initial visibility
+    lightPosition.hidden = !GUIData.lights[key].enabled;
+    lightIntensity.hidden = !GUIData.lights[key].enabled;
+
+    // visibility toggle
     lightToggle
     .on('change', (event) => {
       lightPosition.hidden = !event.value;
