@@ -678,9 +678,14 @@ vec4 trace(Ray ray)
 
 	vec4 background_color = ray.direction.y > 0.0 ? SKY_COLOR: GROUND_COLOR;
 	background_color = mix(vec4(0.7, 0.7, 0.7, 1.0), background_color, smoothstep(0.0, 1.0, abs(ray.direction.y)));
-	background_color = mix(background_color, DIRECTION_COLOR, max(ray.direction.x, 0.0));
+	if (ray.direction.x > 0.0)
+		background_color = mix(background_color, DIRECTION_COLOR, ray.direction.x);
+		
 	if (color.a == 0.0)
 		color = background_color;
+	else
+		// NOTE: color.a was going above 1.0 when using stylized shading (it shouldn't though)
+		color.rgb += background_color.rgb * max(1.0 - color.a, 0.0);
 
   return color;
 }
