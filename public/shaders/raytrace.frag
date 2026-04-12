@@ -53,6 +53,7 @@ const vec3 UP_VECTOR = vec3(0.0, 1.0, 0.0);
 const vec4 GROUND_COLOR = vec4(0.15, 0.2, 0.2, 1.0);
 const vec4 SKY_COLOR = vec4(0.36f, 0.64f, 0.64f, 1.0f);
 const vec4 DIRECTION_COLOR = vec4(0.54f, 0.25f, 0.5f, 1.0f);
+const vec4 DIRECTION_COLOR2 = vec4(0.83f, 0.54f, 0.09f, 1.0f);
 const RayIntersectionData no_intersection = RayIntersectionData(1e20, vec3(0.0), vec3(0.0));
 const Hit miss = Hit(1e20, 1e20, vec3(0.0), vec3(0.0));
 // Render mode
@@ -499,11 +500,17 @@ vec4 shade_stylized(vec4 medium_color, vec3 sample_point, vec3 n, Light light)
 
 	float u = u(sample_point, n, l, v);
 	float I = I(u);
+
 	// TODO: use a color ramp
 	// NOTE: possible to use color ramps for concave/convex transitions
-	// PI - u is a fake color ramp
+	// PI - u / PI is a fake color ramp
 	// NOTE: use alpha = I for layering
-	return vec4(light.intensity * I * medium_color.rgb * (PI - u) / PI, 1.0);
+
+	// intensity driven purely by the function
+	// return vec4(light.intensity * I * medium_color.rgb * (PI - u) / PI, I);
+
+	// alpha affects intensity
+	return vec4(light.intensity * medium_color.a * I * mix(vec3(1.0), medium_color.rgb, (PI - u) / PI), I * medium_color.a);
 
 	// test curvature
 	// return vec4(vec3(compute_curvature(sample_point)), 1.0);
