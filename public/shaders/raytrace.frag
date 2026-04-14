@@ -218,14 +218,26 @@ vec4 sample_voxel(vec3 sample_point)
 
 vec3 compute_gradient(vec3 sample_point, float delta)
 {
-	float x_pos = sample_voxel(vec3(sample_point.x + delta, sample_point.yz)).r;
-	float x_neg = sample_voxel(vec3(sample_point.x - delta, sample_point.yz)).r;
+	// NOTE: Sadly WebGL doesn't support GL_CLAMP_TO_BORDER nor border color so edge cases
+	// have to be dealt with manually
 
-	float y_pos = sample_voxel(vec3(sample_point.x, sample_point.y + delta, sample_point.z)).r;
-	float y_neg = sample_voxel(vec3(sample_point.x, sample_point.y - delta, sample_point.z)).r;
+	float x_delta_pos = sample_point.x + delta;
+	float x_pos = sample_voxel(vec3(x_delta_pos, sample_point.yz)).r * step(x_delta_pos, 1.0);
 
-	float z_pos = sample_voxel(vec3(sample_point.xy, sample_point.z + delta)).r;
-	float z_neg = sample_voxel(vec3(sample_point.xy, sample_point.z - delta)).r;
+	float x_delta_neg = sample_point.x - delta;
+	float x_neg = sample_voxel(vec3(x_delta_neg, sample_point.yz)).r * step(-1.0, x_delta_neg);
+
+	float y_delta_pos = sample_point.y + delta;
+	float y_pos = sample_voxel(vec3(sample_point.x, y_delta_pos, sample_point.z)).r * step(y_delta_pos, 1.0);
+	
+	float y_delta_neg = sample_point.y - delta;
+	float y_neg = sample_voxel(vec3(sample_point.x, y_delta_neg, sample_point.z)).r * step(-1.0, y_delta_neg);
+
+	float z_delta_pos = sample_point.z + delta;
+	float z_pos = sample_voxel(vec3(sample_point.xy, z_delta_pos)).r * step(z_delta_pos, 1.0);
+
+	float z_delta_neg = sample_point.z - delta;
+	float z_neg = sample_voxel(vec3(sample_point.xy, z_delta_neg)).r * step(-1.0, z_delta_neg);
 
 	return vec3(x_pos - x_neg, y_pos - y_neg, z_pos - z_neg) / (2.0 * delta);
 }
