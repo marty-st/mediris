@@ -39,9 +39,10 @@ export function create2DTexture(gl, image, dimensions)
  * @param {*} gl WebGL rendering context
  * @param {*} volume volume data loaded from a DICOM file
  * @param {*} dimensions dimensions of provided volume
+ * @param {*} channels number of channels to use for interleaved textures [1, 4]
  * @returns WebGL 3D texture object
  */
-export function createVolumeTexture(gl, volume, dimensions)
+export function createVolumeTexture(gl, volume, dimensions, channels)
 {
     const volumeTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_3D, volumeTexture);
@@ -51,6 +52,30 @@ export function createVolumeTexture(gl, volume, dimensions)
     gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+
+    let internalFormat;
+    let format;
+    switch(channels)
+    {
+      case 1:
+        internalFormat = gl.R16F;
+        format = gl.RED;
+        break;
+      case 2:
+        internalFormat = gl.RG16F;
+        format = gl.RG;
+        break;
+      case 3:
+        internalFormat = gl.RGB16F;
+        format = gl.RGB;
+        break;
+      case 4:
+        internalFormat = gl.RGBA16F;
+        format = gl.RGBA;
+        break;
+      default:
+        throw new Error("Volume texture: Invalid number of color channels.");
+    }
 
     // ERROR: GL_INVALID_OPERATION: glGenerateMipmap: Texture format does not support mipmap generation.
     // gl.generateMipmap(gl.TEXTURE_3D);
@@ -63,12 +88,12 @@ export function createVolumeTexture(gl, volume, dimensions)
     gl.texImage3D(
       gl.TEXTURE_3D,
       0,
-      gl.R16F,                 // internalFormat
+      internalFormat,                 // internalFormat
       dimensions.cols,
       dimensions.rows,
       dimensions.depth,
       0,
-      gl.RED,                  // format
+      format,                  // format
       gl.FLOAT,                // type
       volume
     );
