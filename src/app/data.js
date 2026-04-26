@@ -74,7 +74,7 @@ const environment = {
 const settings = {
   uniforms: {
     general: {
-      u_mode: 1, // 0 = Volume Data, 1 = Debug Sphere
+      u_mode: 0, // 0 = Volume Data, 1 = Debug Sphere
       u_channel: 1,
     },
     rayTracing: {

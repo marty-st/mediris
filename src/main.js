@@ -1,6 +1,6 @@
 'use strict'
 
-import loadDicom from './file/dicom.js';
+import { loadDicom, interleaveVolumesWithResample } from './file/dicom.js';
 import { initDebugGUI, initGUIData } from './ui/gui.js';
 import { initUI, control, resetControls } from './ui/manager.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
@@ -35,7 +35,8 @@ const mainShaderNames = {vert: "fsquad", frag: "raytrace"};
 
 // FILE PRELOAD
 // Load DICOM during module load
-const imageDataPromise = loadDicom('CT WB w-contrast 5.0 B30s', CACHE);
+const imageDataCTPromise = loadDicom('CT WB w-contrast 5.0 B30s', CACHE);
+const imageDataPETPromise = loadDicom('PET WB', CACHE);
 // Load images for texture use
 const loadingScreenImagePromise = loadImage('loading.png');
 const cubeMapImagesPromise = loadImagesCubeMap("frozendusk", "jpg");
@@ -119,19 +120,29 @@ window.onload = async function init()
   });
 
   // Asynchronously load DICOM to display later
-  imageDataPromise.then((imageData) => {
+  Promise.all([imageDataCTPromise, imageDataPETPromise]).then(([imageDataCT, imageDataPET]) => {
+    const dimensions = imageDataCT.dimensions;
 
-    const dimensions = imageData.dimensions;
-    const volume = imageData.volume;
+    const interleavedVolume = interleaveVolumesWithResample(
+      imageDataCT.volume, 
+      imageDataPET.volume, 
+      imageDataCT.dimensions, 
+      imageDataPET.dimensions,
+      imageDataCT.origin,
+      imageDataPET.origin,
+      imageDataCT.spacing,
+      imageDataPET.spacing,
+      Float32Array
+    )
 
-    const volumeTexture = createVolumeTexture(gl, volume, dimensions);
+    const volumeTexture = createVolumeTexture(gl, interleavedVolume, dimensions, 2);
 
     appData.environment.scene.geometries.push(createVolumeGeometry(gl, volumeProgramInfo, mainShaderNames, volumeTexture, materialTexture, cubeMapTexture, dimensions, appData));
-
+    
     /* --------------------- */
     /* RENDER LOOP --------- */
     /* --------------------- */
-    
+
     // start render loop with the volume geometry loaded
     this.requestAnimationFrame(renderLoop);
   });
