@@ -76,6 +76,8 @@ in VaryingData var;
 /* ------------------------- */
 // Render mode
 uniform int u_mode;
+// Texture channel
+uniform int u_channel;
 // Material texture
 uniform sampler2D u_material_texture;
 // Cube Map texture
@@ -222,22 +224,22 @@ vec3 compute_gradient(vec3 sample_point, float delta)
 	// have to be dealt with manually
 
 	float x_delta_pos = sample_point.x + delta;
-	float x_pos = sample_voxel(vec3(x_delta_pos, sample_point.yz)).r * step(x_delta_pos, 1.0);
+	float x_pos = sample_voxel(vec3(x_delta_pos, sample_point.yz))[u_channel] * step(x_delta_pos, 1.0);
 
 	float x_delta_neg = sample_point.x - delta;
-	float x_neg = sample_voxel(vec3(x_delta_neg, sample_point.yz)).r * step(-1.0, x_delta_neg);
+	float x_neg = sample_voxel(vec3(x_delta_neg, sample_point.yz))[u_channel] * step(-1.0, x_delta_neg);
 
 	float y_delta_pos = sample_point.y + delta;
-	float y_pos = sample_voxel(vec3(sample_point.x, y_delta_pos, sample_point.z)).r * step(y_delta_pos, 1.0);
+	float y_pos = sample_voxel(vec3(sample_point.x, y_delta_pos, sample_point.z))[u_channel] * step(y_delta_pos, 1.0);
 	
 	float y_delta_neg = sample_point.y - delta;
-	float y_neg = sample_voxel(vec3(sample_point.x, y_delta_neg, sample_point.z)).r * step(-1.0, y_delta_neg);
+	float y_neg = sample_voxel(vec3(sample_point.x, y_delta_neg, sample_point.z))[u_channel] * step(-1.0, y_delta_neg);
 
 	float z_delta_pos = sample_point.z + delta;
-	float z_pos = sample_voxel(vec3(sample_point.xy, z_delta_pos)).r * step(z_delta_pos, 1.0);
+	float z_pos = sample_voxel(vec3(sample_point.xy, z_delta_pos))[u_channel] * step(z_delta_pos, 1.0);
 
 	float z_delta_neg = sample_point.z - delta;
-	float z_neg = sample_voxel(vec3(sample_point.xy, z_delta_neg)).r * step(-1.0, z_delta_neg);
+	float z_neg = sample_voxel(vec3(sample_point.xy, z_delta_neg))[u_channel] * step(-1.0, z_delta_neg);
 
 	return vec3(x_pos - x_neg, y_pos - y_neg, z_pos - z_neg) / (2.0 * delta);
 }
@@ -639,12 +641,12 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 
 		// AIR SKIP 
 		// TODO: read the value from a uniform
-		if (float_sample_color.r < AIR_UPPER_LIMIT)
+		if (float_sample_color[u_channel] < AIR_UPPER_LIMIT)
 		{
 			sample_point += ray_direction * u_step_size;
 			volume_travel_distance -= u_step_size;
 			continue;
-			// color += vec4(tf.media_array[0].color.rgb * tf.media_array[0].color..a, tf.media_array[0].color.a);
+			// color += vec4(tf.media_array[0].color.ggb * tf.media_array[0].color..a, tf.media_array[0].color.a);
 		}
 
 		// NOTE: Think about different color multiplier and opacity addition
@@ -653,7 +655,7 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 			vec2 medium_itv = get_medium_interval(i);
 			vec4 medium_color = get_medium_color(i);
 
-			if (float_sample_color.r < medium_itv.x || float_sample_color.r >= medium_itv.y)
+			if (float_sample_color[u_channel] < medium_itv.x || float_sample_color[u_channel] >= medium_itv.y)
 				continue;
 
 			vec3 normal = get_shading_normal(sample_point, surface_normal);

@@ -204,6 +204,13 @@ export function initDebugGUI(GUIData)
     }
   });
 
+  pane.addBinding(GUIData.settings.uniforms.general, "u_channel", {
+    options: {
+      ct: 0,
+      pet: 1,
+    }
+  });
+
   // Ray Tracing
   const folderRT = pane.addFolder({ title: "Ray Tracing" });
   folderRT.addBinding(GUIData.settings.uniforms.rayTracing, "u_step_size", {min: 0.0001, max: 0.01, step: 0.0001});
