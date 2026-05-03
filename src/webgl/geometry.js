@@ -102,6 +102,7 @@ function getTransferFunctionfromAppData(appData)
     tf.media_array.push({
       color: medium.colorVec,
       interval: medium.intervalVec,
+      channel: medium.channel,
     })
   }
 

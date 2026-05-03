@@ -41,6 +41,7 @@ struct Medium
 {
 	vec4 color;
 	vec2 interval;
+	int channel;
 };
 
 /* -----LOCAL VARIABLES----- */
@@ -48,7 +49,8 @@ struct Medium
 const float PI = 3.14159265358979323846;
 const int MAX_TF_ARRAY_SIZE = 20;
 const int MAX_LIGHT_ARRAY_SIZE = 5;
-const float AIR_UPPER_LIMIT = 50.0;
+const float AIR_UPPER_LIMIT_CT = 50.0;
+const float BENIGN_UPPER_LIMIT_PET = 6000.0;
 const vec3 UP_VECTOR = vec3(0.0, 1.0, 0.0);
 const vec4 GROUND_COLOR = vec4(0.15, 0.2, 0.2, 1.0);
 const vec4 SKY_COLOR = vec4(0.36f, 0.64f, 0.64f, 1.0f);
@@ -76,8 +78,6 @@ in VaryingData var;
 /* ------------------------- */
 // Render mode
 uniform int u_mode;
-// Texture channel
-uniform int u_channel;
 // Material texture
 uniform sampler2D u_material_texture;
 // Cube Map texture
@@ -218,42 +218,44 @@ vec4 sample_voxel(vec3 sample_point)
 	return texture(u_volume_texture, uv_coords);
 }
 
-vec3 compute_gradient(vec3 sample_point, float delta)
+vec3 compute_gradient(vec4 sample_point, float delta)
 {
 	// NOTE: Sadly WebGL doesn't support GL_CLAMP_TO_BORDER nor border color so edge cases
 	// have to be dealt with manually
 
+	int channel = int(sample_point.a);
+
 	float x_delta_pos = sample_point.x + delta;
-	float x_pos = sample_voxel(vec3(x_delta_pos, sample_point.yz))[u_channel] * step(x_delta_pos, 1.0);
+	float x_pos = sample_voxel(vec3(x_delta_pos, sample_point.yz))[channel] * step(x_delta_pos, 1.0);
 
 	float x_delta_neg = sample_point.x - delta;
-	float x_neg = sample_voxel(vec3(x_delta_neg, sample_point.yz))[u_channel] * step(-1.0, x_delta_neg);
+	float x_neg = sample_voxel(vec3(x_delta_neg, sample_point.yz))[channel] * step(-1.0, x_delta_neg);
 
 	float y_delta_pos = sample_point.y + delta;
-	float y_pos = sample_voxel(vec3(sample_point.x, y_delta_pos, sample_point.z))[u_channel] * step(y_delta_pos, 1.0);
+	float y_pos = sample_voxel(vec3(sample_point.x, y_delta_pos, sample_point.z))[channel] * step(y_delta_pos, 1.0);
 	
 	float y_delta_neg = sample_point.y - delta;
-	float y_neg = sample_voxel(vec3(sample_point.x, y_delta_neg, sample_point.z))[u_channel] * step(-1.0, y_delta_neg);
+	float y_neg = sample_voxel(vec3(sample_point.x, y_delta_neg, sample_point.z))[channel] * step(-1.0, y_delta_neg);
 
 	float z_delta_pos = sample_point.z + delta;
-	float z_pos = sample_voxel(vec3(sample_point.xy, z_delta_pos))[u_channel] * step(z_delta_pos, 1.0);
+	float z_pos = sample_voxel(vec3(sample_point.xy, z_delta_pos))[channel] * step(z_delta_pos, 1.0);
 
 	float z_delta_neg = sample_point.z - delta;
-	float z_neg = sample_voxel(vec3(sample_point.xy, z_delta_neg))[u_channel] * step(-1.0, z_delta_neg);
+	float z_neg = sample_voxel(vec3(sample_point.xy, z_delta_neg))[channel] * step(-1.0, z_delta_neg);
 
 	return vec3(x_pos - x_neg, y_pos - y_neg, z_pos - z_neg) / (2.0 * delta);
 }
 
-mat3 compute_hessian(vec3 p, float delta)
+mat3 compute_hessian(vec4 p, float delta)
 {
-    vec3 g_x_pos = compute_gradient(vec3(p.x + delta, p.yz), delta);
-    vec3 g_x_neg = compute_gradient(vec3(p.x - delta, p.yz), delta);
+    vec3 g_x_pos = compute_gradient(vec4(p.x + delta, p.yz, p.a), delta);
+    vec3 g_x_neg = compute_gradient(vec4(p.x - delta, p.yz, p.a), delta);
 
-    vec3 g_y_pos = compute_gradient(vec3(p.x, p.y + delta, p.z), delta);
-    vec3 g_y_neg = compute_gradient(vec3(p.x, p.y - delta, p.z), delta);
+    vec3 g_y_pos = compute_gradient(vec4(p.x, p.y + delta, p.z, p.a), delta);
+    vec3 g_y_neg = compute_gradient(vec4(p.x, p.y - delta, p.z, p.a), delta);
 
-    vec3 g_z_pos = compute_gradient(vec3(p.xy, p.z + delta), delta);
-    vec3 g_z_neg = compute_gradient(vec3(p.xy, p.z - delta), delta);
+    vec3 g_z_pos = compute_gradient(vec4(p.xy, p.z + delta, p.a), delta);
+    vec3 g_z_neg = compute_gradient(vec4(p.xy, p.z - delta, p.a), delta);
 
     vec3 row_x = (g_x_pos - g_x_neg) / (2.0 * delta);
     vec3 row_y = (g_y_pos - g_y_neg) / (2.0 * delta);
@@ -267,7 +269,7 @@ mat3 compute_hessian(vec3 p, float delta)
     );
 }
 
-float compute_curvature(vec3 sample_point)
+float compute_curvature(vec4 sample_point)
 {
 	if (u_mode == SPHERE_DEBUG)
 		return 1.0;
@@ -352,10 +354,10 @@ vec3 shade_lambert(vec4 medium_color, vec3 N, Light light)
 	return light.intensity * NdotL * medium_color.rgb;
 }
 
-vec3 shade_blinn_phong(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
+vec3 shade_blinn_phong(vec4 medium_color, vec4 sample_point, vec3 N, Light light)
 {
 	vec3 L = normalize(light.position);
-	vec3 V = normalize(u_eye_position - sample_point);
+	vec3 V = normalize(u_eye_position - sample_point.xyz);
 	vec3 H = normalize(L + V);
 	float NdotH = max(dot(N, H), 0.0001);
 	float NdotL = max(dot(N, L), 0.0);
@@ -363,7 +365,7 @@ vec3 shade_blinn_phong(vec4 medium_color, vec3 sample_point, vec3 N, Light light
 	return light.intensity * NdotL * (medium_color.rgb + pow(NdotH, u_shininess)); 
 }
 
-vec3 shade_disney(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
+vec3 shade_disney(vec4 medium_color, vec4 sample_point, vec3 N, Light light)
 {
 	// Base Diffuse
 	// ThetaL = dot(N, L)
@@ -372,7 +374,7 @@ vec3 shade_disney(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
 	// FD90 = 0.5 + 2 * roughness * cos^2ThetaD
 	// base_diffuse = (baseColor / pi) * (1 + (FD90 - 1) * (1 - cosThetaL) ^ 5) * (1 + (FD90 - 1) * (1 - cosThetaV) ^ 5)
 	vec3 L = normalize(light.position);
-	vec3 V = normalize(u_eye_position - sample_point);
+	vec3 V = normalize(u_eye_position - sample_point.xyz);
 	vec3 H = normalize(L + V);
 	float LdotH = dot(L, H);
 	float NdotL = dot(N, L);
@@ -447,7 +449,7 @@ vec3 shade_disney(vec4 medium_color, vec3 sample_point, vec3 N, Light light)
 }
 
 // u: S^2 X S^2 X S^2 -> [0, PI]
-float u(vec3 sample_point, vec3 n, vec3 l, vec3 v)
+float u(vec4 sample_point, vec3 n, vec3 l, vec3 v)
 {
 	// Anisotropy of the specular highlight
 	vec3 help_vector = abs(n.y) > 0.99999999 ? vec3(1.0, 0.0, 0.0) : UP_VECTOR;
@@ -487,7 +489,7 @@ float I(float u)
 	return pow(max(u_beta + (1.0 - u_beta) * cos(u), 0.0), u_gamma);
 }
 
-vec4 shade_stylized(vec4 medium_color, vec3 sample_point, vec3 n, Light light)
+vec4 shade_stylized(vec4 medium_color, vec4 sample_point, vec3 n, Light light)
 {
 	// description:
 	// n 				normal
@@ -510,7 +512,7 @@ vec4 shade_stylized(vec4 medium_color, vec3 sample_point, vec3 n, Light light)
 	// gamma		<0, INF> intensity fall of rate
 
 	vec3 l = normalize(light.position);
-	vec3 v = normalize(u_eye_position - sample_point);
+	vec3 v = normalize(u_eye_position - sample_point.xyz);
 
 	float u = u(sample_point, n, l, v);
 	float I = I(u);
@@ -535,7 +537,7 @@ vec4 shade_stylized(vec4 medium_color, vec3 sample_point, vec3 n, Light light)
 }
 
 
-vec4 shade(vec4 medium_color, vec3 sample_point, vec3 normal)
+vec4 shade(vec4 medium_color, vec4 sample_point, vec3 normal)
 {
 	vec4 color = vec4(0.0); 
 
@@ -569,7 +571,7 @@ vec4 shade(vec4 medium_color, vec3 sample_point, vec3 normal)
 			color = vec4(vec3((normal + 1.0) * 0.5), 1.0);
 			break;
 		case POSITION:
-			color = vec4(sample_point, 1.0);
+			color = vec4(sample_point.xyz, 1.0);
 			break;
 		case CUBEMAP:
 			color = texture(u_cube_map_texture, normal);
@@ -612,7 +614,7 @@ vec4 get_medium_color(int index)
 	}
 }
 
-vec3 get_shading_normal(vec3 sample_point, vec3 surface_normal)
+vec3 get_shading_normal(vec4 sample_point, vec3 surface_normal)
 {
 	vec3 result;
 	switch(u_mode)
@@ -630,58 +632,75 @@ vec3 get_shading_normal(vec3 sample_point, vec3 surface_normal)
 
 vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_normal, float volume_travel_distance)
 {
-	vec3 sample_point = first_interesection;
+	vec4 sample_point = vec4(first_interesection, -1.0);
 	vec4 color = vec4(0.0);
 
-	bool skin_colored = false;
+	bool surface_colored = false;
+	int index_offset = 0;
 
 	while (volume_travel_distance >= 0.0 && color.a < 1.0)
 	{
-		vec4 float_sample_color = get_sample_color(sample_point);
-
-		// AIR SKIP 
-		// TODO: read the value from a uniform
-		if (float_sample_color[u_channel] < AIR_UPPER_LIMIT)
+		// CORNER SKIP - values closer to 1 produce artifacts
+		if (abs(sample_point.x * sample_point.x) + abs(sample_point.y * sample_point.y) > 1.1)
 		{
-			sample_point += ray_direction * u_step_size;
+			sample_point.xyz += ray_direction * u_step_size;
+			volume_travel_distance -= u_step_size;
+			continue;
+		}
+
+		vec4 float_sample_color = get_sample_color(sample_point.xyz);
+
+		// AIR SKIP - assumes PET values are inside the CT scan values (inside the body)
+		// TODO: read the value from a uniform
+		if (float_sample_color.r < AIR_UPPER_LIMIT_CT /* && float_sample_color.g < BENIGN_UPPER_LIMIT_PET */)
+		{
+			sample_point.xyz += ray_direction * u_step_size;
 			volume_travel_distance -= u_step_size;
 			continue;
 			// color += vec4(tf.media_array[0].color.ggb * tf.media_array[0].color..a, tf.media_array[0].color.a);
 		}
 
 		// NOTE: Think about different color multiplier and opacity addition
-		for(int i = 0; i < tf.media_array_size; ++i)
+		for(int i = index_offset; i < tf.media_array_size; ++i)
 		{
 			vec2 medium_itv = get_medium_interval(i);
 			vec4 medium_color = get_medium_color(i);
+			int medium_channel = tf.media_array[i].channel;
 
-			if (float_sample_color[u_channel] < medium_itv.x || float_sample_color[u_channel] >= medium_itv.y)
+			if (float_sample_color[medium_channel] < medium_itv.x || float_sample_color[medium_channel] >= medium_itv.y)
 				continue;
 
+			sample_point.a = float(medium_channel);
 			vec3 normal = get_shading_normal(sample_point, surface_normal);
 			
 			// TODO: do systematically
-			if (!skin_colored)
+			if (!surface_colored)
 			{
 				color += shade(medium_color, sample_point, normal);
-				skin_colored = true;
-			}
-			else
-			{
-				color += vec4(0.9f, 0.7f, 0.47f, 1.0f) * (1.0 - color.a) * u_step_size;
+				// surface_colored = true;
 				return color;
 			}
-			// TODO: Return only if not using volume shading
-			// return color;
+		
+			// TODO: figure out efficient way to also include values below the skin
+			// if (!surface_colored)
+			// {
+			// 	color += shade(medium_color, sample_point, normal);
+			// 	surface_colored = true;
+			// 	++index_offset;
+			// 	continue;
+			// 	// return color;
+			// }
 
+			// color += shade(medium_color, sample_point, normal);
+			// return color;
 
 			// TODO: alpha should be consistent for all step sizes so: alpha = medium_alpha * (step size / reference step size)
 			// float available_alpha = min(medium_color.a, 1.0 - color.a);
 			// color += vec4(diffuse_color * available_alpha, available_alpha);
-			break;
+			// break;
 		}
 
-		sample_point += ray_direction * u_step_size;
+		sample_point.xyz += ray_direction * u_step_size;
 		volume_travel_distance -= u_step_size;
 	}
 

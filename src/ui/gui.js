@@ -47,7 +47,7 @@ function addTransferFunctionBindings(pane, GUIData)
     folderTF.addBinding(GUIData.transferFunction[key], "interval", {
       label: key,
       min: 0,
-      max: 4095,
+      max: 32766, // TODO: set from volume range
       step: 1,
     })
     .on('change', (event) => {
@@ -201,13 +201,6 @@ export function initDebugGUI(GUIData)
     options: {
       main: 0,
       debugShader: 1,
-    }
-  });
-
-  pane.addBinding(GUIData.settings.uniforms.general, "u_channel", {
-    options: {
-      ct: 0,
-      pet: 1,
     }
   });
 

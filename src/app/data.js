@@ -17,19 +17,21 @@ const hu = {
   softTissueContrast: { min: 100 + C, max: 300 + C },
   boneCancellous: { min: 300 + C, max: 400 + C },
   boneCortical: { min: -440 + C, max: 1900 + C }, // USE min: -440 for skin layer, 350 for the bone
+  pet: {min: 5000 + C, max: 40000 + C},
 
 };
 
 // Transfer Function Definition
 const tf = {
-  air: { interval: hu.air, color: {r: 0, g: 0, b: 0, a: 0}, enabled: false},
-  lungs: { interval: hu.lungs, color: {r: 0.65, g: 0.35, b: 0.11, a: 0.00}, enabled: false},
-  fat: { interval: hu.fat, color: {r: 0.82, g: 0.83, b: 0.18, a: 0.00}, enabled: false},
-  water: { interval: hu.water, color: {r: 0.03, g: 0.49, b: 0.87, a: 0.00}, enabled: false},
-  muscle: { interval: hu.muscle, color: {r: 0.46, g: 0.02, b: 0.02, a: 0.00}, enabled: false},
-  softTissueContrast: { interval: hu.softTissueContrast, color: {r: 0.66, g: 0.36, b: 0.52, a: 0.00}, enabled: false},
-  boneCancellous: { interval: hu.boneCancellous, color: {r: 0.41, g: 0.66, b: 0.17, a: 0.0}, enabled: false},
-  boneCortical: { interval: hu.boneCortical, color: {r: 0.88, g: 0.88, b: 0.88, a: 1.00}, enabled: true},
+  air: { interval: hu.air, color: {r: 0, g: 0, b: 0, a: 0}, channel: "ct", enabled: false},
+  lungs: { interval: hu.lungs, color: {r: 0.65, g: 0.35, b: 0.11, a: 0.00}, channel: "ct", enabled: false},
+  fat: { interval: hu.fat, color: {r: 0.82, g: 0.83, b: 0.18, a: 0.00}, channel: "ct", enabled: false},
+  water: { interval: hu.water, color: {r: 0.03, g: 0.49, b: 0.87, a: 0.00}, channel: "ct", enabled: false},
+  muscle: { interval: hu.muscle, color: {r: 0.46, g: 0.02, b: 0.02, a: 0.00}, channel: "ct", enabled: false},
+  softTissueContrast: { interval: hu.softTissueContrast, color: {r: 0.66, g: 0.36, b: 0.52, a: 0.00}, channel: "ct", enabled: false},
+  boneCancellous: { interval: hu.boneCancellous, color: {r: 0.41, g: 0.66, b: 0.17, a: 0.0}, channel: "ct", enabled: false},
+  boneCortical: { interval: hu.boneCortical, color: {r: 0.88, g: 0.88, b: 0.88, a: 1.00}, channel: "ct", enabled: true},
+  pet: { interval: hu.pet, color: {r: 0.88, g: 0.88, b: 0.88, a: 1.00}, channel: "pet", enabled: true},
 };
 
 // Lights Setup
@@ -75,7 +77,6 @@ const settings = {
   uniforms: {
     general: {
       u_mode: 0, // 0 = Volume Data, 1 = Debug Sphere
-      u_channel: 1,
     },
     rayTracing: {
       u_step_size: 0.0025,
@@ -168,6 +169,7 @@ function initTransferFunctionProperties(tf)
 
     transferFunction[key] = {};
     transferFunction[key].enabled = medium.enabled;
+    transferFunction[key].channel = medium.channel === "ct" ? 0 : 1;
     transferFunction[key].interval = medium.interval;
     transferFunction[key].color = medium.color;
     transferFunction[key].intervalVec = initIntervalVec(medium);

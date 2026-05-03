@@ -409,7 +409,7 @@ export function interleaveVolumesWithResample(
         const petZ = (dimPET.depth - 1) - physZ / spacingPET.pz;
 
         // Trilinear interpolation (or nearest-neighbor for speed)
-        const petValue = trilinearSample(volumePET, dimPET, petX, petY, petZ);
+        const petValue = sampleVolume(volumePET, dimPET, petX, petY, petZ);
 
         const outIdx = ctIdx * 2;
         interleaved[outIdx]     = volumeCT[ctIdx]; // R = CT
