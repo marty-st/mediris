@@ -35,8 +35,10 @@ const mainShaderNames = {vert: "fsquad", frag: "raytrace"};
 
 // FILE PRELOAD
 // Load DICOM during module load
-const imageDataCTPromise = loadDicom('CT WB w-contrast 5.0 B30s', CACHE);
-const imageDataPETPromise = loadDicom('PET WB', CACHE);
+const folderNameCT = 'CT WB w-contrast 5.0 B30s';
+const folderNamePET = 'PET WB';
+const imageDataCTPromise = loadDicom(folderNameCT, CACHE);
+const imageDataPETPromise = loadDicom(folderNamePET, CACHE);
 // Load images for texture use
 const loadingScreenImagePromise = loadImage('loading.png');
 const cubeMapImagesPromise = loadImagesCubeMap("frozendusk", "jpg");
@@ -120,10 +122,10 @@ window.onload = async function init()
   });
 
   // Asynchronously load DICOM to display later
-  Promise.all([imageDataCTPromise, imageDataPETPromise]).then(([imageDataCT, imageDataPET]) => {
+  Promise.all([imageDataCTPromise, imageDataPETPromise]).then(async([imageDataCT, imageDataPET]) => {
     const dimensions = imageDataCT.dimensions;
 
-    const interleavedVolume = interleaveVolumesWithResample(
+    const interleavedVolume = await interleaveVolumesWithResample(
       imageDataCT.volume, 
       imageDataPET.volume, 
       imageDataCT.dimensions, 
@@ -132,6 +134,8 @@ window.onload = async function init()
       imageDataPET.origin,
       imageDataCT.spacing,
       imageDataPET.spacing,
+      folderNameCT + folderNamePET,
+      CACHE,
       Float32Array
     )
 

@@ -379,19 +379,39 @@ function getPixelDataRange(volume)
  * @param {Array} originPET
  * @param {{px, py, pz}} spacingCT - CT pixel/voxel spacing in mm
  * @param {{px, py, pz}} spacingPET - PET pixel/voxel spacing in mm
+ * @param {string} folderNames
+ * @param {boolean} useCache
  * @param {typeof TypedArray} Typed - desired output type
  * @returns {TypedArray} interleaved volume (CT + PET per voxel)
  */
-export function interleaveVolumesWithResample(
+export async function interleaveVolumesWithResample(
   volumeCT, volumePET,
   dimCT, dimPET, 
   originCT, originPET,
   spacingCT, spacingPET,
+  folderNames,
+  useCache = false,
   Typed = Float32Array
 ) 
 {
+  const DATABASE_NAME = "interleavedVolumeCache";
+  const DATABASE_VERSION = 1;
+  const KEY_TYPE = "folderName";
+  const STORE_NAME = "interleavedVolume";
+  if (useCache)
+  {
+    const cache = await getCache(DATABASE_NAME, STORE_NAME, KEY_TYPE, folderNames, DATABASE_VERSION);
+    if (cache)
+    {
+      console.log("using cache");
+      return cache;
+    }
+  }
+
   const totalVoxels = dimCT.cols * dimCT.rows * dimCT.depth;
   const interleaved = new Typed(totalVoxels * 2);
+
+  console.log("running for loopp");
 
   for (let z = 0; z < dimCT.depth; z++) {
     for (let y = 0; y < dimCT.rows; y++) {
@@ -409,7 +429,7 @@ export function interleaveVolumesWithResample(
         const petZ = (dimPET.depth - 1) - physZ / spacingPET.pz;
 
         // Trilinear interpolation (or nearest-neighbor for speed)
-        const petValue = sampleVolume(volumePET, dimPET, petX, petY, petZ);
+        const petValue = tricubicSample(volumePET, dimPET, petX, petY, petZ);
 
         const outIdx = ctIdx * 2;
         interleaved[outIdx]     = volumeCT[ctIdx]; // R = CT
@@ -417,6 +437,8 @@ export function interleaveVolumesWithResample(
       }
     }
   }
+
+  await setCache(DATABASE_NAME, STORE_NAME, KEY_TYPE, folderNames, interleaved, DATABASE_VERSION);
 
   return interleaved;
 }
