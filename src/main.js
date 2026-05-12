@@ -1,6 +1,7 @@
 'use strict'
 
-import { loadDicom, interleaveVolumesWithResample } from './file/dicom.js';
+import loadDicom from './file/dicom.js';
+import { interleaveVolumesWithResample } from './algo/image.js'
 import { initDebugGUI, initGUIData } from './ui/gui.js';
 import { initUI, control, resetControls } from './ui/manager.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
