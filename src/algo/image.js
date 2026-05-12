@@ -10,7 +10,43 @@ const DATABASE_VERSION = 1;
 const KEY_TYPE = "folderName";
 const STORE_NAME = "interleavedVolume";
 
+// Numerical limits
+const INT32_MAX = ~(1 << 31);
+
 /**/
+
+class StridedArrayView 
+{
+  constructor(typedArray, start, end, stride)
+  {
+    this.array = typedArray;
+    this.start = start;
+    this.stride = stride;
+    this.length = Math.max(0, Math.ceil((end - start) / stride));
+  }
+
+  // virtual index
+  at(index)
+  {
+    if (index < 0 || index >= this.length) 
+      return undefined;
+    return this.array[this.start + index * this.stride];
+  }
+
+  // access the original array using the virtual index
+  set(index, value)
+  {
+    if (index >= 0 && index < this.length) 
+      this.array[this.start + index * this.stride] = value;
+  }
+
+  // set multiple values from another array into the original array
+  setAll(items)
+  {
+    for (let i = 0; i < items.length; ++i)
+      this.set(i, items[i]);
+  }
+}
 
 /**
  * Resamples source volume to match target volume's grid, then interleaves.
@@ -158,4 +194,101 @@ function tricubicSample(volume, dims, fx, fy, fz) {
         }
     }
     return result;
+}
+
+export async function euclideanDistanceTransform(volume, dimensions, spacing, threshold) 
+{
+  const {rows: width, cols: height, depth} = dimensions;
+  const widthHeight = width * height
+  const volumeSize = widthHeight * depth;
+
+  const distanceTransform = new Float32Array(volumeSize).map((value, index) => value = volume[index] > threshold ? 0 : INT32_MAX);
+
+  // x
+  for (let z = 0; z < depth; ++z)
+  {
+    for (let y = 0; y < height; ++y)
+    {
+      const startIndex = z * widthHeight + y * width;
+      const row = new StridedArrayView(distanceTransform, startIndex, startIndex + width, 1);
+      row.setAll(DT(row, spacing.px));
+    }
+  }
+
+  // y
+  for (let z = 0; z < depth; ++z)
+  {
+    for (let x = 0; x < width; ++x)
+    {
+      const startIndex = z * widthHeight + x;
+      const column = new StridedArrayView(distanceTransform, startIndex, startIndex + height * width, width);
+      column.setAll(DT(column, spacing.py));
+    }
+  }
+
+  // z
+  for (let y = 0; y < height; ++y)
+  {
+    for (let x = 0; x < width; ++x)
+    {
+      const startIndex = y * width + x;
+      const layer = new StridedArrayView(distanceTransform, startIndex, startIndex + depth * widthHeight, widthHeight);
+      layer.setAll(DT(layer, spacing.pz));
+    }
+  }
+
+  return distanceTransform;
+}
+
+/**
+ * 
+ * @param { StridedArrayView } f array representing a 1D function
+ * @param {Number} s spacing between samples of `f`
+ * @returns {TypedArray} distance transform for the given function `f`
+ */
+function DT(f, s) 
+{
+  const n = f.length;
+  const v = new Int32Array(n);
+  const z = new Float64Array(n + 1);
+
+  let k = 0;
+  v[0] = 0;
+  z[0] = -Infinity;
+  z[1] = Infinity;
+
+  for (let q = 1; q < n; ++q)
+  {
+    const v_k = v[k];
+    let s = ((f.at(q) + q * q) - (f.at(v_k) + v_k * v_k)) / (2 * q - 2 * v_k);
+    while (s <= z[k]) 
+    {
+      --k;
+      s = ((f.at(q) + q * q) - (f.at(v_k) + v_k * v_k)) / (2 * q - 2 * v_k);
+    }
+
+    ++k;
+    v[k] = q;
+    z[k] = s;
+    z[k + 1] = Infinity;
+  }
+
+  // NOTE: Float has 24 mantissa bits -> integers are exact up to 2^24 = 16,777,216;
+  // so squared distances will be correct up to volume dimension of 2048^3 (max sq. distance ~12.6M).
+  // However, if s (sample spacing) is a decimal value, subsequent calculations will have a small
+  // floating point error.
+  const Df = new Float32Array(n); 
+  k = 0;
+
+  for (let q = 0; q < n; ++q)
+  {
+    while (z[k + 1] < q)
+      ++k;
+    
+    let v_k = v[k];
+    let temp = (q - v_k) * s;
+    Df[q] = temp * temp + f.at(v_k);
+  }
+
+  return Df;
 }

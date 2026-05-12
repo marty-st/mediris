@@ -1,7 +1,7 @@
 'use strict'
 
 import loadDicom from './file/dicom.js';
-import { interleaveVolumesWithResample } from './algo/image.js'
+import { euclideanDistanceTransform, interleaveVolumesWithResample } from './algo/image.js'
 import { initDebugGUI, initGUIData } from './ui/gui.js';
 import { initUI, control, resetControls } from './ui/manager.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
@@ -125,6 +125,8 @@ window.onload = async function init()
   // Asynchronously load DICOM to display later
   Promise.all([imageDataCTPromise, imageDataPETPromise]).then(async([imageDataCT, imageDataPET]) => {
     const dimensions = imageDataCT.dimensions;
+
+    const squaredEuclideanDistanceToNonAir = await euclideanDistanceTransform(imageDataCT.volume, imageDataCT.dimensions, imageDataCT.spacing, 50);
 
     const interleavedVolume = await interleaveVolumesWithResample(
       imageDataCT.volume, 
