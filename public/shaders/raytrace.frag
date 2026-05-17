@@ -640,7 +640,7 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 
 	while (volume_travel_distance >= 0.0 && color.a < 1.0)
 	{
-		// CORNER SKIP - values closer to 1 produce artifacts
+		// CORNER SKIP - Skips tracing outside of the scanned cylinder. Values closer to 1 produce artifacts.
 		if (abs(sample_point.x * sample_point.x) + abs(sample_point.y * sample_point.y) > 1.1)
 		{
 			sample_point.xyz += ray_direction * u_step_size;
@@ -650,14 +650,14 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 
 		vec4 float_sample_color = get_sample_color(sample_point.xyz);
 
-		// AIR SKIP - assumes PET values are inside the CT scan values (inside the body)
-		// TODO: read the value from a uniform
-		if (float_sample_color.r < AIR_UPPER_LIMIT_CT /* && float_sample_color.g < BENIGN_UPPER_LIMIT_PET */)
+		// EUCLIDEAN DISTANCE TO NON-AIR VOXELS SKIP
+		float distance = float_sample_color.b;
+		if (distance > 1.0)
 		{
-			sample_point.xyz += ray_direction * u_step_size;
-			volume_travel_distance -= u_step_size;
+			float stride = sqrt(distance) / 256.0;
+			sample_point.xyz += ray_direction * stride;
+			volume_travel_distance -= stride;
 			continue;
-			// color += vec4(tf.media_array[0].color.ggb * tf.media_array[0].color..a, tf.media_array[0].color.a);
 		}
 
 		// NOTE: Think about different color multiplier and opacity addition

@@ -243,14 +243,15 @@ export async function euclideanDistanceTransform(volume, dimensions, spacing, th
 /**
  * 
  * @param { StridedArrayView } f array representing a 1D function
- * @param {Number} s spacing between samples of `f`
+ * @param {Number} spacing spacing between samples of `f`
  * @returns {TypedArray} distance transform for the given function `f`
  */
-function DT(f, s) 
+function DT(f, spacing) 
 {
   const n = f.length;
   const v = new Int32Array(n);
   const z = new Float64Array(n + 1);
+  const sq = spacing * spacing;
 
   let k = 0;
   v[0] = 0;
@@ -260,11 +261,12 @@ function DT(f, s)
   for (let q = 1; q < n; ++q)
   {
     const v_k = v[k];
-    let s = ((f.at(q) + q * q) - (f.at(v_k) + v_k * v_k)) / (2 * q - 2 * v_k);
+    let s = ((f.at(q) + q * q * sq) - (f.at(v_k) + v_k * v_k * sq)) / (2 * sq * (q - v_k));
     while (s <= z[k]) 
     {
       --k;
-      s = ((f.at(q) + q * q) - (f.at(v_k) + v_k * v_k)) / (2 * q - 2 * v_k);
+      const v_k = v[k];
+      s = ((f.at(q) + q * q * sq) - (f.at(v_k) + v_k * v_k * sq)) / (2 * sq * (q - v_k));
     }
 
     ++k;
@@ -286,9 +288,25 @@ function DT(f, s)
       ++k;
     
     let v_k = v[k];
-    let temp = (q - v_k) * s;
+    let temp = (q - v_k) * spacing;
     Df[q] = temp * temp + f.at(v_k);
   }
 
   return Df;
+}
+
+export function interleaveVolumeAndEDT(volume, edt)
+{
+  const interleaved = new Float32Array(volume.length + edt.length);
+
+  let outIdx = 0;
+  for (let i = 0; i < edt.length; ++i)
+  {
+    const volumeIdx = 2 * i;
+    interleaved[outIdx++] = volume[volumeIdx];
+    interleaved[outIdx++] = volume[volumeIdx + 1];
+    interleaved[outIdx++] = edt[i];
+  }
+
+  return interleaved;
 }

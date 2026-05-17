@@ -1,7 +1,7 @@
 'use strict'
 
 import loadDicom from './file/dicom.js';
-import { euclideanDistanceTransform, interleaveVolumesWithResample } from './algo/image.js'
+import { euclideanDistanceTransform, interleaveVolumeAndEDT, interleaveVolumesWithResample } from './algo/image.js'
 import { initDebugGUI, initGUIData } from './ui/gui.js';
 import { initUI, control, resetControls } from './ui/manager.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
@@ -128,7 +128,7 @@ window.onload = async function init()
 
     const squaredEuclideanDistanceToNonAir = await euclideanDistanceTransform(imageDataCT.volume, imageDataCT.dimensions, imageDataCT.spacing, 50);
 
-    const interleavedVolume = await interleaveVolumesWithResample(
+    const interleavedVolumes = await interleaveVolumesWithResample(
       imageDataCT.volume, 
       imageDataPET.volume, 
       imageDataCT.dimensions, 
@@ -142,7 +142,11 @@ window.onload = async function init()
       Float32Array
     )
 
-    const volumeTexture = createVolumeTexture(gl, interleavedVolume, dimensions, 2);
+    console.log(squaredEuclideanDistanceToNonAir);
+
+    const interleavedData = interleaveVolumeAndEDT(interleavedVolumes, squaredEuclideanDistanceToNonAir);
+
+    const volumeTexture = createVolumeTexture(gl, interleavedData, dimensions, 3);
 
     appData.environment.scene.geometries.push(createVolumeGeometry(gl, volumeProgramInfo, mainShaderNames, volumeTexture, materialTexture, cubeMapTexture, dimensions, appData));
     
