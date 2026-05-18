@@ -89,9 +89,9 @@ export function createVolumeTexture(gl, volume, dimensions, channels)
       gl.TEXTURE_3D,
       0,
       internalFormat,                 // internalFormat
-      dimensions.cols,
       dimensions.rows,
-      dimensions.depth,
+      dimensions.cols,
+      dimensions.layers,
       0,
       format,                  // format
       gl.FLOAT,                // type
@@ -103,9 +103,9 @@ export function createVolumeTexture(gl, volume, dimensions, channels)
     //   gl.TEXTURE_3D,
     //   0,
     //   gl.R16UI,             // internalFormat
-    //   dimensions.cols,
     //   dimensions.rows,
-    //   dimensions.depth,
+    //   dimensions.cols,
+    //   dimensions.layers,
     //   0,
     //   gl.RED_INTEGER,       // format
     //   gl.UNSIGNED_SHORT,    // type

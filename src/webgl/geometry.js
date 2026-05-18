@@ -75,7 +75,7 @@ export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimens
     uniforms: {
       u_volume_texture: volumeTexture,
       u_slice_number: appData.settings.slice,
-      u_slice_count: dimensions.depth,
+      u_slice_count: dimensions.layers,
     }
   };
 }

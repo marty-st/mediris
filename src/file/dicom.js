@@ -130,14 +130,14 @@ function sortSlicesByPosition(imageIds, images) {
 /**
  * Extracts the dimensions of the image volume from the loaded images
  * @param {Array} images array of loaded cornerstone image objects
- * @returns {{rows: number, cols: number, depth: number}} object containing the volume dimensions
+ * @returns {{rows: number, cols: number, layers: number}} object containing the volume dimensions
  */
 function getDataDimensions(images)
 {
   return { 
     rows: images[0].rows, 
     cols: images[0].columns,
-    depth: images.length,
+    layers: images.length,
   };
 }
 
@@ -195,16 +195,16 @@ function defineVolumeArrayType(bitsAllocated, pixelRepresentation)
 /**
  * Gathers pixel data for 3D texture into a single volume object
  * @param {Array} images array of loaded cornerstone image objects
- * @param {{rows: number, cols: number, depth: number}} dimensions object containing the volume dimensions
+ * @param {{rows: number, cols: number, layers: number}} dimensions object containing the volume dimensions
  * @param {number} sliceSize number of pixels per slice (rows * cols)
  * @param {typeof Float32Array} Typed TypedArray constructor for the volume data
  * @returns {Float32Array} flattened volume array containing all slice pixel data
  */
 function createVolume(images, dimensions, sliceSize, Typed)
 {
-  const volume = new Typed(sliceSize * dimensions.depth);
+  const volume = new Typed(sliceSize * dimensions.layers);
 
-  for (let z = 0; z < dimensions.depth; ++z) 
+  for (let z = 0; z < dimensions.layers; ++z) 
   {
     const slicePixelData = images[z].getPixelData(); // Typed array
 
@@ -220,7 +220,7 @@ function createVolume(images, dimensions, sliceSize, Typed)
 /**
  * Extracts voxel spacing information from DICOM metadata
  * @param {string[]} imageIds array of cornerstone image identifiers
- * @param {{rows: number, cols: number, depth: number}} dimensions object containing the volume dimensions
+ * @param {{rows: number, cols: number, layers: number}} dimensions object containing the volume dimensions
  * @returns {{px: number, py: number, pz: number}} object with pixel/slice spacing values in mm
  */
 function getPixelSpacing(imageIds, dimensions)
@@ -230,7 +230,7 @@ function getPixelSpacing(imageIds, dimensions)
   return {
     px: plane.columnPixelSpacing ?? 1, // dx
     py: plane.rowPixelSpacing ?? 1,    // dy
-    pz: (dimensions.depth > 1 ? Math.abs(
+    pz: (dimensions.layers > 1 ? Math.abs(
       (cornerstone.metaData.get('imagePositionPatient', imageIds[1])?.[2] ?? 0) -
       (cornerstone.metaData.get('imagePositionPatient', imageIds[0])?.[2] ?? 0)
     ) : (cornerstone.metaData.get('sliceThickness', imageIds[0]) ?? 1)) || 1, // dz
@@ -308,7 +308,7 @@ function getVolumeGeometry(imageIds, images) {
  * Processes loaded DICOM images and extracts all relevant data for 3D rendering
  * @param {string[]} imageIds array of cornerstone image identifiers
  * @param {Array} images array of loaded cornerstone image objects
- * @returns {{dimensions: {rows: number, cols: number, depth: number}, 
+ * @returns {{dimensions: {rows: number, cols: number, layers: number}, 
  *            bitsAllocated: number, pixelRepresentation: number, spacing: {px: number, py: number, pz: number}, 
  *            origin: Array, row: int[], col: int[], imageIds: string[], volume: Float32Array}} object containing DICOM slices metadata and pixel volume
  */

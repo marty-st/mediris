@@ -52,8 +52,8 @@ class StridedArrayView
  * Resamples source volume to match target volume's grid, then interleaves.
  * @param {TypedArray} volumeCT - target grid (higher res)
  * @param {TypedArray} volumePET - source grid (lower res)
- * @param {{cols, rows, depth}} dimCT - CT dimensions
- * @param {{cols, rows, depth}} dimPET - PET dimensions
+ * @param {{cols, rows, layers}} dimCT - CT dimensions
+ * @param {{cols, rows, layers}} dimPET - PET dimensions
  * @param {Array} originCT
  * @param {Array} originPET
  * @param {{px, py, pz}} spacingCT - CT pixel/voxel spacing in mm
@@ -80,13 +80,18 @@ export async function interleaveVolumesWithResample(
       return cache;
   }
 
-  const totalVoxels = dimCT.cols * dimCT.rows * dimCT.depth;
+  const layerSize = dimCT.rows * dimCT.cols;
+  const totalVoxels = layerSize * dimCT.layers;
   const interleaved = new Typed(totalVoxels * 2);
 
-  for (let z = 0; z < dimCT.depth; z++) {
-    for (let y = 0; y < dimCT.rows; y++) {
-      for (let x = 0; x < dimCT.cols; x++) {
-        const ctIdx = z * dimCT.rows * dimCT.cols + y * dimCT.cols + x;
+  for (let z = 0; z < dimCT.layers; z++) {
+    for (let y = 0; y < dimCT.cols; y++) {
+      for (let x = 0; x < dimCT.rows; x++) {
+        const ctIdx = z * layerSize + y * dimCT.cols + x;
+
+        // NOTE: origin.z values are dropped as they are too large and (I assume)
+        // the value would be put outside of the volume. 
+        // Example: originCT.z = -1541, originPET.z = -775.964.
 
         // Physical position of this CT voxel
         const physX = originCT[0] + x * spacingCT.px;
@@ -96,14 +101,14 @@ export async function interleaveVolumesWithResample(
         // Corresponding index in PET grid
         const petX = (physX - originPET[0]) / spacingPET.px;
         const petY = (physY - originPET[1]) / spacingPET.py;
-        const petZ = (dimPET.depth - 1) - physZ / spacingPET.pz;
+        const petZ = (dimPET.layers - 1) - physZ / spacingPET.pz;
 
-        // Trilinear interpolation (or nearest-neighbor for speed)
+        // Interpolation (nearest-neighbor for speed)
         const petValue = tricubicSample(volumePET, dimPET, petX, petY, petZ);
 
         const outIdx = ctIdx * 2;
-        interleaved[outIdx]     = volumeCT[ctIdx]; // R = CT
-        interleaved[outIdx + 1] = petValue;        // G = PET
+        interleaved[outIdx] = volumeCT[ctIdx]; // R = CT
+        interleaved[outIdx + 1] = petValue;    // G = PET
       }
     }
   }
@@ -116,7 +121,7 @@ export async function interleaveVolumesWithResample(
 // TODO: docs
 function nearestNeigborSample(volume, dim, fx, fy, fz) {
   const x = Math.round(fx), y = Math.round(fy), z = Math.round(fz);
-  if (x < 0 || x >= dim.cols || y < 0 || y >= dim.rows || z < 0 || z >= dim.depth)
+  if (x < 0 || x >= dim.cols || y < 0 || y >= dim.rows || z < 0 || z >= dim.layers)
     return 0;
   return volume[z * dim.rows * dim.cols + y * dim.cols + x];
 }
@@ -128,7 +133,7 @@ function trilinearSample(volume, dims, fx, fy, fz) {
     // Clamp to valid range
     fx = Math.max(0, Math.min(dims.rows - 1.001, fx));
     fy = Math.max(0, Math.min(dims.cols - 1.001, fy));
-    fz = Math.max(0, Math.min(dims.depth - 1.001, fz));
+    fz = Math.max(0, Math.min(dims.layers - 1.001, fz));
 
     const x0 = Math.floor(fx), x1 = x0 + 1;
     const y0 = Math.floor(fy), y1 = y0 + 1;
@@ -177,7 +182,7 @@ function cubicWeight(t) {
 // TODO: docs
 function tricubicSample(volume, dims, fx, fy, fz) {
     const clamp = (v, max) => Math.max(0, Math.min(max - 1, v));
-    const idx = (x, y, z) => clamp(x,dims.rows) + dims.rows * (clamp(y,dims.cols) + dims.cols * clamp(z,dims.depth));
+    const idx = (x, y, z) => clamp(x,dims.rows) + dims.rows * (clamp(y,dims.cols) + dims.cols * clamp(z,dims.layers));
 
     const x0 = Math.floor(fx), y0 = Math.floor(fy), z0 = Math.floor(fz);
     const wx = cubicWeight(fx - x0);
@@ -198,7 +203,7 @@ function tricubicSample(volume, dims, fx, fy, fz) {
 
 export async function euclideanDistanceTransform(volume, dimensions, spacing, threshold) 
 {
-  const {rows: width, cols: height, depth} = dimensions;
+  const {rows: width, cols: height, layers: depth} = dimensions;
   const widthHeight = width * height
   const volumeSize = widthHeight * depth;
 
