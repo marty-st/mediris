@@ -651,10 +651,12 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 		vec4 float_sample_color = get_sample_color(sample_point.xyz);
 
 		// EUCLIDEAN DISTANCE TO NON-AIR VOXELS SKIP
-		float distance = float_sample_color.b;
+		float distance = float_sample_color.b; // squared distance in voxels
 		if (u_mode == DICOM && distance > 1.0)
 		{
-			float stride = sqrt(distance) / 256.0;
+			float stride = max((sqrt(distance) - 1.0), 1.0) / 256.0; // 256 = textureSize.x / 2.0 as sampled cube is <-1, 1>
+			// TODO: use stride vector
+			// vec3 strideVec = 2.0 * vec3(stride) / textureSize(u_volume_texture, 0);
 			sample_point.xyz += ray_direction * stride;
 			volume_travel_distance -= stride;
 			continue;
