@@ -113,18 +113,20 @@ async function loadImages(imageIds)
 }
 
 // TODO: docs
-function sortSlicesByPosition(imageIds, images) {
-    const pairs = imageIds.map((id, i) => {
-        const dataset = images[i].data;
-        const ipp = dataset?.string('x00200032');
-        const z = ipp ? parseFloat(ipp.split('\\')[2]) : i;
-        return { id, image: images[i], z };
-    });
-    pairs.sort((a, b) => a.z - b.z);
-    return {
-        imageIds: pairs.map(p => p.id),
-        images:   pairs.map(p => p.image),
-    };
+function sortSlicesByPosition(imageIds, images)
+{
+  const pairs = imageIds.map((id, i) => {
+    const dataset = images[i].data;
+    const ipp = dataset?.string('x00200032');
+    const z = ipp ? parseFloat(ipp.split('\\')[2]) : i;
+    return { id, image: images[i], z };
+  });
+  pairs.sort((a, b) => a.z - b.z);
+
+  return {
+    imageIds: pairs.map(p => p.id),
+    images:   pairs.map(p => p.image),
+  };
 }
 
 /**
@@ -164,7 +166,8 @@ function getPixelMetaData(images, imageIds)
   // Prefer metadata; otherwise infer from pixel data type
   let bitsAllocated = cornerstone.metaData.get?.('bitsAllocated', imageIds[0]);
   let pixelRepresentation = cornerstone.metaData.get?.('pixelRepresentation', imageIds[0]);
-  if (bitsAllocated == null || pixelRepresentation == null) {
+  if (bitsAllocated == null || pixelRepresentation == null)
+  {
     const pd0 = images[0].getPixelData();
     bitsAllocated = (pd0?.BYTES_PER_ELEMENT || 1) * 8;
     pixelRepresentation =
@@ -255,7 +258,8 @@ function arrayToXYZ(array)
  *   (0020,0037) Image Orientation Patient → row (3) + col (3) direction cosines
  */
 // TODO: docs
-function getGeometryFromDataset(dataset) {
+function getGeometryFromDataset(dataset)
+{
   // dicomParser: backslash-separated decimal strings
   const ipp = dataset.string('x00200032'); // "x\y\z"
   const iop = dataset.string('x00200037'); // "rx\ry\rz\cx\cy\cz"
@@ -283,11 +287,13 @@ function getGeometryFromDataset(dataset) {
  * @param {Array} images - loaded cornerstone image objects (image.data is the dicomParser dataset)
  */
 // TODO: docs
-function getVolumeGeometry(imageIds, images) {
+function getVolumeGeometry(imageIds, images)
+{
   // --- Try cornerstone metadata provider first ---
   const plane = cornerstone.metaData.get('imagePlaneModule', imageIds[0]);
 
-  if (plane?.imagePositionPatient && plane?.rowCosines && plane?.columnCosines) {
+  if (plane?.imagePositionPatient && plane?.rowCosines && plane?.columnCosines)
+  {
     // Cornerstone may return {x,y,z} objects or plain arrays depending on version
     const toXYZ = v => Array.isArray(v) ? arrayToXYZ(v) : v;
     return {
@@ -300,9 +306,8 @@ function getVolumeGeometry(imageIds, images) {
   // --- Fallback: read directly from dicomParser dataset ---
   // images[0].data is the raw parsed dicom dataset from cornerstone-wado-image-loader
   const dataset = images[0].data;
-  if (dataset) {
+  if (dataset)
     return getGeometryFromDataset(dataset);
-  }
 
   // Last resort: identity (will misregister but won't crash)
   console.warn('Could not extract DICOM geometry — using identity transform');
