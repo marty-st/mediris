@@ -201,7 +201,7 @@ function tricubicSample(volume, dims, fx, fy, fz) {
     return result;
 }
 
-export async function euclideanDistanceTransform(volume, dimensions, spacing, threshold) 
+export async function euclideanDistanceTransform(volume, dimensions, threshold) 
 {
   const {rows: width, cols: height, layers: depth} = dimensions;
   const widthHeight = width * height
@@ -216,7 +216,7 @@ export async function euclideanDistanceTransform(volume, dimensions, spacing, th
     {
       const startIndex = z * widthHeight + y * width;
       const row = new StridedArrayView(distanceTransform, startIndex, startIndex + width, 1);
-      row.setAll(DT(row, spacing.x));
+      row.setAll(DT(row));
     }
   }
 
@@ -227,7 +227,7 @@ export async function euclideanDistanceTransform(volume, dimensions, spacing, th
     {
       const startIndex = z * widthHeight + x;
       const column = new StridedArrayView(distanceTransform, startIndex, startIndex + height * width, width);
-      column.setAll(DT(column, spacing.y));
+      column.setAll(DT(column));
     }
   }
 
@@ -238,7 +238,7 @@ export async function euclideanDistanceTransform(volume, dimensions, spacing, th
     {
       const startIndex = y * width + x;
       const layer = new StridedArrayView(distanceTransform, startIndex, startIndex + depth * widthHeight, widthHeight);
-      layer.setAll(DT(layer, spacing.z));
+      layer.setAll(DT(layer));
     }
   }
 
@@ -248,15 +248,13 @@ export async function euclideanDistanceTransform(volume, dimensions, spacing, th
 /**
  * 
  * @param { StridedArrayView } f array representing a 1D function
- * @param {Number} spacing spacing between samples of `f`
  * @returns {TypedArray} distance transform for the given function `f`
  */
-function DT(f, spacing) 
+function DT(f)
 {
   const n = f.length;
   const v = new Int32Array(n);
   const z = new Float64Array(n + 1);
-  const sq = spacing * spacing;
 
   let k = 0;
   v[0] = 0;
@@ -266,12 +264,12 @@ function DT(f, spacing)
   for (let q = 1; q < n; ++q)
   {
     const v_k = v[k];
-    let s = ((f.at(q) + q * q * sq) - (f.at(v_k) + v_k * v_k * sq)) / (2 * sq * (q - v_k));
+    let s = ((f.at(q) + q * q) - (f.at(v_k) + v_k * v_k)) / (2 * (q - v_k));
     while (s <= z[k]) 
     {
       --k;
       const v_k = v[k];
-      s = ((f.at(q) + q * q * sq) - (f.at(v_k) + v_k * v_k * sq)) / (2 * sq * (q - v_k));
+      s = ((f.at(q) + q * q) - (f.at(v_k) + v_k * v_k)) / (2 * (q - v_k));
     }
 
     ++k;
@@ -282,7 +280,7 @@ function DT(f, spacing)
 
   // NOTE: Float has 24 mantissa bits -> integers are exact up to 2^24 = 16,777,216;
   // so squared distances will be correct up to volume dimension of 2048^3 (max sq. distance ~12.6M).
-  // However, if s (sample spacing) is a decimal value, subsequent calculations will have a small
+  // However, if real-value sample spacing is used, subsequent calculations will have a small
   // floating point error.
   const Df = new Float32Array(n); 
   k = 0;
@@ -293,7 +291,7 @@ function DT(f, spacing)
       ++k;
     
     let v_k = v[k];
-    let temp = (q - v_k) * spacing;
+    let temp = (q - v_k);
     Df[q] = temp * temp + f.at(v_k);
   }
 
