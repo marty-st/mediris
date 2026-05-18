@@ -652,7 +652,7 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 
 		// EUCLIDEAN DISTANCE TO NON-AIR VOXELS SKIP
 		float distance = float_sample_color.b;
-		if (distance > 1.0)
+		if (u_mode == DICOM && distance > 1.0)
 		{
 			float stride = sqrt(distance) / 256.0;
 			sample_point.xyz += ray_direction * stride;
