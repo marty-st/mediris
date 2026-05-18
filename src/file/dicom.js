@@ -237,6 +237,15 @@ function getPixelSpacing(imageIds, dimensions)
   };
 }
 
+function arrayToXYZ(array)
+{
+  if (array.length < 3)
+    console.warn("Array of insufficient length transformed to an XYZ-object.", array);
+  return {
+    x: array[0], y: array[1], z: array[2],
+  };
+}
+
 /**
  * Parses Image Position Patient and Image Orientation Patient
  * directly from the DICOM dataset via dicomParser as a fallback.
@@ -247,23 +256,23 @@ function getPixelSpacing(imageIds, dimensions)
  */
 // TODO: docs
 function getGeometryFromDataset(dataset) {
-    // dicomParser: backslash-separated decimal strings
-    const ipp = dataset.string('x00200032'); // "x\y\z"
-    const iop = dataset.string('x00200037'); // "rx\ry\rz\cx\cy\cz"
+  // dicomParser: backslash-separated decimal strings
+  const ipp = dataset.string('x00200032'); // "x\y\z"
+  const iop = dataset.string('x00200037'); // "rx\ry\rz\cx\cy\cz"
 
-    const origin = ipp
-        ? ipp.split('\\').map(Number)
-        : [0, 0, 0];
+  const origin = ipp
+    ? ipp.split('\\').map(Number)
+    : [0, 0, 0];
 
-    const cosines = iop
-        ? iop.split('\\').map(Number)
-        : [1, 0, 0,  0, 1, 0];  // identity fallback
+  const cosines = iop
+    ? iop.split('\\').map(Number)
+    : [1, 0, 0,  0, 1, 0];  // identity fallback
 
-    return {
-        origin: origin,          // [x, y, z] in mm
-        row:    cosines.slice(0, 3),  // [rx, ry, rz]
-        col:    cosines.slice(3, 6),  // [cx, cy, cz]
-    };
+  return {
+    origin: arrayToXYZ(origin),          // in mm
+    rowAxis:    arrayToXYZ(cosines.slice(0, 3)),
+    colAxis:    arrayToXYZ(cosines.slice(3, 6)),
+  };
 }
 
 /**
@@ -275,42 +284,50 @@ function getGeometryFromDataset(dataset) {
  */
 // TODO: docs
 function getVolumeGeometry(imageIds, images) {
-    // --- Try cornerstone metadata provider first ---
-    const plane = cornerstone.metaData.get('imagePlaneModule', imageIds[0]);
+  // --- Try cornerstone metadata provider first ---
+  const plane = cornerstone.metaData.get('imagePlaneModule', imageIds[0]);
 
-    if (plane?.imagePositionPatient && plane?.rowCosines && plane?.columnCosines) {
-        // Cornerstone may return {x,y,z} objects or plain arrays depending on version
-        const toArr = v => Array.isArray(v) ? v : [v.x, v.y, v.z];
-        return {
-            origin: toArr(plane.imagePositionPatient),
-            row:    toArr(plane.rowCosines),
-            col:    toArr(plane.columnCosines),
-        };
-    }
-
-    // --- Fallback: read directly from dicomParser dataset ---
-    // images[0].data is the raw parsed dicom dataset from cornerstone-wado-image-loader
-    const dataset = images[0].data;
-    if (dataset) {
-        return getGeometryFromDataset(dataset);
-    }
-
-    // Last resort: identity (will misregister but won't crash)
-    console.warn('Could not extract DICOM geometry — using identity transform');
+  if (plane?.imagePositionPatient && plane?.rowCosines && plane?.columnCosines) {
+    // Cornerstone may return {x,y,z} objects or plain arrays depending on version
+    const toXYZ = v => Array.isArray(v) ? arrayToXYZ(v) : v;
     return {
-        origin: [0, 0, 0],
-        row:    [1, 0, 0],
-        col:    [0, 1, 0],
+      origin: toXYZ(plane.imagePositionPatient),
+      rowAxis: toXYZ(plane.rowCosines),
+      colAxis: toXYZ(plane.columnCosines),
     };
+  }
+
+  // --- Fallback: read directly from dicomParser dataset ---
+  // images[0].data is the raw parsed dicom dataset from cornerstone-wado-image-loader
+  const dataset = images[0].data;
+  if (dataset) {
+    return getGeometryFromDataset(dataset);
+  }
+
+  // Last resort: identity (will misregister but won't crash)
+  console.warn('Could not extract DICOM geometry — using identity transform');
+  return {
+    origin: arrayToXYZ([0, 0, 0]),
+    rowAxis: arrayToXYZ([1, 0, 0]),
+    colAxis: arrayToXYZ([0, 1, 0]),
+  };
 }
 
 /**
  * Processes loaded DICOM images and extracts all relevant data for 3D rendering
  * @param {string[]} imageIds array of cornerstone image identifiers
  * @param {Array} images array of loaded cornerstone image objects
- * @returns {{dimensions: {rows: number, cols: number, layers: number}, 
- *            bitsAllocated: number, pixelRepresentation: number, spacing: {px: number, py: number, pz: number}, 
- *            origin: Array, row: int[], col: int[], imageIds: string[], volume: Float32Array}} object containing DICOM slices metadata and pixel volume
+ * @returns {{
+ *  dimensions: {rows: number, cols: number, layers: number},
+ *  bitsAllocated: number,
+ *  pixelRepresentation: number,
+ *  spacing: {px: number, py: number, pz: number},
+ *  origin: {x: number, y: number, z: number},
+ *  rowAxis: {x: number, y: number, z: number},
+ *  colAxis: {x: number, y: number, z: number},
+ *  imageIds: string[],
+ *  volume: Float32Array
+ * }} object containing DICOM slices metadata and pixel volume
  */
 function getImageData(imageIds, images)
 {
@@ -328,7 +345,7 @@ function getImageData(imageIds, images)
 
   const spacing = getPixelSpacing(imageIds, dimensions);
 
-  const { origin, row, col } = getVolumeGeometry(imageIds, images);
+  const { origin, rowAxis, colAxis } = getVolumeGeometry(imageIds, images);
 
   return {
     dimensions,
@@ -336,8 +353,8 @@ function getImageData(imageIds, images)
     pixelRepresentation,
     spacing,
     origin,
-    row,
-    col,
+    rowAxis,
+    colAxis,
     imageIds,
     volume,
   };

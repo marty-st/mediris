@@ -94,13 +94,13 @@ export async function interleaveVolumesWithResample(
         // Example: originCT.z = -1541, originPET.z = -775.964.
 
         // Physical position of this CT voxel
-        const physX = originCT[0] + x * spacingCT.px;
-        const physY = originCT[1] + y * spacingCT.py;
+        const physX = originCT.x + x * spacingCT.px;
+        const physY = originCT.y + y * spacingCT.py;
         const physZ = z * spacingCT.pz;
 
         // Corresponding index in PET grid
-        const petX = (physX - originPET[0]) / spacingPET.px;
-        const petY = (physY - originPET[1]) / spacingPET.py;
+        const petX = (physX - originPET.x) / spacingPET.px;
+        const petY = (physY - originPET.y) / spacingPET.py;
         const petZ = (dimPET.layers - 1) - physZ / spacingPET.pz;
 
         // Interpolation (nearest-neighbor for speed)
