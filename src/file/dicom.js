@@ -221,16 +221,16 @@ function createVolume(images, dimensions, sliceSize, Typed)
  * Extracts voxel spacing information from DICOM metadata
  * @param {string[]} imageIds array of cornerstone image identifiers
  * @param {{rows: number, cols: number, layers: number}} dimensions object containing the volume dimensions
- * @returns {{px: number, py: number, pz: number}} object with pixel/slice spacing values in mm
+ * @returns {{x: number, y: number, z: number}} object with pixel/slice spacing values in mm
  */
 function getPixelSpacing(imageIds, dimensions)
 {
   const plane = cornerstone.metaData.get('imagePlaneModule', imageIds[0]) || {};
 
   return {
-    px: plane.columnPixelSpacing ?? 1, // dx
-    py: plane.rowPixelSpacing ?? 1,    // dy
-    pz: (dimensions.layers > 1 ? Math.abs(
+    x: plane.columnPixelSpacing ?? 1, // dx
+    y: plane.rowPixelSpacing ?? 1,    // dy
+    z: (dimensions.layers > 1 ? Math.abs(
       (cornerstone.metaData.get('imagePositionPatient', imageIds[1])?.[2] ?? 0) -
       (cornerstone.metaData.get('imagePositionPatient', imageIds[0])?.[2] ?? 0)
     ) : (cornerstone.metaData.get('sliceThickness', imageIds[0]) ?? 1)) || 1, // dz
@@ -321,7 +321,7 @@ function getVolumeGeometry(imageIds, images) {
  *  dimensions: {rows: number, cols: number, layers: number},
  *  bitsAllocated: number,
  *  pixelRepresentation: number,
- *  spacing: {px: number, py: number, pz: number},
+ *  spacing: {x: number, y: number, z: number},
  *  origin: {x: number, y: number, z: number},
  *  rowAxis: {x: number, y: number, z: number},
  *  colAxis: {x: number, y: number, z: number},

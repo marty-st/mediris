@@ -56,8 +56,8 @@ class StridedArrayView
  * @param {{cols, rows, layers}} dimPET - PET dimensions
  * @param {Array} originCT
  * @param {Array} originPET
- * @param {{px, py, pz}} spacingCT - CT pixel/voxel spacing in mm
- * @param {{px, py, pz}} spacingPET - PET pixel/voxel spacing in mm
+ * @param {{x, y, z}} spacingCT - CT pixel/voxel spacing in mm
+ * @param {{x, y, z}} spacingPET - PET pixel/voxel spacing in mm
  * @param {string} folderNames
  * @param {boolean} useCache
  * @param {typeof TypedArray} Typed - desired output type
@@ -94,14 +94,14 @@ export async function interleaveVolumesWithResample(
         // Example: originCT.z = -1541, originPET.z = -775.964.
 
         // Physical position of this CT voxel
-        const physX = originCT.x + x * spacingCT.px;
-        const physY = originCT.y + y * spacingCT.py;
-        const physZ = z * spacingCT.pz;
+        const physX = originCT.x + x * spacingCT.x;
+        const physY = originCT.y + y * spacingCT.y;
+        const physZ = z * spacingCT.z;
 
         // Corresponding index in PET grid
-        const petX = (physX - originPET.x) / spacingPET.px;
-        const petY = (physY - originPET.y) / spacingPET.py;
-        const petZ = (dimPET.layers - 1) - physZ / spacingPET.pz;
+        const petX = (physX - originPET.x) / spacingPET.x;
+        const petY = (physY - originPET.y) / spacingPET.y;
+        const petZ = (dimPET.layers - 1) - physZ / spacingPET.z;
 
         // Interpolation (nearest-neighbor for speed)
         const petValue = tricubicSample(volumePET, dimPET, petX, petY, petZ);
@@ -216,7 +216,7 @@ export async function euclideanDistanceTransform(volume, dimensions, spacing, th
     {
       const startIndex = z * widthHeight + y * width;
       const row = new StridedArrayView(distanceTransform, startIndex, startIndex + width, 1);
-      row.setAll(DT(row, spacing.px));
+      row.setAll(DT(row, spacing.x));
     }
   }
 
@@ -227,7 +227,7 @@ export async function euclideanDistanceTransform(volume, dimensions, spacing, th
     {
       const startIndex = z * widthHeight + x;
       const column = new StridedArrayView(distanceTransform, startIndex, startIndex + height * width, width);
-      column.setAll(DT(column, spacing.py));
+      column.setAll(DT(column, spacing.y));
     }
   }
 
@@ -238,7 +238,7 @@ export async function euclideanDistanceTransform(volume, dimensions, spacing, th
     {
       const startIndex = y * width + x;
       const layer = new StridedArrayView(distanceTransform, startIndex, startIndex + depth * widthHeight, widthHeight);
-      layer.setAll(DT(layer, spacing.pz));
+      layer.setAll(DT(layer, spacing.z));
     }
   }
 
