@@ -9,7 +9,7 @@ import createShaderProgram from './webgl/program.js';
 import { createSceneEmpty, createSceneRaycast } from './webgl/scene.js';
 import render from './webgl/render.js';
 import { create2DTexture, createCubeMapTexture, createVolumeTexture } from './webgl/texture.js';
-import { createVolumeGeometry, createLoadingScreenGeometry } from './webgl/geometry.js';
+import { createVolumeGeometry, createFullScreenGeometry } from './webgl/geometry.js';
 import { initCamera } from './webgl/camera.js';
 import { loadImage, loadImagesCubeMap } from './file/image.js';
 import { initAppData } from './app/data.js';

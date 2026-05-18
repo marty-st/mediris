@@ -34,10 +34,10 @@ const fullScreenQuadArrays = {
  * @param {*} gl WebGL rendering context
  * @param {*} shaderProgramInfo associated shader program
  * @param {*} shaderFileNames contains file names of associated shaders for reload purposes
- * @param {*} texture image shown on the screen when loading screen is displayed
- * @returns geometry of the loading screen (full screen quad with a texture)
+ * @param {*} texture texture rendered onto the full-screen quad
+ * @returns full-screen geometry (full-screen quad with a texture)
  */
-export function createLoadingScreenGeometry(gl, shaderProgramInfo, shaderFileNames, texture)
+export function createFullScreenGeometry(gl, shaderProgramInfo, shaderFileNames, texture)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
