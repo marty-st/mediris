@@ -27,11 +27,16 @@ const NO_CACHE = false;
 // Application data
 const appData = initAppData();
 
+let sceneEmpty = undefined;
+let idleGeometry = undefined;
+let frameBuffer = undefined;
+
 // Wrapper object for the UI controls & GUI, managed by the UI manager
 let UI = undefined;
 
 // Shader program file names
 const loadingScreenShaderNames = {vert: "fsquad", frag: "fstexture"};
+const idleShaderNames = {vert: "fsquad", frag: "fstexture"};
 const mainShaderNames = {vert: "fsquad", frag: "raytrace"};
 
 // FILE PRELOAD
@@ -70,11 +75,17 @@ window.onload = async function init()
   const pane = initDebugGUI(GUIData);   // Tweakpane rendering window
   UI = initUI(canvas, GUIData);
 
+  // pane
+  // .on('change', (event) => {
+  //   appData.environment.state.cameraIdle = false;
+  // });
+
   /* --------------------- */
   /* SHADER INITIALIZATION */
   /* --------------------- */
 
   const loadingScreenProgramInfo = await createShaderProgram(gl, loadingScreenShaderNames.vert, loadingScreenShaderNames.frag, NO_CACHE);
+  const idleShaderProgramInfo = await createShaderProgram(gl, idleShaderNames.vert, idleShaderNames.frag, NO_CACHE);
   const volumeProgramInfo = await createShaderProgram(gl, mainShaderNames.vert, mainShaderNames.frag, NO_CACHE);
 
   /* --------------------- */
@@ -92,13 +103,13 @@ window.onload = async function init()
 
   appData.environment.camera = initCamera(appData.environment.viewport);
 
-  const sceneEmpty = createSceneEmpty();
+  sceneEmpty = createSceneEmpty();
   const sceneRaycast = createSceneRaycast(gl, volumeProgramInfo, appData.settings.uniforms, appData.environment);
   appData.environment.scene = sceneRaycast;
 
   loadingScreenImagePromise.then((loadingScreenImage) =>{
     const loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
-    const loadingScreenGeometry = [createLoadingScreenGeometry(gl, loadingScreenProgramInfo, loadingScreenShaderNames, loadingScreenTexture)];
+    const loadingScreenGeometry = [createFullScreenGeometry(gl, loadingScreenProgramInfo, loadingScreenShaderNames, loadingScreenTexture)];
 
     /* --------------------- */
     /* RENDER LOAD SCREEN -- */
@@ -122,11 +133,34 @@ window.onload = async function init()
     materialTexture = create2DTexture(gl, materialImage, { width: 4096, height: 4096 });
   });
 
+  // TODO: refactor
+  const renderTexture = create2DTexture(gl, null, { width: canvas.width, height: canvas.height });
+  const depthTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, depthTexture);
+  gl.texImage2D(
+    gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, canvas.width, canvas.height, 0, 
+    gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null
+  );
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  
+  frameBuffer = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, renderTexture, 0);
+  // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, idleTexture, 0);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthTexture, 0); 
+  const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+  console.log(status);
+
+  idleGeometry = [createFullScreenGeometry(gl, idleShaderProgramInfo, idleShaderNames, renderTexture)];
+
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
+  // END OF TODO
+
   // Asynchronously load DICOM to display later
   Promise.all([imageDataCTPromise, imageDataPETPromise]).then(async([imageDataCT, imageDataPET]) => {
     const dimensions = imageDataCT.dimensions;
 
-    const squaredEuclideanDistanceToNonAir = await euclideanDistanceTransform(imageDataCT.volume, imageDataCT.dimensions, imageDataCT.spacing, 50);
+    const squaredEuclideanDistanceToNonAir = await euclideanDistanceTransform(imageDataCT.volume, imageDataCT.dimensions, imageDataCT.spacing, appData.transferFunction.boneCortical.interval.min);
 
     const interleavedVolumes = await interleaveVolumesWithResample(
       imageDataCT.volume, 
@@ -142,8 +176,6 @@ window.onload = async function init()
       Float32Array
     )
 
-    console.log(squaredEuclideanDistanceToNonAir);
-
     const interleavedData = interleaveVolumeAndEDT(interleavedVolumes, squaredEuclideanDistanceToNonAir);
 
     const volumeTexture = createVolumeTexture(gl, interleavedData, dimensions, 3);
@@ -155,6 +187,7 @@ window.onload = async function init()
     /* --------------------- */
 
     // start render loop with the volume geometry loaded
+    console.log("Render Loop Ready.");
     this.requestAnimationFrame(renderLoop);
   });
 }
@@ -192,7 +225,14 @@ function renderLoop(currentTime)
 {
   update(currentTime);
 
-  render(appData.context.gl, appData.context.canvas, appData.environment.viewport, appData.environment.scene, appData.environment.scene.geometries);
+  if (!UI.cameraControls.idle)
+  {
+    appData.context.gl.bindFramebuffer(appData.context.gl.FRAMEBUFFER, frameBuffer);
+    render(appData.context.gl, appData.context.canvas, appData.environment.viewport, appData.environment.scene, appData.environment.scene.geometries);
+  }
+
+  appData.context.gl.bindFramebuffer(appData.context.gl.FRAMEBUFFER, null);
+  render(appData.context.gl, appData.context.canvas, appData.environment.viewport, sceneEmpty, idleGeometry);
 
   requestAnimationFrame(renderLoop);
 }

@@ -63,9 +63,15 @@ const time = {
   delta: 0,
 };
 
+// Application states
+const state = {
+
+};
+
 // Application environment data
 const environment = {
   time: time,
+  state: state,
   camera: undefined,
   viewport: undefined,    // Viewport position and dimensions
   scene: undefined,       // Current scene object
