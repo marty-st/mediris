@@ -8,7 +8,7 @@ import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from '
 import createShaderProgram from './webgl/program.js';
 import { createSceneEmpty, createSceneRaycast } from './webgl/scene.js';
 import render from './webgl/render.js';
-import { create2DTexture, createCubeMapTexture, createVolumeTexture } from './webgl/texture.js';
+import { create2DTexture, createCubeMapTexture, createVolumeTexture, createFramebufferTexture, createFramebuffer } from './webgl/texture.js';
 import { createVolumeGeometry, createFullScreenGeometry } from './webgl/geometry.js';
 import { initCamera } from './webgl/camera.js';
 import { loadImage, loadImagesCubeMap } from './file/image.js';
@@ -133,28 +133,12 @@ window.onload = async function init()
     materialTexture = create2DTexture(gl, materialImage, { width: 4096, height: 4096 });
   });
 
-  // TODO: refactor
-  const renderTexture = create2DTexture(gl, null, { width: canvas.width, height: canvas.height });
-  const depthTexture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, depthTexture);
-  gl.texImage2D(
-    gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, canvas.width, canvas.height, 0, 
-    gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null
-  );
-  gl.bindTexture(gl.TEXTURE_2D, null);
+  const renderTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
+  const depthTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "depth");
   
-  frameBuffer = gl.createFramebuffer();
-  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, renderTexture, 0);
-  // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, idleTexture, 0);
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthTexture, 0); 
-  const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-  console.log(status);
+  frameBuffer = createFramebuffer(gl, {color: [renderTexture], depth: depthTexture});
 
   idleGeometry = [createFullScreenGeometry(gl, idleShaderProgramInfo, idleShaderNames, renderTexture)];
-
-  gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
-  // END OF TODO
 
   // Asynchronously load DICOM to display later
   Promise.all([imageDataCTPromise, imageDataPETPromise]).then(async([imageDataCT, imageDataPET]) => {

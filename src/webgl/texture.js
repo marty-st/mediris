@@ -119,10 +119,11 @@ export function createVolumeTexture(gl, volume, dimensions, channels)
 }
 
 /**
- * 
+ * Creates a WebGL cubemap texture from 6 given squared images.
  * @param {*} gl WebGL rendering context
  * @param {*} images array of six images, one for each cube side
  * @param {*} dimensions dimensions of a single image
+ * @returns WebGL cubemap texture object
  */
 export function createCubeMapTexture(gl, images, dimensions)
 {
@@ -164,4 +165,79 @@ export function createCubeMapTexture(gl, images, dimensions)
   gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
 
   return texture;
+}
+
+/**
+ * Creates a WebGL depth texture for custom framebuffer use.
+ * @param {*} gl WebGL rendering context
+ * @param {*} dimensions screen dimensions
+ * @returns WebGL depth texture object
+ */
+function createDepthTexture(gl, dimensions)
+{
+  const depthTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, depthTexture);
+
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.DEPTH_COMPONENT24,
+    dimensions.width,
+    dimensions.height,
+    0,
+    gl.DEPTH_COMPONENT,
+    gl.UNSIGNED_INT,
+    null
+  );
+
+  gl.bindTexture(gl.TEXTURE_2D, null);
+
+  return depthTexture;
+}
+
+/**
+ * Creates a WebGL texture used for custom framebuffer use.
+ * @param {*} gl WebGL rendering context
+ * @param {*} dimensions screen dimensions
+ * @param {*} type type of texture to be created [rgba, depth, stencil, ...]
+ * @returns WebGL texture object
+ */
+export function createFramebufferTexture(gl, dimensions, type)
+{
+  switch(type)
+  {
+    case "rgba":
+      return create2DTexture(gl, null, dimensions);
+    case "depth":
+      return createDepthTexture(gl, dimensions);
+    default:
+      console.error("invalid frambebuffer texture type");
+  }
+}
+
+/**
+ * Creates a custom framebuffer.
+ * @param {*} gl WebGL rendering context
+ * @param {{color: Array, depth, stencil}} attachments texture attachments 
+ * @returns custom framebuffer
+ */
+export function createFramebuffer(gl, attachments)
+{
+  const frameBuffer = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+
+  for (let i = 0; i < attachments.color.length; ++i)
+  {
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, attachments.color[i], 0);
+  }
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, attachments.depth, 0); 
+
+  const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+  console.log("[FRAMEBUFFER STATUS]", status == 36053 ? "complete" : "incomplete " + status);
+
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+  return frameBuffer;
 }
