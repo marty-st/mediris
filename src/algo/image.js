@@ -1,5 +1,6 @@
 'use strict'
 
+import { endBenchmark, startBenchmark } from "../app/log";
 import { getCache, setCache } from "../file/cache";
 
 /* CONSTANTS */
@@ -73,11 +74,16 @@ export async function interleaveVolumesWithResample(
   Typed = Float32Array
 ) 
 {
+  const start = startBenchmark("RESAMPLE CT PET");
+
   if (useCache)
   {
     const cache = await getCache(DATABASE_NAME, STORE_NAME, KEY_TYPE, folderNames, DATABASE_VERSION);
     if (cache)
+    {
+      endBenchmark("RESAMPLE CT PET", start, true);
       return cache;
+    }
   }
 
   const layerSize = dimCT.rows * dimCT.cols;
@@ -114,6 +120,8 @@ export async function interleaveVolumesWithResample(
   }
 
   await setCache(DATABASE_NAME, STORE_NAME, KEY_TYPE, folderNames, interleaved, DATABASE_VERSION);
+
+  endBenchmark("RESAMPLE CT PET", start);
 
   return interleaved;
 }
@@ -209,6 +217,8 @@ function tricubicSample(volume, dims, fx, fy, fz)
 
 export async function euclideanDistanceTransform(volume, dimensions, threshold) 
 {
+  const start = startBenchmark("COMPUTE EDT");
+
   const {rows: width, cols: height, layers: depth} = dimensions;
   const widthHeight = width * height
   const volumeSize = widthHeight * depth;
@@ -247,6 +257,8 @@ export async function euclideanDistanceTransform(volume, dimensions, threshold)
       layer.setAll(DT(layer));
     }
   }
+
+  endBenchmark("COMPUTE EDT", start);
 
   return distanceTransform;
 }
@@ -306,6 +318,8 @@ function DT(f)
 
 export function interleaveVolumeAndEDT(volume, edt)
 {
+  const start = startBenchmark("INTERLEAVE VOL EDT");
+
   const interleaved = new Float32Array(volume.length + edt.length);
 
   let outIdx = 0;
@@ -316,6 +330,8 @@ export function interleaveVolumeAndEDT(volume, edt)
     interleaved[outIdx++] = volume[volumeIdx + 1];
     interleaved[outIdx++] = edt[i];
   }
+
+  endBenchmark("INTERLEAVE VOL EDT", start);
 
   return interleaved;
 }

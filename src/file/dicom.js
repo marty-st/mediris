@@ -14,6 +14,7 @@ import * as cornerstone from 'cornerstone-core';
 import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import dicomParser from 'dicom-parser';
 import { getCache, setCache } from './cache';
+import { endBenchmark, startBenchmark } from '../app/log';
 
 /* CONSTANTS */
 
@@ -400,11 +401,16 @@ function getPixelDataRange(volume)
  */
 export default async function loadDicom(folderName, useCache = false) 
 {
+  const start = startBenchmark("LOAD DICOM");
+
   if (useCache)
   {
     const cache = await getCache(DATABASE_NAME, STORE_NAME, KEY_TYPE, folderName, DATABASE_VERSION);
     if (cache)
+    {
+      endBenchmark("LOAD DICOM", start, true, folderName);
       return cache;
+    }
   }
 
   const list = await fetchDicomFileNames(folderName);
@@ -419,6 +425,8 @@ export default async function loadDicom(folderName, useCache = false)
   const imageData = getImageData(imageIds, images);
 
   await setCache(DATABASE_NAME, STORE_NAME, KEY_TYPE, folderName, imageData, DATABASE_VERSION);
+
+  endBenchmark("LOAD DICOM", start, false, folderName);
 
   return imageData;
 }
