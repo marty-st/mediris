@@ -10,10 +10,10 @@ import { updateSceneFloatUniforms, updateSceneLights } from '../webgl/scene.js';
  * @param {*} appData object with application data
  * @param {*} UI UI manager object
  */
-function updateAppFromUI(appData, UI)
+async function updateAppFromUI(appData, UI)
 {
   if (UI.appControls.reloadShaders)
-    reloadShaders(appData.context.gl, appData.environment.scene);
+    await reloadShaders(appData.context.gl, appData.environment.scene);
 
   // if (UI.appControls.reloadDicom)
     // use loadDicom(folder, useCache = false); 
