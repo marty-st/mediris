@@ -27,14 +27,14 @@ const STORE_NAME = "text";
  */
 export default async function fetchShaderTexts(vertexShaderPath, fragmentShaderPath, useCache) 
 {
-  const start = startBenchmark("FETCH SHADER", vertexShaderPath, vertexShaderPath);
+  const start = startBenchmark("FETCH SHADER", vertexShaderPath, fragmentShaderPath);
 
   if (useCache)
   {
     const cache = await getCache(DATABASE_NAME, STORE_NAME, KEY_TYPE, vertexShaderPath + fragmentShaderPath, DATABASE_VERSION);
     if (cache)
     {
-      endBenchmark("FETCH SHADER", start, true, vertexShaderPath, vertexShaderPath);
+      endBenchmark("FETCH SHADER", start, true, vertexShaderPath, fragmentShaderPath);
       return cache;
     }
   }
@@ -87,7 +87,7 @@ export default async function fetchShaderTexts(vertexShaderPath, fragmentShaderP
 
   await setCache(DATABASE_NAME, STORE_NAME, KEY_TYPE, vertexShaderPath + fragmentShaderPath, shaderTexts, DATABASE_VERSION);
 
-  endBenchmark("FETCH SHADER", start, false, vertexShaderPath, vertexShaderPath);
+  endBenchmark("FETCH SHADER", start, false, vertexShaderPath, fragmentShaderPath);
   
   return shaderTexts;
 }
