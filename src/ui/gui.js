@@ -16,6 +16,7 @@ import { vec2, vec3, vec4 } from 'gl-matrix';
 export function initGUIData(appData)
 {
   let GUIData = {
+    idle: false,
     framesPerSecond: 0,
     // App Data
     settings: appData.settings,
@@ -227,5 +228,22 @@ export function initDebugGUI(GUIData)
 
   addTransferFunctionBindings(pane, GUIData);
 
+  pane
+  .on('change', (event) => {
+    // Ignore self-updating components
+    if (event.target.key == "framesPerSecond")
+      return;
+    GUIData.idle = false;
+  });
+
   return pane;
+}
+
+/**
+ * Resets states affected by the 'on-change' event handler of the GUI pane.
+ * @param {*} GUIData mediator object between GUI and the rest of the application
+ */
+export function resetGUIState(GUIData)
+{
+  GUIData.idle = true;
 }

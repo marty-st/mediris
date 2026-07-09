@@ -2,7 +2,7 @@
 
 import loadDicom from './file/dicom.js';
 import { euclideanDistanceTransform, interleaveVolumeAndEDT, interleaveVolumesWithResample } from './algo/image.js'
-import { initDebugGUI, initGUIData } from './ui/gui.js';
+import { initDebugGUI, initGUIData, resetGUIState } from './ui/gui.js';
 import { initUI, control, resetControls } from './ui/manager.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
 import createShaderProgram from './webgl/program.js';
@@ -13,7 +13,7 @@ import { createVolumeGeometry, createFullScreenGeometry } from './webgl/geometry
 import { initCamera } from './webgl/camera.js';
 import { loadImage, loadImagesCubeMap } from './file/image.js';
 import { initAppData } from './app/data.js';
-import { updateApp } from './app/manager.js';
+import { updateApp, updateAppPostFrame } from './app/manager.js';
 
 /* CONSTANTS */
 
@@ -74,11 +74,6 @@ window.onload = async function init()
   const GUIData = initGUIData(appData); // Mediator object between Tweakpane and the rest of the application
   const pane = initDebugGUI(GUIData);   // Tweakpane rendering window
   UI = initUI(canvas, GUIData);
-
-  // pane
-  // .on('change', (event) => {
-  //   appData.environment.state.cameraIdle = false;
-  // });
 
   /* --------------------- */
   /* SHADER INITIALIZATION */
@@ -177,7 +172,7 @@ window.onload = async function init()
 }
 
 /**
- * Updates variables and object states fpr each frame throughout the render loop.
+ * Updates variables and object states for each frame throughout the render loop.
  * @param currentTime current application time in ms
  */
 function update(currentTime)
@@ -195,9 +190,18 @@ function update(currentTime)
   // State updates
   updateApp(appData, UI);
 
-  resetControls(UI);
-
   time.previous = time.current;
+}
+
+/**
+ * Updates (resets) object states after a frame has been rendered to prepare for a new frame. 
+ * Some rendering relies on pre-reset states.
+ */
+function updatePostFrame()
+{
+  resetControls(UI);
+  resetGUIState(UI.GUIData);
+  updateAppPostFrame(appData);
 }
 
 /**
@@ -209,14 +213,19 @@ function renderLoop(currentTime)
 {
   update(currentTime);
 
-  if (!UI.cameraControls.idle)
+  // Prepare idle framebuffer - fully render the scene
+  if (!appData.environment.state.idleRender)
   {
     appData.context.gl.bindFramebuffer(appData.context.gl.FRAMEBUFFER, frameBuffer);
     render(appData.context.gl, appData.context.canvas, appData.environment.viewport, appData.environment.scene, appData.environment.scene.geometries);
   }
 
+  // Idle render
   appData.context.gl.bindFramebuffer(appData.context.gl.FRAMEBUFFER, null);
   render(appData.context.gl, appData.context.canvas, appData.environment.viewport, sceneEmpty, idleGeometry);
+
+  // State reset
+  updatePostFrame();
 
   requestAnimationFrame(renderLoop);
 }

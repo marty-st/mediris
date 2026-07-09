@@ -65,7 +65,7 @@ const time = {
 
 // Application states
 const state = {
-
+ idleRender: false,
 };
 
 // Application environment data
