@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 import { endBenchmark, startBenchmark } from '../app/log';
 import { getCache, setCache } from './cache';
@@ -14,18 +14,18 @@ const STORE_NAME = "text";
 /**/
 
 /**
- * Code by: 
+ * Code by:
  * David Banks
  * from:
  * https://medium.com/@banksysan_10088/webgl-external-glsl-files-dd7cf85f9ee9
- * 
+ *
  * Fetch the fragment and vertex shader text from external files.
  * @param vertexShaderPath file system path of the vertex shader file
  * @param fragmentShaderPath file system path of the fragment shader file
- * @param {*} useCache boolean determining whether to load and/or store text data from client-side browser cache 
+ * @param {*} useCache boolean determining whether to load and/or store text data from client-side browser cache
  * @returns {Promise<{vertexShaderText: string | null, fragmentShaderText: string | null}>} Object with stringified contents of both shaders
  */
-export default async function fetchShaderTexts(vertexShaderPath, fragmentShaderPath, useCache) 
+export default async function fetchShaderTexts(vertexShaderPath, fragmentShaderPath, useCache)
 {
   const start = startBenchmark("FETCH SHADER", vertexShaderPath, fragmentShaderPath);
 
@@ -47,47 +47,49 @@ export default async function fetchShaderTexts(vertexShaderPath, fragmentShaderP
   let errors = [];
   await Promise.all([
     fetch(vertexShaderPath)
-      .catch((e) => {
-          errors.push(e);
-        })
-      .then(async (response) => {
-        if (response.status === 200) 
+      .catch(e =>
+      {
+        errors.push(e);
+      })
+      .then(async response =>
+      {
+        if (response.status === 200)
           shaderTexts.vertexShaderText = await response.text();
         else
           errors.push(`Non-200 response for ${vertexShaderPath}.  ${response.status}:  ${response.statusText}`);
       }),
 
     fetch(fragmentShaderPath)
-      .catch((e) => errors.push(e))
-      .then(async (response) => {
-        if (response.status === 200) 
+      .catch(e => errors.push(e))
+      .then(async response =>
+      {
+        if (response.status === 200)
           shaderTexts.fragmentShaderText = await response.text();
-        else 
+        else
           errors.push(`Non-200 response for ${fragmentShaderPath}.  ${response.status}:  ${response.statusText}`);
       }),
   ]);
 
-  if (errors.length !== 0) 
+  if (errors.length !== 0)
   {
-    throw new Error(
-      `Failed to fetch shader(s):\n${JSON.stringify(errors, (key, value) => {
-        if (value?.constructor.name === 'Error') 
-        {
-          return {
-            name: value.name,
-            message: value.message,
-            stack: value.stack,
-            cause: value.cause,
-          };
-        }
-        return value;
-      }, 2)}`
-    );
+    throw new Error(`Failed to fetch shader(s):\n${JSON.stringify(errors, (key, value) =>
+    {
+      if (value?.constructor.name === 'Error')
+      {
+        return {
+          name: value.name,
+          message: value.message,
+          stack: value.stack,
+          cause: value.cause,
+        };
+      }
+      return value;
+    }, 2)}`);
   }
 
   await setCache(DATABASE_NAME, STORE_NAME, KEY_TYPE, vertexShaderPath + fragmentShaderPath, shaderTexts, DATABASE_VERSION);
 
   endBenchmark("FETCH SHADER", start, false, vertexShaderPath, fragmentShaderPath);
-  
+
   return shaderTexts;
 }

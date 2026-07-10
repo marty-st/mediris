@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 /**
  * Creates a WebGL RGBA 2D texture from a browser-loaded image.
@@ -44,78 +44,78 @@ export function create2DTexture(gl, image, dimensions)
  */
 export function createVolumeTexture(gl, volume, dimensions, channels)
 {
-    const volumeTexture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_3D, volumeTexture);
+  const volumeTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_3D, volumeTexture);
 
-    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
 
-    let internalFormat;
-    let format;
-    switch(channels)
-    {
-      case 1:
-        internalFormat = gl.R16F;
-        format = gl.RED;
-        break;
-      case 2:
-        internalFormat = gl.RG16F;
-        format = gl.RG;
-        break;
-      case 3:
-        internalFormat = gl.RGB16F;
-        format = gl.RGB;
-        break;
-      case 4:
-        internalFormat = gl.RGBA16F;
-        format = gl.RGBA;
-        break;
-      default:
-        throw new Error("Volume texture: Invalid number of color channels.");
-    }
+  let internalFormat;
+  let format;
+  switch (channels)
+  {
+    case 1:
+      internalFormat = gl.R16F;
+      format = gl.RED;
+      break;
+    case 2:
+      internalFormat = gl.RG16F;
+      format = gl.RG;
+      break;
+    case 3:
+      internalFormat = gl.RGB16F;
+      format = gl.RGB;
+      break;
+    case 4:
+      internalFormat = gl.RGBA16F;
+      format = gl.RGBA;
+      break;
+    default:
+      throw new Error("Volume texture: Invalid number of color channels.");
+  }
 
-    // ERROR: GL_INVALID_OPERATION: glGenerateMipmap: Texture format does not support mipmap generation.
-    // gl.generateMipmap(gl.TEXTURE_3D);
+  // ERROR: GL_INVALID_OPERATION: glGenerateMipmap: Texture format does not support mipmap generation.
+  // gl.generateMipmap(gl.TEXTURE_3D);
 
-    // gl.UNPACK_ALIGNMENT specifies the alignment requirements
-    // for the start of each pixel row in memory. 1 == byte alignment
-    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  // gl.UNPACK_ALIGNMENT specifies the alignment requirements
+  // for the start of each pixel row in memory. 1 == byte alignment
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 
-    gl.texImage3D(
-      gl.TEXTURE_3D,
-      0,
-      internalFormat,                 // internalFormat
-      dimensions.rows,
-      dimensions.cols,
-      dimensions.layers,
-      0,
-      format,                  // format
-      gl.FLOAT,                // type
-      volume
-    );
-    
-    // Also possible to use this (with gl.NEAREST):
-    // gl.texImage3D(
-    //   gl.TEXTURE_3D,
-    //   0,
-    //   gl.R16UI,             // internalFormat
-    //   dimensions.rows,
-    //   dimensions.cols,
-    //   dimensions.layers,
-    //   0,
-    //   gl.RED_INTEGER,       // format
-    //   gl.UNSIGNED_SHORT,    // type
-    //   volume
-    // );
+  gl.texImage3D(
+    gl.TEXTURE_3D,
+    0,
+    internalFormat,                 // internalFormat
+    dimensions.rows,
+    dimensions.cols,
+    dimensions.layers,
+    0,
+    format,                  // format
+    gl.FLOAT,                // type
+    volume
+  );
 
-    gl.bindTexture(gl.TEXTURE_3D, null);
-    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4); // reset to default value
+  // Also possible to use this (with gl.NEAREST):
+  // gl.texImage3D(
+  //   gl.TEXTURE_3D,
+  //   0,
+  //   gl.R16UI,             // internalFormat
+  //   dimensions.rows,
+  //   dimensions.cols,
+  //   dimensions.layers,
+  //   0,
+  //   gl.RED_INTEGER,       // format
+  //   gl.UNSIGNED_SHORT,    // type
+  //   volume
+  // );
 
-    return volumeTexture;
+  gl.bindTexture(gl.TEXTURE_3D, null);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4); // reset to default value
+
+  return volumeTexture;
 }
 
 /**
@@ -141,10 +141,10 @@ export function createCubeMapTexture(gl, images, dimensions)
 
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 
-  for (let i = 0 ; i < faces.length; ++i)
+  for (let i = 0; i < faces.length; ++i)
   {
     gl.texImage2D(
-      faces[i], 
+      faces[i],
       0,
       gl.RGBA,
       dimensions.width,
@@ -204,7 +204,7 @@ function createDepthTexture(gl, dimensions)
  */
 export function createFramebufferTexture(gl, dimensions, type)
 {
-  switch(type)
+  switch (type)
   {
     case "rgba":
       return create2DTexture(gl, null, dimensions);
@@ -218,7 +218,7 @@ export function createFramebufferTexture(gl, dimensions, type)
 /**
  * Creates a custom framebuffer.
  * @param {*} gl WebGL rendering context
- * @param {{color: Array, depth, stencil}} attachments texture attachments 
+ * @param {{color: Array, depth, stencil}} attachments texture attachments
  * @returns custom framebuffer
  */
 export function createFramebuffer(gl, attachments)
@@ -230,7 +230,7 @@ export function createFramebuffer(gl, attachments)
   {
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, attachments.color[i], 0);
   }
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, attachments.depth, 0); 
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, attachments.depth, 0);
 
   const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
   console.log("[FRAMEBUFFER STATUS]", status == 36053 ? "complete" : "incomplete " + status);

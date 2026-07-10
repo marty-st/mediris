@@ -1,4 +1,4 @@
-"use strict"
+'use strict';
 
 /**
  * Marks the start of a timing benchmark.

@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 /* GLOBAL VARIABLES */
 
@@ -27,11 +27,12 @@ export async function loadImagesCubeMap(imageFolderName, format)
 {
   // NOTE: order of the faces was established by trial and error
   // The reason why it works with this order (and not rt, lf, up, dn, bk, ft)
-  // is unknown to me 
-  const suffixes = ["ft", "bk", "up", "dn", "rt", "lf" ];
+  // is unknown to me
+  const suffixes = ["ft", "bk", "up", "dn", "rt", "lf"];
   let images = [];
 
-  suffixes.forEach(async (suffix) => {
+  suffixes.forEach(async suffix =>
+  {
     images.push(await loadImage(imageFolderName + "/" + imageFolderName + "_" + suffix + "." + format));
   });
 

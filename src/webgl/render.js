@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 import * as twgl from 'twgl.js';
 
@@ -11,7 +11,7 @@ import * as twgl from 'twgl.js';
  * @param {*} geometries Array of `geometry` objects
  */
 export default function render(gl, canvas, viewport, scene, geometries)
-{ 
+{
   // TODO: canvas resize
   // https://webgl2fundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html
 
@@ -27,8 +27,8 @@ export default function render(gl, canvas, viewport, scene, geometries)
 
     // Scene uniforms & UBOs
     if (scene.uniforms)
-      twgl.setUniforms(geometry.programInfo, scene.uniforms)
-    
+      twgl.setUniforms(geometry.programInfo, scene.uniforms);
+
     if (scene.uniformBlock)
     {
       twgl.setBlockUniforms(scene.uniformBlock.info, scene.uniformBlock.uniforms);

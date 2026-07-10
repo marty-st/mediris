@@ -1,9 +1,9 @@
-'use strict'
+'use strict';
 
 import createShaderProgram from './program';
 
 import * as twgl from 'twgl.js';
-import { vec3, mat4 } from 'gl-matrix';
+import { vec3 } from 'gl-matrix';
 
 /**
  * Reloads the shader programs by re-fetching their appropriate text files. Used for application development.
@@ -15,16 +15,16 @@ export async function reloadShaders(gl, scene)
   for (const geometry of scene.geometries)
   {
     const shader = geometry.shaderFileNames;
-  
+
     geometry.programInfo = await createShaderProgram(gl, shader.vert, shader.frag, false);
-  
+
     if (geometry.uniformBlock)
     {
       const blockName = geometry.uniformBlock.info.name;
       geometry.uniformBlock.info = twgl.createUniformBlockInfo(gl, geometry.programInfo, blockName);
     }
   }
-  
+
   // Uniforms and UBOs are shared by all geometries in a scene, hence only needs to be set once
   if (scene.geometries?.length > 0 && scene.uniformBlock)
   {
@@ -45,19 +45,19 @@ export async function reloadShaders(gl, scene)
 export function updateSceneFloatUniforms(scene, uniforms)
 {
   // TODO: rewrite to use recursion instead of spaghetti code
-  for (const values of Object.values(uniforms)) 
+  for (const values of Object.values(uniforms))
   {
-    for (const key in values) 
+    for (const key in values)
     {
-      const value = values[key]; 
+      const value = values[key];
 
       if (typeof value === 'object')
       {
         for (const innerKey in value)
           scene.uniforms[innerKey] = value[innerKey];
       }
-      
-      else if (typeof value !== 'object' || value === null) 
+
+      else if (typeof value !== 'object' || value === null)
         scene.uniforms[key] = value;
     }
   }
@@ -78,7 +78,7 @@ export function updateSceneLights(scene, lights, camera)
 
 /**
  * Transforms information about user-controlled light properties into a GPU compatible
- * format (UBO). 
+ * format (UBO).
  * @param {*} environment object with environment data - lights, camera, scene, etc.
  * @param {*} cameraInvViewMat camera inverse view matrix
  * @returns object containing an array with per-light data and the array size
@@ -87,7 +87,7 @@ function createLightsUBOFromAppData(lights, cameraInvViewMat)
 {
   let lightsUBO = {
     lights_array: [],
-    lights_array_size: 0
+    lights_array_size: 0,
   };
 
   for (const key in lights)
@@ -126,7 +126,7 @@ export function createSceneEmpty()
 }
 
 /**
- * Creates a raycast scene object with uniform variables and uniform blocks used 
+ * Creates a raycast scene object with uniform variables and uniform blocks used
  * by a shader. These include raycasting properties, light sources, camera, shading
  * model properties.
  * @param {*} gl WebGL rendering context

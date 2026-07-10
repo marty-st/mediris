@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 import { deleteCache } from '../file/cache.js';
 import { updateCamera } from '../webgl/camera.js';
@@ -16,7 +16,7 @@ async function updateAppFromUI(appData, UI)
     await reloadShaders(appData.context.gl, appData.environment.scene);
 
   // if (UI.appControls.reloadDicom)
-    // use loadDicom(folder, useCache = false); 
+  // use loadDicom(folder, useCache = false);
 
   if (UI.appControls.deleteCache)
     deleteCache();

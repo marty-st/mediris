@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 import * as twgl from 'twgl.js';
 
@@ -11,7 +11,7 @@ export function initGLCanvas()
   let canvas = document.getElementById('webgl-canvas');
 
   if (!canvas)
-    alert('Cannot find WebGL canvas :(')
+    alert('Cannot find WebGL canvas :(');
 
   return canvas;
 }
@@ -25,8 +25,8 @@ export function initGLContext(canvas)
 {
   let gl = canvas.getContext('webgl2');
 
-  if (!gl) 
-    alert('WebGL2 is not supported!')
+  if (!gl)
+    alert('WebGL2 is not supported!');
 
   return gl;
 }
@@ -48,11 +48,10 @@ export function setOutputResolution(canvas)
  */
 export function initGLStates(gl)
 {
-  gl.clearColor(0.25,0.25,0.25,1.0);
+  gl.clearColor(0.25, 0.25, 0.25, 1.0);
   gl.enable(gl.SCISSOR_TEST);
 
   twgl.setDefaults({
-      attribPrefix: "i_",
-    }
-  );
+    attribPrefix: "i_",
+  });
 }

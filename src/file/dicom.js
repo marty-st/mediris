@@ -1,12 +1,12 @@
-'use strict'
+'use strict';
 
 /**
  * FUNCTIONALITY OVERVIEW
- * 
+ *
  * NOTE: The code in this file seems to be no longer supported
  * by the cornerstone libraries. It works but only partially.
  * No metadata are loaded (default value always selected).
- * 
+ *
  * ----------------------
  */
 
@@ -44,8 +44,6 @@ cornerstoneWADOImageLoader.configure({ useWebWorkers: false });
 //   },
 // });
 
-
-
 /**
  * Asks server for list of files
  * @param {*} folderName direct name of the folder containing DICOM data
@@ -54,7 +52,7 @@ cornerstoneWADOImageLoader.configure({ useWebWorkers: false });
 async function fetchDicomFileNames(folderName)
 {
   const listRes = await fetch(`/server/dicom/?folder=${encodeURIComponent(folderName)}`);
-  if (!listRes.ok) 
+  if (!listRes.ok)
     throw new Error(`List HTTP ${listRes.status}`);
 
   return await listRes.json();
@@ -66,13 +64,13 @@ async function fetchDicomFileNames(folderName)
  * @param {number} batchSize number of images to load concurrently (default: 6)
  * @param {function} onProgress callback function called after each batch with (loaded, total) parameters
  * @returns {Promise<Array>} array of loaded cornerstone image objects
- */ 
-async function loadInBatches(imageIds, batchSize = 6, onProgress) 
+ */
+async function loadInBatches(imageIds, batchSize = 6, onProgress)
 {
   const images = [];
   let loaded = 0;
 
-  for (let i = 0; i < imageIds.length; i += batchSize) 
+  for (let i = 0; i < imageIds.length; i += batchSize)
   {
     const batch = imageIds.slice(i, i + batchSize).map(id => cornerstone.loadAndCacheImage(id));
     const results = await Promise.all(batch);
@@ -101,13 +99,14 @@ async function loadImages(imageIds)
   // }
 
   const batchSize = 6;
-  const onProgress = function(n, total) {
-    console.debug(`Loaded ${n}/${total}`)
+  const onProgress = function (n, total)
+  {
+    console.debug(`Loaded ${n}/${total}`);
   };
-  
+
   const images = await loadInBatches(imageIds, batchSize, onProgress);
-  
-  if (images.length === 0) 
+
+  if (images.length === 0)
     throw new Error('No images loaded');
 
   return images;
@@ -116,7 +115,8 @@ async function loadImages(imageIds)
 // TODO: docs
 function sortSlicesByPosition(imageIds, images)
 {
-  const pairs = imageIds.map((id, i) => {
+  const pairs = imageIds.map((id, i) =>
+  {
     const dataset = images[i].data;
     const ipp = dataset?.string('x00200032');
     const z = ipp ? parseFloat(ipp.split('\\')[2]) : i;
@@ -126,7 +126,7 @@ function sortSlicesByPosition(imageIds, images)
 
   return {
     imageIds: pairs.map(p => p.id),
-    images:   pairs.map(p => p.image),
+    images: pairs.map(p => p.image),
   };
 }
 
@@ -137,8 +137,8 @@ function sortSlicesByPosition(imageIds, images)
  */
 function getDataDimensions(images)
 {
-  return { 
-    rows: images[0].rows, 
+  return {
+    rows: images[0].rows,
     cols: images[0].columns,
     layers: images.length,
   };
@@ -189,7 +189,7 @@ function defineVolumeArrayType(bitsAllocated, pixelRepresentation)
   // Data are typed as float for hardware-supported interpolation on the GPU
   // Otherwise Uint16Array is enough
   return Float32Array;
-  
+
   // return bitsAllocated === 8 ? Uint8Array
   //   : bitsAllocated === 16 ? (pixelRepresentation === 1 ? Int16Array : Uint16Array)
   //   : bitsAllocated === 32 ? (pixelRepresentation === 1 ? Int32Array : Uint32Array)
@@ -208,11 +208,11 @@ function createVolume(images, dimensions, sliceSize, Typed)
 {
   const volume = new Typed(sliceSize * dimensions.layers);
 
-  for (let z = 0; z < dimensions.layers; ++z) 
+  for (let z = 0; z < dimensions.layers; ++z)
   {
     const slicePixelData = images[z].getPixelData(); // Typed array
 
-    if (slicePixelData.length !== sliceSize) 
+    if (slicePixelData.length !== sliceSize)
       throw new Error(`Unexpected pixels in slice ${z}: ${slicePixelData.length} != ${sliceSize}`);
 
     volume.set(slicePixelData, z * sliceSize);
@@ -234,10 +234,10 @@ function getPixelSpacing(imageIds, dimensions)
   return {
     x: plane.columnPixelSpacing ?? 1, // dx
     y: plane.rowPixelSpacing ?? 1,    // dy
-    z: (dimensions.layers > 1 ? Math.abs(
-      (cornerstone.metaData.get('imagePositionPatient', imageIds[1])?.[2] ?? 0) -
-      (cornerstone.metaData.get('imagePositionPatient', imageIds[0])?.[2] ?? 0)
-    ) : (cornerstone.metaData.get('sliceThickness', imageIds[0]) ?? 1)) || 1, // dz
+    z: (dimensions.layers > 1
+      ? Math.abs((cornerstone.metaData.get('imagePositionPatient', imageIds[1])?.[2] ?? 0)
+      - (cornerstone.metaData.get('imagePositionPatient', imageIds[0])?.[2] ?? 0))
+      : (cornerstone.metaData.get('sliceThickness', imageIds[0]) ?? 1)) || 1, // dz
   };
 }
 
@@ -245,15 +245,13 @@ function arrayToXYZ(array)
 {
   if (array.length < 3)
     console.warn("Array of insufficient length transformed to an XYZ-object.", array);
-  return {
-    x: array[0], y: array[1], z: array[2],
-  };
+  return { x: array[0], y: array[1], z: array[2] };
 }
 
 /**
  * Parses Image Position Patient and Image Orientation Patient
  * directly from the DICOM dataset via dicomParser as a fallback.
- * 
+ *
  * Tags:
  *   (0020,0032) Image Position Patient  → origin of this slice
  *   (0020,0037) Image Orientation Patient → row (3) + col (3) direction cosines
@@ -271,19 +269,19 @@ function getGeometryFromDataset(dataset)
 
   const cosines = iop
     ? iop.split('\\').map(Number)
-    : [1, 0, 0,  0, 1, 0];  // identity fallback
+    : [1, 0, 0, 0, 1, 0];  // identity fallback
 
   return {
     origin: arrayToXYZ(origin),          // in mm
-    rowAxis:    arrayToXYZ(cosines.slice(0, 3)),
-    colAxis:    arrayToXYZ(cosines.slice(3, 6)),
+    rowAxis: arrayToXYZ(cosines.slice(0, 3)),
+    colAxis: arrayToXYZ(cosines.slice(3, 6)),
   };
 }
 
 /**
  * Extracts origin and orientation for the first slice.
  * Tries cornerstone's imagePlaneModule first, falls back to dicomParser.
- * 
+ *
  * @param {string[]} imageIds
  * @param {Array} images - loaded cornerstone image objects (image.data is the dicomParser dataset)
  */
@@ -379,12 +377,12 @@ function getPixelDataRange(volume)
   for (let i = 0; i < volume.length; ++i)
   {
     const element = volume[i];
-    if (element !== NaN)
+    if (!Number.isNaN(element))
     {
       min = Math.min(min, element);
       max = Math.max(max, element);
     }
-  };
+  }
 
   // console.log("min in volume", min);
   // console.log("max in volume", max);
@@ -396,10 +394,10 @@ function getPixelDataRange(volume)
  * Fetches DICOM file names from a server, loads them into memory and returns their
  * relevant content.
  * @param {*} folderName direct name of the folder containing DICOM data
- * @param {*} useCache boolean determining whether to load and/or store image data from client-side browser cache 
- * @returns an object containing DICOM slices metadata and pixel volume 
+ * @param {*} useCache boolean determining whether to load and/or store image data from client-side browser cache
+ * @returns an object containing DICOM slices metadata and pixel volume
  */
-export default async function loadDicom(folderName, useCache = false) 
+export default async function loadDicom(folderName, useCache = false)
 {
   const start = startBenchmark("LOAD DICOM");
 

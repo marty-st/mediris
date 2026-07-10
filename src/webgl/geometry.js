@@ -1,17 +1,17 @@
-'use strict'
+'use strict';
 
 /**
  * FUNCTIONALITY OVERVIEW
- * 
+ *
  * Geometry objects are objects that are taken into the rendering loop
  * where they provide all necessary information needed for their correct rendering.
- * 
+ *
  * This includes a linked shader program, buffer with geometry data, Vertex Array Object,
  * uniforms (this includes textures), and Uniform Blocks (UBOs).
- * 
+ *
  * Geometry objects are also used to render full-screen quads intended for ray-casting,
  * deffered rendering, or post-processing.
- * 
+ *
  * ----------------------
  */
 
@@ -24,7 +24,7 @@ import { vec3 } from 'gl-matrix';
 // gl.drawArrays(gl.TRIANGLES, 0, 3)
 // where this setup sets bufferInfo.numElements to 3
 const fullScreenQuadArrays = {
-  position: { numComponents: 1, data: [0, 0, 0], },
+  position: { numComponents: 1, data: [0, 0, 0] },
 };
 
 /**/
@@ -43,13 +43,13 @@ export function createFullScreenGeometry(gl, shaderProgramInfo, shaderFileNames,
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
 
   return {
-    bufferInfo: fullScreenQuadBufferInfo, 
-    vao: emptyVAO, 
+    bufferInfo: fullScreenQuadBufferInfo,
+    vao: emptyVAO,
     programInfo: shaderProgramInfo,
     shaderFileNames: shaderFileNames,
     uniforms: {
       u_texture: texture,
-    }
+    },
   };
 }
 
@@ -69,14 +69,14 @@ export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimens
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
 
   return {
-    bufferInfo: fullScreenQuadBufferInfo, 
-    vao: emptyVAO, 
-    programInfo: shaderProgramInfo, 
+    bufferInfo: fullScreenQuadBufferInfo,
+    vao: emptyVAO,
+    programInfo: shaderProgramInfo,
     uniforms: {
       u_volume_texture: volumeTexture,
       u_slice_number: appData.settings.slice,
       u_slice_count: dimensions.layers,
-    }
+    },
   };
 }
 
@@ -87,9 +87,9 @@ export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimens
  */
 function getTransferFunctionfromAppData(appData)
 {
-  let tf = { 
+  let tf = {
     media_array: [],
-    media_array_size: 0
+    media_array_size: 0,
   };
 
   for (const key in appData.transferFunction)
@@ -103,7 +103,7 @@ function getTransferFunctionfromAppData(appData)
       color: medium.colorVec,
       interval: medium.intervalVec,
       channel: medium.channel,
-    })
+    });
   }
 
   tf.media_array_size = tf.media_array.length;
@@ -131,9 +131,9 @@ export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, vol
   const bbox_max = vec3.fromValues(1, 1, 1);
 
   return {
-    bufferInfo: fullScreenQuadBufferInfo, 
-    vao: emptyVAO, 
-    programInfo: shaderProgramInfo, 
+    bufferInfo: fullScreenQuadBufferInfo,
+    vao: emptyVAO,
+    programInfo: shaderProgramInfo,
     shaderFileNames: shaderFileNames,
     uniforms: {
       u_material_texture: materialTexture,
@@ -165,8 +165,8 @@ export function createSphereGeometry(gl, shaderProgramInfo, shaderFileNames, app
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
 
   return {
-    bufferInfo: fullScreenQuadBufferInfo, 
-    vao: emptyVAO, 
+    bufferInfo: fullScreenQuadBufferInfo,
+    vao: emptyVAO,
     programInfo: shaderProgramInfo,
     shaderFileNames: shaderFileNames,
     // Transfer Function

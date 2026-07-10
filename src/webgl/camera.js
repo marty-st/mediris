@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 import { vec3, mat3, mat4, quat, glMatrix } from 'gl-matrix';
 
@@ -7,7 +7,7 @@ import { vec3, mat3, mat4, quat, glMatrix } from 'gl-matrix';
 /* --------------------------------------------------------------------------- */
 
 /**
- * Initializes the camera's `distanceToTarget` and `rotationQuaternion` attributes 
+ * Initializes the camera's `distanceToTarget` and `rotationQuaternion` attributes
  * from the camera's position. It is assumed that the camera looks at (0, 0, 0).
  * @param {*} camera camera object
  */
@@ -30,18 +30,14 @@ function initAttributesFromPosition(camera)
   // tilt up-vector according to the forward vector
   vec3.cross(cameraUp, cameraRight, cameraForward);
 
-
   // NOTE: Use this method when it gets implemented correctly.
   // issue: https://github.com/toji/gl-matrix/issues/436
   // quat.setAxes(camera.rotationQuaternion, cameraForward, cameraRight, cameraUp);
 
   const cameraZ = vec3.create();
   vec3.negate(cameraZ, cameraForward);
-  
-  const rotationMatrix = mat3.fromValues(
-    cameraRight[0], cameraRight[1], cameraRight[2], 
-    cameraUp[0], cameraUp[1], cameraUp[2], 
-    cameraZ[0], cameraZ[1], cameraZ[2]);
+
+  const rotationMatrix = mat3.fromValues(cameraRight[0], cameraRight[1], cameraRight[2], cameraUp[0], cameraUp[1], cameraUp[2], cameraZ[0], cameraZ[1], cameraZ[2]);
 
   quat.fromMat3(camera.rotationQuaternion, rotationMatrix);
 
@@ -61,7 +57,7 @@ export function initCamera(viewport)
     minFOV: 10,
     maxFOV: 90,
     zoomStep: 4,
-    nearPlane: 1, 
+    nearPlane: 1,
     farPlane: 1000,
     // orbital camera attributes
     targetPosition: vec3.fromValues(0, 0, 0),
@@ -88,7 +84,7 @@ export function initCamera(viewport)
 /* --------------------------------------------------------------------------- */
 
 /**
- * Updates camera's position by placing it in the direction of its z-axis 
+ * Updates camera's position by placing it in the direction of its z-axis
  * (computed from the rotation quaternion) and offsets it from the `targetPosition`
  *  by its `distanceToTarget`.
  * @param {*} camera camera object
@@ -125,12 +121,12 @@ function updateProjectionInverseMatrix(camera, viewport)
 {
   const perspectiveMat = mat4.create();
   // NOTE: when near was set to 0.1 and shader projection plane distance was 1.0, raytracing
-  // didn't work. I'm curious what is the exact issue with that. 
+  // didn't work. I'm curious what is the exact issue with that.
   mat4.perspective(
-    perspectiveMat, 
-    glMatrix.toRadian(camera.FOV), 
-    viewport.width / viewport.height, 
-    camera.nearPlane, 
+    perspectiveMat,
+    glMatrix.toRadian(camera.FOV),
+    viewport.width / viewport.height,
+    camera.nearPlane,
     camera.farPlane
   );
 
@@ -140,10 +136,10 @@ function updateProjectionInverseMatrix(camera, viewport)
 /**
  * Takes a screen-space vector and transforms it into a camera's rotation in 3D space
  * (camera's rotation quaternion is updated).
- * The camera's rotation is computed in world space. 'Pitch' movement is allowed within 
+ * The camera's rotation is computed in world space. 'Pitch' movement is allowed within
  * <-90, 90> degree interval.
  * @param {*} camera camera object
- * @param {*} mouseVector 2D screen-space motion vector from the latest application frame 
+ * @param {*} mouseVector 2D screen-space motion vector from the latest application frame
  */
 function rotateCamera(camera, mouseVector)
 {
@@ -154,14 +150,14 @@ function rotateCamera(camera, mouseVector)
   // YAW
   const horizontalRotationQuat = quat.create();
   quat.setAxisAngle(horizontalRotationQuat, [0, 1, 0], horizontalRotation);
-  
+
   // NOTE: This order multiplies in world space (needed for rotation around (0, 1, 0))
   quat.multiply(camera.rotationQuaternion, horizontalRotationQuat, camera.rotationQuaternion);
   quat.normalize(camera.rotationQuaternion, camera.rotationQuaternion);
-  
+
   // PITCH
   const verticalRotationQuatCheck = quat.create();
-  quat.rotateX(verticalRotationQuatCheck, camera.rotationQuaternion, verticalRotation)
+  quat.rotateX(verticalRotationQuatCheck, camera.rotationQuaternion, verticalRotation);
 
   // pitch within <-90, 90> degree range check
   const verticalRotationMatCheck = mat3.create();
@@ -176,11 +172,11 @@ function rotateCamera(camera, mouseVector)
 }
 
 /**
- * Translates the camera in a 3D space. Camera's target position is updated using a motion 
- * vector transformed into world space. Distance to target is kept which effectively 
+ * Translates the camera in a 3D space. Camera's target position is updated using a motion
+ * vector transformed into world space. Distance to target is kept which effectively
  * moves the camera.
  * @param {*} camera camera object
- * @param {*} keyboardVector 3D local-space motion vector from the latest application frame 
+ * @param {*} keyboardVector 3D local-space motion vector from the latest application frame
  * @param {*} timeDelta time elapsed from the previous frame (in seconds)
  */
 function moveCamera(camera, keyboardVector, timeDelta)
@@ -217,7 +213,7 @@ function zoomCamera(camera, viewport, zoomDirection)
  * @param {*} cameraControls state object for camera controls
  * @param {*} viewport object containing width and height attributes
  * @param {*} timeDelta time elapsed from the previous frame (in seconds)
- * @returns 
+ * @returns
  */
 export function updateCamera(camera, cameraControls, viewport, timeDelta)
 {

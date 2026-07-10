@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 import { endBenchmark, startBenchmark } from "../app/log";
 import { getCache, setCache } from "../file/cache";
@@ -16,7 +16,7 @@ const INT32_MAX = ~(1 << 31);
 
 /**/
 
-class StridedArrayView 
+class StridedArrayView
 {
   constructor(typedArray, start, end, stride)
   {
@@ -29,7 +29,7 @@ class StridedArrayView
   // virtual index
   at(index)
   {
-    if (index < 0 || index >= this.length) 
+    if (index < 0 || index >= this.length)
       return undefined;
     return this.array[this.start + index * this.stride];
   }
@@ -37,7 +37,7 @@ class StridedArrayView
   // access the original array using the virtual index
   set(index, value)
   {
-    if (index >= 0 && index < this.length) 
+    if (index >= 0 && index < this.length)
       this.array[this.start + index * this.stride] = value;
   }
 
@@ -66,13 +66,13 @@ class StridedArrayView
  */
 export async function interleaveVolumesWithResample(
   volumeCT, volumePET,
-  dimCT, dimPET, 
+  dimCT, dimPET,
   originCT, originPET,
   spacingCT, spacingPET,
   folderNames,
   useCache = false,
   Typed = Float32Array
-) 
+)
 {
   const start = startBenchmark("RESAMPLE CT PET");
 
@@ -90,13 +90,16 @@ export async function interleaveVolumesWithResample(
   const totalVoxels = layerSize * dimCT.layers;
   const interleaved = new Typed(totalVoxels * 2);
 
-  for (let z = 0; z < dimCT.layers; z++) {
-    for (let y = 0; y < dimCT.cols; y++) {
-      for (let x = 0; x < dimCT.rows; x++) {
+  for (let z = 0; z < dimCT.layers; z++)
+  {
+    for (let y = 0; y < dimCT.cols; y++)
+    {
+      for (let x = 0; x < dimCT.rows; x++)
+      {
         const ctIdx = z * layerSize + y * dimCT.cols + x;
 
         // NOTE: origin.z values are dropped as they are too large and (I assume)
-        // the value would be put outside of the volume. 
+        // the value would be put outside of the volume.
         // Example: originCT.z = -1541, originPET.z = -775.964.
 
         // Physical position of this CT voxel
@@ -164,14 +167,14 @@ function trilinearSample(volume, dims, fx, fy, fz)
 
   // Trilinear blend
   return (
-    c000 * (1-tx)*(1-ty)*(1-tz) +
-    c100 *    tx *(1-ty)*(1-tz) +
-    c010 * (1-tx)*   ty *(1-tz) +
-    c110 *    tx *   ty *(1-tz) +
-    c001 * (1-tx)*(1-ty)*   tz  +
-    c101 *    tx *(1-ty)*   tz  +
-    c011 * (1-tx)*   ty *   tz  +
-    c111 *    tx *   ty *   tz
+    c000 * (1 - tx) * (1 - ty) * (1 - tz)
+    + c100 * tx * (1 - ty) * (1 - tz)
+    + c010 * (1 - tx) * ty * (1 - tz)
+    + c110 * tx * ty * (1 - tz)
+    + c001 * (1 - tx) * (1 - ty) * tz
+    + c101 * tx * (1 - ty) * tz
+    + c011 * (1 - tx) * ty * tz
+    + c111 * tx * ty * tz
   );
 }
 
@@ -181,10 +184,10 @@ function cubicWeight(t)
   // Catmull-Rom basis
   const t2 = t * t, t3 = t2 * t;
   return [
-    -0.5*t3 + 1.0*t2 - 0.5*t,
-     1.5*t3 - 2.5*t2 + 1.0,
-    -1.5*t3 + 2.0*t2 + 0.5*t,
-     0.5*t3 - 0.5*t2
+    -0.5 * t3 + 1.0 * t2 - 0.5 * t,
+    1.5 * t3 - 2.5 * t2 + 1.0,
+    -1.5 * t3 + 2.0 * t2 + 0.5 * t,
+    0.5 * t3 - 0.5 * t2,
   ];
 }
 
@@ -193,7 +196,7 @@ function cubicWeight(t)
 function tricubicSample(volume, dims, fx, fy, fz)
 {
   const clamp = (v, max) => Math.max(0, Math.min(max - 1, v));
-  const idx = (x, y, z) => clamp(x,dims.rows) + dims.rows * (clamp(y,dims.cols) + dims.cols * clamp(z,dims.layers));
+  const idx = (x, y, z) => clamp(x, dims.rows) + dims.rows * (clamp(y, dims.cols) + dims.cols * clamp(z, dims.layers));
 
   const x0 = Math.floor(fx), y0 = Math.floor(fy), z0 = Math.floor(fz);
   const wx = cubicWeight(fx - x0);
@@ -205,9 +208,9 @@ function tricubicSample(volume, dims, fx, fy, fz)
   {
     for (let dj = 0; dj < 4; dj++)
     {
-      for (let di = 0; di < 4; di++) 
+      for (let di = 0; di < 4; di++)
       {
-        result += volume[idx(x0+di-1, y0+dj-1, z0+dk-1)]
+        result += volume[idx(x0 + di - 1, y0 + dj - 1, z0 + dk - 1)]
                   * wx[di] * wy[dj] * wz[dk];
       }
     }
@@ -215,12 +218,12 @@ function tricubicSample(volume, dims, fx, fy, fz)
   return result;
 }
 
-export async function euclideanDistanceTransform(volume, dimensions, threshold) 
+export async function euclideanDistanceTransform(volume, dimensions, threshold)
 {
   const start = startBenchmark("COMPUTE EDT");
 
-  const {rows: width, cols: height, layers: depth} = dimensions;
-  const widthHeight = width * height
+  const { rows: width, cols: height, layers: depth } = dimensions;
+  const widthHeight = width * height;
   const volumeSize = widthHeight * depth;
 
   const distanceTransform = new Float32Array(volumeSize).map((value, index) => value = volume[index] > threshold ? 0 : INT32_MAX);
@@ -264,7 +267,7 @@ export async function euclideanDistanceTransform(volume, dimensions, threshold)
 }
 
 /**
- * 
+ *
  * @param { StridedArrayView } f array representing a 1D function
  * @returns {TypedArray} distance transform for the given function `f`
  */
@@ -283,7 +286,7 @@ function DT(f)
   {
     const v_k = v[k];
     let s = ((f.at(q) + q * q) - (f.at(v_k) + v_k * v_k)) / (2 * (q - v_k));
-    while (s <= z[k]) 
+    while (s <= z[k])
     {
       --k;
       const v_k = v[k];
@@ -300,14 +303,14 @@ function DT(f)
   // so squared distances will be correct up to volume dimension of 2048^3 (max sq. distance ~12.6M).
   // However, if real-value sample spacing is used, subsequent calculations will have a small
   // floating point error.
-  const Df = new Float32Array(n); 
+  const Df = new Float32Array(n);
   k = 0;
 
   for (let q = 0; q < n; ++q)
   {
     while (z[k + 1] < q)
       ++k;
-    
+
     let v_k = v[k];
     let temp = (q - v_k);
     Df[q] = temp * temp + f.at(v_k);

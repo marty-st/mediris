@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 /**
  * !!!
@@ -41,9 +41,11 @@ const STATIC_PATH = process.cwd();
 
 const toBool = [() => true, () => false];
 
-const prepareFile = async (url) => {
+const prepareFile = async url =>
+{
   const paths = [STATIC_PATH, url];
-  if (url.endsWith("/")) paths.push("index.html");
+  if (url.endsWith("/"))
+    paths.push("index.html");
   const filePath = path.join(...paths);
   const pathTraversal = !filePath.startsWith(STATIC_PATH);
   const exists = await fs.promises.access(filePath).then(...toBool);
@@ -59,17 +61,22 @@ const prepareFile = async (url) => {
 };
 
 http
-  .createServer(async (req, res) => {
+  .createServer(async (req, res) =>
+  {
     // Accessing DICOM files
     const urlObj = new URL(req.url, `http://${req.headers.host}`);
-    if (urlObj.pathname === "/server/dicom" && req.method === "GET") {
-      try {
+    if (urlObj.pathname === "/server/dicom" && req.method === "GET")
+    {
+      try
+      {
         // Hardcoded folder name
         const folder = urlObj.searchParams.get("folder") || "CT WB w-contrast 5.0 B30s";
         const result = await readDicomFileNames(folder);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(result));
-      } catch (err) {
+      }
+      catch (err)
+      {
         res.writeHead(500, { "Content-Type": "text/plain" });
         res.end("Error: " + err.message);
       }
@@ -81,7 +88,8 @@ http
     const statusCodeSuccess = 200;
     const statusCodeFail = 404;
 
-    if (!file.found) {
+    if (!file.found)
+    {
       res.writeHead(statusCodeFail, { "Content-Type": "text/plain" });
       res.end(statusCodeFail + " Not Found");
       // UNCOMMENT FOR DEBUGGING FILE LOADING

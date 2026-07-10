@@ -1,20 +1,20 @@
-'use strict'
+'use strict';
 
-import { 
-  controlApp, 
-  controlCamera, 
-  initAppControls, 
-  initCameraControls, 
-  initKeyboardControls, 
-  initMouseControls, 
-  resetAppControls, 
-  resetCameraControls, 
-  resetKeyboardControls, 
-  resetMouseControls 
+import {
+  controlApp,
+  controlCamera,
+  initAppControls,
+  initCameraControls,
+  initKeyboardControls,
+  initMouseControls,
+  resetAppControls,
+  resetCameraControls,
+  resetKeyboardControls,
+  resetMouseControls
 } from './controls.js';
 
 /**
- * Creates an object that manages user controls and GUI. 
+ * Creates an object that manages user controls and GUI.
  * @param {*} canvas HTML canvas element
  * @param {*} GUIData mediator object between GUI and the rest of the application
  * @returns UI manager object

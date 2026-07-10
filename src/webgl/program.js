@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 import * as twgl from 'twgl.js';
 import fetchShaderTexts from '../file/shader.js';
@@ -34,26 +34,26 @@ function parseShaderNames(vertexShaderName, fragmentShaderName)
  * @param {*} gl WebGL context
  * @param {*} vertexShaderName Name of file containing the vertex shader
  * @param {*} fragmentShaderName Name of file containing the fragment shader
- * @param {*} useCache boolean determining whether to load and/or store text data from client-side browser cache 
+ * @param {*} useCache boolean determining whether to load and/or store text data from client-side browser cache
  * @returns `programInfo` object, containing the program, uniform setters, and attribute setters
- * @description The names of shader files do not have to contain the file suffix, however, `.vert` and `.frag` 
+ * @description The names of shader files do not have to contain the file suffix, however, `.vert` and `.frag`
  * suffixes are assumed automatically.
- * 
+ *
  * Additionaly `fragmentShaderName` does NOT need to be specified if it shares its name with the vertex shader.
  */
 export default async function createShaderProgram(gl, vertexShaderName, fragmentShaderName, useCache = false)
 {
-  const { 
-    vertexShaderNameParsed, 
-    fragmentShaderNameParsed 
+  const {
+    vertexShaderNameParsed,
+    fragmentShaderNameParsed,
   } = parseShaderNames(vertexShaderName, fragmentShaderName);
 
-  const { 
-    vertexShaderText, 
-    fragmentShaderText 
+  const {
+    vertexShaderText,
+    fragmentShaderText,
   } = await fetchShaderTexts(shaderPath + vertexShaderNameParsed, shaderPath + fragmentShaderNameParsed, useCache);
 
-  const programInfo = twgl.createProgramInfo(gl, [vertexShaderText, fragmentShaderText] );
+  const programInfo = twgl.createProgramInfo(gl, [vertexShaderText, fragmentShaderText]);
 
   return programInfo;
 }
