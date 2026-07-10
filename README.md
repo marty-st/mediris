@@ -5,6 +5,7 @@
 **MedIRIS** is written in JavaScript and uses the following libraries:
 - [Vite](https://github.com/vitejs/vite) (dev only)
 - [ESLint](https://eslint.org/) (dev only)
+- [ESLint Stylistic](https://eslint.style/) (dev only)
 - [twgl.js](https://github.com/greggman/twgl.js/)
 - [glMatrix](https://glmatrix.net/)
 - [dicomParser](https://github.com/cornerstonejs/dicomParser)
@@ -24,6 +25,7 @@ git clone https://github.com/marty-st/mediris.git
 ```
 npm install --save-dev vite
 npm install --save-dev eslint
+npm install --save-dev @stylistic/eslint-plugin
 npm install twgl.js gl-matrix
 npm install dicom-parser cornerstone-wado-image-loader cornerstone-core 
 npm install --save tweakpane
