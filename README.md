@@ -4,6 +4,7 @@
 ## Framework
 **MedIRIS** is written in JavaScript and uses the following libraries:
 - [Vite](https://github.com/vitejs/vite) (dev only)
+- [ESLint](https://eslint.org/) (dev only)
 - [twgl.js](https://github.com/greggman/twgl.js/)
 - [glMatrix](https://glmatrix.net/)
 - [dicomParser](https://github.com/cornerstonejs/dicomParser)
@@ -21,11 +22,12 @@ git clone https://github.com/marty-st/mediris.git
 ### 2. install Node packages in the root of the project
 (You must have [Node.js](https://nodejs.org/en) installed on your machine)
 ```
-`npm install --save-dev vite`
-`npm install twgl.js gl-matrix`
-`npm install dicom-parser cornerstone-wado-image-loader cornerstone-core` 
-`npm install --save tweakpane`
-`npm install @tweakpane/plugin-essentials`
+npm install --save-dev vite
+npm install --save-dev eslint
+npm install twgl.js gl-matrix
+npm install dicom-parser cornerstone-wado-image-loader cornerstone-core 
+npm install --save tweakpane
+npm install @tweakpane/plugin-essentials
 ```
 ### 3. Add the following to the `package.json` file:
 ```
