@@ -137,7 +137,7 @@ window.onload = async function init()
   {
     const dimensions = imageDataCT.dimensions;
 
-    const squaredEuclideanDistanceToNonAir = await euclideanDistanceTransform(imageDataCT.volume, imageDataCT.dimensions, appData.transferFunction.boneCortical.interval.min);
+    const squaredEuclideanDistanceToNonAir = await euclideanDistanceTransform(imageDataCT.name, imageDataCT.volume, imageDataCT.dimensions, appData.transferFunction.boneCortical.interval.min, CACHE);
 
     const interleavedVolumes = await interleaveVolumesWithResample(
       imageDataCT.volume,

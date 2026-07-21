@@ -6,10 +6,14 @@ import { getCache, setCache } from "../file/cache";
 /* CONSTANTS */
 
 // Cache variables
-const DATABASE_NAME = "interleavedVolumeCache";
+const DATABASE_NAME_CT_PET = "interleavedVolumeCache";
 const DATABASE_VERSION = 1;
-const KEY_TYPE = "folderName";
-const STORE_NAME = "interleavedVolume";
+const KEY_TYPE_CT_PET = "folderName";
+const STORE_NAME_CT_PET = "interleavedVolume";
+
+const DATABASE_NAME_EDT = "DistanceTransformCache";
+const KEY_TYPE_EDT = "name";
+const STORE_NAME_EDT = "DistanceTransform";
 
 // Numerical limits
 const INT32_MAX = ~(1 << 31);
@@ -78,7 +82,7 @@ export async function interleaveVolumesWithResample(
 
   if (useCache)
   {
-    const cache = await getCache(DATABASE_NAME, STORE_NAME, KEY_TYPE, folderNames, DATABASE_VERSION);
+    const cache = await getCache(DATABASE_NAME_CT_PET, STORE_NAME_CT_PET, KEY_TYPE_CT_PET, folderNames, DATABASE_VERSION);
     if (cache)
     {
       endBenchmark("RESAMPLE CT PET", start, true);
@@ -122,7 +126,7 @@ export async function interleaveVolumesWithResample(
     }
   }
 
-  await setCache(DATABASE_NAME, STORE_NAME, KEY_TYPE, folderNames, interleaved, DATABASE_VERSION);
+  await setCache(DATABASE_NAME_CT_PET, STORE_NAME_CT_PET, KEY_TYPE_CT_PET, folderNames, interleaved, DATABASE_VERSION);
 
   endBenchmark("RESAMPLE CT PET", start);
 
@@ -218,9 +222,28 @@ function tricubicSample(volume, dims, fx, fy, fz)
   return result;
 }
 
-export async function euclideanDistanceTransform(volume, dimensions, threshold)
+/**
+ * Computes Euclidean Distance Transform within a volume to a given threshold value.
+ * @param {*} name volume data name
+ * @param {*} volume volume data array
+ * @param {*} dimensions volume dimensions
+ * @param {*} threshold value to which the distance is computed
+ * @param {*} useCache boolean determining whether to load and/or store computed data from client-side browser cache
+ * @returns array of computed distance transform for each voxel of the volume
+ */
+export async function euclideanDistanceTransform(name, volume, dimensions, threshold, useCache = false)
 {
-  const start = startBenchmark("COMPUTE EDT");
+  const start = startBenchmark("COMPUTE EDT", name);
+
+  if (useCache)
+  {
+    const cache = await getCache(DATABASE_NAME_EDT, STORE_NAME_EDT, KEY_TYPE_EDT, name, DATABASE_VERSION);
+    if (cache)
+    {
+      endBenchmark("COMPUTE EDT", start, true, name);
+      return cache;
+    }
+  }
 
   const { rows: width, cols: height, layers: depth } = dimensions;
   const widthHeight = width * height;
@@ -261,7 +284,9 @@ export async function euclideanDistanceTransform(volume, dimensions, threshold)
     }
   }
 
-  endBenchmark("COMPUTE EDT", start);
+  await setCache(DATABASE_NAME_EDT, STORE_NAME_EDT, KEY_TYPE_EDT, name, distanceTransform, DATABASE_VERSION);
+
+  endBenchmark("COMPUTE EDT", start, false, name);
 
   return distanceTransform;
 }

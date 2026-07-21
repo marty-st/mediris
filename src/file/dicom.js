@@ -319,9 +319,11 @@ function getVolumeGeometry(imageIds, images)
 
 /**
  * Processes loaded DICOM images and extracts all relevant data for 3D rendering
+ * @param {string} folderName direct name of the folder containing DICOM data
  * @param {string[]} imageIds array of cornerstone image identifiers
  * @param {Array} images array of loaded cornerstone image objects
  * @returns {{
+ *  name: string,
  *  dimensions: {rows: number, cols: number, layers: number},
  *  bitsAllocated: number,
  *  pixelRepresentation: number,
@@ -333,8 +335,10 @@ function getVolumeGeometry(imageIds, images)
  *  volume: Float32Array
  * }} object containing DICOM slices metadata and pixel volume
  */
-function getImageData(imageIds, images)
+function getImageData(folderName, imageIds, images)
 {
+  const name = folderName;
+
   const dimensions = getDataDimensions(images);
 
   const { bitsAllocated, pixelRepresentation } = getPixelMetaData(images, imageIds);
@@ -352,6 +356,7 @@ function getImageData(imageIds, images)
   const { origin, rowAxis, colAxis } = getVolumeGeometry(imageIds, images);
 
   return {
+    name,
     dimensions,
     bitsAllocated,
     pixelRepresentation,
@@ -420,7 +425,7 @@ export default async function loadDicom(folderName, useCache = false)
 
   sortSlicesByPosition(imageIds, images);
 
-  const imageData = getImageData(imageIds, images);
+  const imageData = getImageData(folderName, imageIds, images);
 
   await setCache(DATABASE_NAME, STORE_NAME, KEY_TYPE, folderName, imageData, DATABASE_VERSION);
 
