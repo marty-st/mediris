@@ -20,6 +20,11 @@ const INT32_MAX = ~(1 << 31);
 
 /**/
 
+/**
+ * Manages a stride when foreign code accesses the array from the outside.
+ * This allows the foreign code to use consecutive indexes without having
+ * knowledge about the stride.
+ */
 class StridedArrayView
 {
   constructor(typedArray, start, end, stride)
@@ -59,12 +64,12 @@ class StridedArrayView
  * @param {TypedArray} volumePET - source grid (lower res)
  * @param {{cols, rows, layers}} dimCT - CT dimensions
  * @param {{cols, rows, layers}} dimPET - PET dimensions
- * @param {Array} originCT
- * @param {Array} originPET
+ * @param {Array} originCT CT origin vector
+ * @param {Array} originPET PET origin vector
  * @param {{x, y, z}} spacingCT - CT pixel/voxel spacing in mm
  * @param {{x, y, z}} spacingPET - PET pixel/voxel spacing in mm
- * @param {string} folderNames
- * @param {boolean} useCache
+ * @param {string} folderNames concatenated names of CT and PET folders
+ * @param {boolean} useCache boolean determining whether to load and/or store interleaved data from client-side browser cache
  * @param {typeof TypedArray} Typed - desired output type
  * @returns {TypedArray} interleaved volume (CT + PET per voxel)
  */
@@ -133,7 +138,16 @@ export async function interleaveVolumesWithResample(
   return interleaved;
 }
 
-// TODO: docs
+/**
+ * Samples a volume at the nearest voxel to the provided continuous coordinates.
+ * Out-of-bounds coordinates return 0 so the caller can treat the sample as empty.
+ * @param {TypedArray} volume - Flat 3D volume data stored in row-major order.
+ * @param {{rows: number, cols: number, layers: number}} dim - Volume dimensions.
+ * @param {number} fx - Continuous x coordinate in voxel space.
+ * @param {number} fy - Continuous y coordinate in voxel space.
+ * @param {number} fz - Continuous z coordinate in voxel space.
+ * @returns {number} Sampled value at the nearest voxel or 0 when outside the volume.
+ */
 function nearestNeigborSample(volume, dim, fx, fy, fz)
 {
   const x = Math.round(fx), y = Math.round(fy), z = Math.round(fz);
@@ -142,8 +156,16 @@ function nearestNeigborSample(volume, dim, fx, fy, fz)
   return volume[z * dim.rows * dim.cols + y * dim.cols + x];
 }
 
-// --- Trilinear interpolation in a flat 3D array ---
-// TODO: docs
+/**
+ * Samples a volume using trilinear interpolation from the eight surrounding voxels.
+ * Coordinates are clamped to the valid voxel range before interpolation.
+ * @param {TypedArray} volume - Flat 3D volume data stored in row-major order.
+ * @param {{rows: number, cols: number, layers: number}} dims - Volume dimensions.
+ * @param {number} fx - Continuous x coordinate in voxel space.
+ * @param {number} fy - Continuous y coordinate in voxel space.
+ * @param {number} fz - Continuous z coordinate in voxel space.
+ * @returns {number} Interpolated sample value.
+ */
 function trilinearSample(volume, dims, fx, fy, fz)
 {
   // Clamp to valid range
@@ -182,7 +204,11 @@ function trilinearSample(volume, dims, fx, fy, fz)
   );
 }
 
-// TODO: docs
+/**
+ * Computes the four Catmull-Rom interpolation weights for a fractional offset.
+ * @param {number} t - Fractional distance from the lower grid coordinate.
+ * @returns {number[]} Array of weights for the four neighboring samples.
+ */
 function cubicWeight(t)
 {
   // Catmull-Rom basis
@@ -196,7 +222,16 @@ function cubicWeight(t)
 }
 
 // NOTE: Takes VERY long
-// TODO: docs
+/**
+ * Samples a volume using Catmull-Rom tricubic interpolation over a 4x4x4 neighborhood.
+ * This is slower than trilinear interpolation but produces smoother results.
+ * @param {TypedArray} volume - Flat 3D volume data stored in row-major order.
+ * @param {{rows: number, cols: number, layers: number}} dims - Volume dimensions.
+ * @param {number} fx - Continuous x coordinate in voxel space.
+ * @param {number} fy - Continuous y coordinate in voxel space.
+ * @param {number} fz - Continuous z coordinate in voxel space.
+ * @returns {number} Interpolated sample value.
+ */
 function tricubicSample(volume, dims, fx, fy, fz)
 {
   const clamp = (v, max) => Math.max(0, Math.min(max - 1, v));
@@ -292,7 +327,8 @@ export async function euclideanDistanceTransform(name, volume, dimensions, thres
 }
 
 /**
- *
+ * Computes Distance Transform according to the algorithm presented by
+ * Felzenszwalb and Huttenlocher in Theory of Computing Volume 8 (2012).
  * @param { StridedArrayView } f array representing a 1D function
  * @returns {TypedArray} distance transform for the given function `f`
  */
@@ -344,6 +380,12 @@ function DT(f)
   return Df;
 }
 
+/**
+ * Interleaves already interleaved volume (CT + PET) and EDT data into one array.
+ * @param {*} volume CT + PET interleaved volume data array
+ * @param {*} edt edt array
+ * @returns Interleaved array of volumes (CT + PET) and EDT
+ */
 export function interleaveVolumeAndEDT(volume, edt)
 {
   const start = startBenchmark("INTERLEAVE VOL EDT");
