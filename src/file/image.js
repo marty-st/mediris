@@ -31,7 +31,7 @@ export async function loadImagesCubeMap(imageFolderName, format)
   const suffixes = ["ft", "bk", "up", "dn", "rt", "lf"];
   let images = [];
 
-  suffixes.forEach(async suffix =>
+  await suffixes.forEach(async suffix =>
   {
     images.push(await loadImage(imageFolderName + "/" + imageFolderName + "_" + suffix + "." + format));
   });
