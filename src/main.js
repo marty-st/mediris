@@ -1,7 +1,7 @@
 'use strict';
 
 import loadDicom from './file/dicom.js';
-import { euclideanDistanceTransform, interleaveVolumeAndEDT, interleaveVolumesWithResample } from './algo/image.js';
+import { euclideanDistanceTransform, interleaveVolumeArrays, resampleVolumePET } from './algo/image.js';
 import { initDebugGUI, initGUIData, resetGUIState } from './ui/gui.js';
 import { initUI, control, resetControls } from './ui/manager.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
@@ -137,9 +137,9 @@ window.onload = async function init()
   {
     const dimensions = imageDataCT.dimensions;
 
-    const squaredEuclideanDistanceToNonAir = await euclideanDistanceTransform(imageDataCT.name, imageDataCT.volume, imageDataCT.dimensions, appData.transferFunction.boneCortical.interval.min, CACHE);
+    const squaredEuclideanDistanceToNonAirCT = await euclideanDistanceTransform(imageDataCT.name, imageDataCT.volume, imageDataCT.dimensions, appData.transferFunction.boneCortical.interval.min, CACHE);
 
-    const interleavedVolumes = await interleaveVolumesWithResample(
+    const resampledVolumePET = await resampleVolumePET(
       imageDataCT.volume,
       imageDataPET.volume,
       imageDataCT.dimensions,
@@ -153,9 +153,13 @@ window.onload = async function init()
       Float32Array
     );
 
-    const interleavedData = interleaveVolumeAndEDT(interleavedVolumes, squaredEuclideanDistanceToNonAir);
+    // const squaredEuclideanDistanceToNonAirPET = await euclideanDistanceTransform(imageDataPET.name, resampledVolumePET, imageDataCT.dimensions, appData.transferFunction.pet.interval.min, CACHE);
 
-    const volumeTexture = createVolumeTexture(gl, interleavedData, dimensions, 3);
+    const interleavedVolumes = interleaveVolumeArrays(imageDataCT.volume, resampledVolumePET, squaredEuclideanDistanceToNonAirCT /** , squaredEuclideanDistanceToNonAirPET **/);
+
+    // NOTE: when all 4 textures are interleaved and used in the volume texture, the application crashes with WebGL context loss
+    // needs further testing of (V)RAM stress and/or leaks
+    const volumeTexture = createVolumeTexture(gl, interleavedVolumes, dimensions, 3);
 
     appData.environment.scene.geometries.push(createVolumeGeometry(gl, volumeProgramInfo, mainShaderNames, volumeTexture, materialTexture, cubeMapTexture, dimensions, appData));
 

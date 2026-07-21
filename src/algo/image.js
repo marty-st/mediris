@@ -6,10 +6,10 @@ import { getCache, setCache } from "../file/cache";
 /* CONSTANTS */
 
 // Cache variables
-const DATABASE_NAME_CT_PET = "interleavedVolumeCache";
+const DATABASE_NAME_CT_PET = "resampledVolumePETCache";
 const DATABASE_VERSION = 1;
 const KEY_TYPE_CT_PET = "folderName";
-const STORE_NAME_CT_PET = "interleavedVolume";
+const STORE_NAME_CT_PET = "resampledVolumePET";
 
 const DATABASE_NAME_EDT = "DistanceTransformCache";
 const KEY_TYPE_EDT = "name";
@@ -59,7 +59,7 @@ class StridedArrayView
 }
 
 /**
- * Resamples source volume to match target volume's grid, then interleaves.
+ * Resamples source volume to match target volume's grid.
  * @param {TypedArray} volumeCT - target grid (higher res)
  * @param {TypedArray} volumePET - source grid (lower res)
  * @param {{cols, rows, layers}} dimCT - CT dimensions
@@ -71,9 +71,9 @@ class StridedArrayView
  * @param {string} folderNames concatenated names of CT and PET folders
  * @param {boolean} useCache boolean determining whether to load and/or store interleaved data from client-side browser cache
  * @param {typeof TypedArray} Typed - desired output type
- * @returns {TypedArray} interleaved volume (CT + PET per voxel)
+ * @returns {TypedArray} resampled volume
  */
-export async function interleaveVolumesWithResample(
+export async function resampleVolumePET(
   volumeCT, volumePET,
   dimCT, dimPET,
   originCT, originPET,
@@ -97,7 +97,7 @@ export async function interleaveVolumesWithResample(
 
   const layerSize = dimCT.rows * dimCT.cols;
   const totalVoxels = layerSize * dimCT.layers;
-  const interleaved = new Typed(totalVoxels * 2);
+  const resampledPET = new Typed(totalVoxels);
 
   for (let z = 0; z < dimCT.layers; z++)
   {
@@ -124,18 +124,16 @@ export async function interleaveVolumesWithResample(
         // Interpolation (nearest-neighbor for speed)
         const petValue = tricubicSample(volumePET, dimPET, petX, petY, petZ);
 
-        const outIdx = ctIdx * 2;
-        interleaved[outIdx] = volumeCT[ctIdx]; // R = CT
-        interleaved[outIdx + 1] = petValue;    // G = PET
+        resampledPET[ctIdx] = petValue;
       }
     }
   }
 
-  await setCache(DATABASE_NAME_CT_PET, STORE_NAME_CT_PET, KEY_TYPE_CT_PET, folderNames, interleaved, DATABASE_VERSION);
+  await setCache(DATABASE_NAME_CT_PET, STORE_NAME_CT_PET, KEY_TYPE_CT_PET, folderNames, resampledPET, DATABASE_VERSION);
 
   endBenchmark("RESAMPLE CT PET", start);
 
-  return interleaved;
+  return resampledPET;
 }
 
 /**
@@ -381,27 +379,31 @@ function DT(f)
 }
 
 /**
- * Interleaves already interleaved volume (CT + PET) and EDT data into one array.
- * @param {*} volume CT + PET interleaved volume data array
- * @param {*} edt edt array
- * @returns Interleaved array of volumes (CT + PET) and EDT
+ * Interleaves multiple volume array into one array.
+ * @param {*} volumeArrays volume arrays
+ * @returns Interleaved array of volumes
  */
-export function interleaveVolumeAndEDT(volume, edt)
+export function interleaveVolumeArrays(...volumeArrays)
 {
-  const start = startBenchmark("INTERLEAVE VOL EDT");
+  if (volumeArrays.length === 1)
+    return volumeArrays[0];
 
-  const interleaved = new Float32Array(volume.length + edt.length);
+  const start = startBenchmark("INTERLEAVE ARRAYS");
+
+  let totalLength = 0;
+  for (const volume of volumeArrays)
+    totalLength += volume.length;
+
+  const interleaved = new Float32Array(totalLength);
 
   let outIdx = 0;
-  for (let i = 0; i < edt.length; ++i)
+  for (let i = 0; i < volumeArrays[0].length; ++i)
   {
-    const volumeIdx = 2 * i;
-    interleaved[outIdx++] = volume[volumeIdx];
-    interleaved[outIdx++] = volume[volumeIdx + 1];
-    interleaved[outIdx++] = edt[i];
+    for (const volume of volumeArrays)
+      interleaved[outIdx++] = volume[i];
   }
 
-  endBenchmark("INTERLEAVE VOL EDT", start);
+  endBenchmark("INTERLEAVE ARRAYS", start);
 
   return interleaved;
 }
