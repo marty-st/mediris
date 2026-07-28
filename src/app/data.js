@@ -167,17 +167,18 @@ function initTransferFunctionProperties(tf)
 {
   let transferFunction = {};
 
-  for (const key in tf)
+  for (const [key, medium] of Object.entries(tf))
   {
-    const medium = tf[key];
+    const obj = {
+      enabled: medium.enabled,
+      channel: medium.channel === "ct" ? 0 : 1,
+      interval: medium.interval,
+      color: medium.color,
+      intervalVec: initIntervalVec(medium),
+      colorVec: initColorVec(medium),
+    };
 
-    transferFunction[key] = {};
-    transferFunction[key].enabled = medium.enabled;
-    transferFunction[key].channel = medium.channel === "ct" ? 0 : 1;
-    transferFunction[key].interval = medium.interval;
-    transferFunction[key].color = medium.color;
-    transferFunction[key].intervalVec = initIntervalVec(medium);
-    transferFunction[key].colorVec = initColorVec(medium);
+    transferFunction[key] = obj;
   }
 
   return transferFunction;
@@ -193,16 +194,17 @@ function initLightsProperties(lights)
 {
   let lightsProperties = {};
 
-  for (const key in lights)
+  for (const [key, light] of Object.entries(lights))
   {
-    const light = lights[key];
+    const obj = {
+      position: light.position,
+      positionVec: initVec3(light.position),
+      intensity: light.intensity,
+      relativeToCamera: light.relativeToCamera,
+      enabled: light.enabled,
+    };
 
-    lightsProperties[key] = {};
-    lightsProperties[key].position = light.position;
-    lightsProperties[key].positionVec = initVec3(light.position);
-    lightsProperties[key].intensity = light.intensity;
-    lightsProperties[key].relativeToCamera = light.relativeToCamera;
-    lightsProperties[key].enabled = light.enabled;
+    lightsProperties[key] = obj;
   }
 
   return lightsProperties;

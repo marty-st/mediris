@@ -335,6 +335,6 @@ export function controlApp(keyboard, appControls)
  */
 export function resetAppControls(appControls)
 {
-  for (const value in appControls)
-    appControls[value] = false;
+  for (const key in appControls)
+    appControls[key] = false;
 }

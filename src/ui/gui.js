@@ -40,12 +40,12 @@ function addTransferFunctionBindings(pane, GUIData)
 {
   const folderTF = pane.addFolder({ title: "Transfer Function" });
 
-  for (const key in GUIData.transferFunction)
+  for (const [key, medium] of Object.entries(GUIData.transferFunction))
   {
-    if (!GUIData.transferFunction[key].enabled)
+    if (!medium.enabled)
       continue;
 
-    folderTF.addBinding(GUIData.transferFunction[key], "interval", {
+    folderTF.addBinding(medium, "interval", {
       label: key,
       min: 0,
       max: 32766, // TODO: set from volume range
@@ -54,10 +54,10 @@ function addTransferFunctionBindings(pane, GUIData)
       .on('change', event =>
       {
         const { min, max } = event.value;
-        vec2.set(GUIData.transferFunction[key].intervalVec, min, max);
+        vec2.set(medium.intervalVec, min, max);
       });
 
-    folderTF.addBinding(GUIData.transferFunction[key], "color", {
+    folderTF.addBinding(medium, "color", {
       color: { type: "float" },
       picker: "inline",
       expanded: false,
@@ -65,7 +65,7 @@ function addTransferFunctionBindings(pane, GUIData)
       .on('change', event =>
       {
         const { r, g, b, a } = event.value;
-        vec4.set(GUIData.transferFunction[key].colorVec, r, g, b, a);
+        vec4.set(medium.colorVec, r, g, b, a);
       });
   }
 }
@@ -79,11 +79,11 @@ function addLightsBindings(pane, GUIData)
 {
   const folderLights = pane.addFolder({ title: "Lights" });
 
-  for (const key in GUIData.lights)
+  for (const [key, light] of Object.entries(GUIData.lights))
   {
-    const lightToggle = folderLights.addBinding(GUIData.lights[key], "enabled", { label: "toggle " + key });
+    const lightToggle = folderLights.addBinding(light, "enabled", { label: "toggle " + key });
 
-    const lightPosition = folderLights.addBinding(GUIData.lights[key], "position", {
+    const lightPosition = folderLights.addBinding(light, "position", {
       label: key,
       min: -10,
       max: 10,
@@ -91,17 +91,17 @@ function addLightsBindings(pane, GUIData)
       .on('change', event =>
       {
         const { x, y, z } = event.value;
-        vec3.set(GUIData.lights[key].positionVec, x, y, z);
+        vec3.set(light.positionVec, x, y, z);
       });
 
-    const lightIntensity = folderLights.addBinding(GUIData.lights[key], "intensity", {
+    const lightIntensity = folderLights.addBinding(light, "intensity", {
       min: 0,
       max: 1,
     });
 
     // initial visibility
-    lightPosition.hidden = !GUIData.lights[key].enabled;
-    lightIntensity.hidden = !GUIData.lights[key].enabled;
+    lightPosition.hidden = !light.enabled;
+    lightIntensity.hidden = !light.enabled;
 
     // visibility toggle
     lightToggle
@@ -140,21 +140,21 @@ function addShadingModelBindings(pane, GUIData, modelBinding)
   const folderSM = pane.addFolder({ title: "Shading Model" });
 
   const shadingModelBindings = {};
-  for (const model in GUIData.settings.uniforms.shadingModel)
+  for (const [modelKey, model] of Object.entries(GUIData.settings.uniforms.shadingModel))
   {
-    shadingModelBindings[model] = [];
-    for (const key in GUIData.settings.uniforms.shadingModel[model])
+    shadingModelBindings[modelKey] = [];
+    for (const paramKey in model)
     {
       const uniformBinding = folderSM.addBinding(
-        GUIData.settings.uniforms.shadingModel[model],
-        key,
-        { min: intervals[key].min, max: intervals[key].max }
+        model,
+        paramKey,
+        { min: intervals[paramKey].min, max: intervals[paramKey].max }
       );
       const modelIndex = Object.keys(shadingModelBindings).length - 1;
       // Show only default
       uniformBinding.hidden = modelIndex !== GUIData.settings.uniforms.rayTracing.u_shading_model;
 
-      shadingModelBindings[model].push(uniformBinding);
+      shadingModelBindings[modelKey].push(uniformBinding);
     }
   }
 
@@ -162,9 +162,9 @@ function addShadingModelBindings(pane, GUIData, modelBinding)
   modelBinding.on('change', event =>
   {
     // Hide all first
-    for (const model in shadingModelBindings)
+    for (const model of Object.values(shadingModelBindings))
     {
-      shadingModelBindings[model].forEach(uniformBinding =>
+      model.forEach(uniformBinding =>
       {
         uniformBinding.hidden = true;
       });

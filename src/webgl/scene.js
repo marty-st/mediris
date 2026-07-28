@@ -47,14 +47,12 @@ export function updateSceneFloatUniforms(scene, uniforms)
   // TODO: rewrite to use recursion instead of spaghetti code
   for (const values of Object.values(uniforms))
   {
-    for (const key in values)
+    for (const [key, value] of Object.entries(values))
     {
-      const value = values[key];
-
       if (typeof value === 'object')
       {
-        for (const innerKey in value)
-          scene.uniforms[innerKey] = value[innerKey];
+        for (const [innerKey, innerValue] of Object.entries(value))
+          scene.uniforms[innerKey] = innerValue;
       }
 
       else if (typeof value !== 'object' || value === null)
@@ -90,10 +88,8 @@ function createLightsUBOFromAppData(lights, cameraInvViewMat)
     lights_array_size: 0,
   };
 
-  for (const key in lights)
+  for (const light of Object.values(lights))
   {
-    const light = lights[key];
-
     if (!light.enabled)
       continue;
 
