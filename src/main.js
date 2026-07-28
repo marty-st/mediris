@@ -8,10 +8,10 @@ import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from '
 import createShaderProgram from './webgl/program.js';
 import { createSceneEmpty, createSceneRaycast } from './webgl/scene.js';
 import render from './webgl/render.js';
-import { create2DTexture, createCubeMapTexture, createVolumeTexture, createFramebufferTexture, createFramebuffer } from './webgl/texture.js';
+import { create2DTexture, createVolumeTexture, createFramebufferTexture, createFramebuffer } from './webgl/texture.js';
 import { createVolumeGeometry, createFullScreenGeometry } from './webgl/geometry.js';
 import { initCamera } from './webgl/camera.js';
-import { loadImage, loadImagesCubeMap } from './file/image.js';
+import { loadImage } from './file/image.js';
 import { initAppData } from './app/data.js';
 import { updateApp, updateAppPostFrame } from './app/manager.js';
 
@@ -28,7 +28,7 @@ const NO_CACHE = false;
 const appData = initAppData();
 
 let sceneEmpty = undefined;
-let idleGeometry = undefined;
+let idleGeometries = undefined;
 let frameBuffer = undefined;
 
 // Wrapper object for the UI controls & GUI, managed by the UI manager
@@ -47,8 +47,6 @@ const imageDataCTPromise = loadDicom(folderNameCT, CACHE);
 const imageDataPETPromise = loadDicom(folderNamePET, CACHE);
 // Load images for texture use
 const loadingScreenImagePromise = loadImage('loading.png');
-const cubeMapImagesPromise = loadImagesCubeMap("frozendusk", "jpg");
-const materialImagePromise = loadImage('Stylized_Water_001_basecolor.png');
 
 /**/
 
@@ -104,25 +102,19 @@ window.onload = async function init()
   loadingScreenImagePromise.then(loadingScreenImage =>
   {
     const loadingScreenTexture = create2DTexture(gl, loadingScreenImage, { width: 1920, height: 1080 });
-    const loadingScreenGeometry = [createFullScreenGeometry(gl, loadingScreenProgramInfo, loadingScreenShaderNames, loadingScreenTexture)];
+
+    const loadingScreenGeometry = createFullScreenGeometry(
+      gl,
+      loadingScreenProgramInfo,
+      loadingScreenShaderNames,
+      loadingScreenTexture
+    );
 
     /* --------------------- */
     /* RENDER LOAD SCREEN -- */
     /* --------------------- */
 
-    render(gl, canvas, appData.environment.viewport, sceneEmpty, loadingScreenGeometry);
-  });
-
-  let cubeMapTexture;
-  cubeMapImagesPromise.then(cubeMapImages =>
-  {
-    cubeMapTexture = createCubeMapTexture(gl, cubeMapImages, { width: 512, height: 512 });
-  });
-
-  let materialTexture;
-  materialImagePromise.then(materialImage =>
-  {
-    materialTexture = create2DTexture(gl, materialImage, { width: 4096, height: 4096 });
+    render(gl, canvas, appData.environment.viewport, sceneEmpty, [loadingScreenGeometry]);
   });
 
   const renderTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
@@ -130,7 +122,7 @@ window.onload = async function init()
 
   frameBuffer = createFramebuffer(gl, { color: [renderTexture], depth: depthTexture });
 
-  idleGeometry = [createFullScreenGeometry(gl, idleShaderProgramInfo, idleShaderNames, renderTexture)];
+  idleGeometries = [createFullScreenGeometry(gl, idleShaderProgramInfo, idleShaderNames, renderTexture)];
 
   // Asynchronously load DICOM to display later
   Promise.all([imageDataCTPromise, imageDataPETPromise]).then(async ([imageDataCT, imageDataPET]) =>
@@ -144,9 +136,13 @@ window.onload = async function init()
     //   },
     // };
 
-    const dimensions = imageDataCT.dimensions;
-
-    const squaredEuclideanDistanceToNonAirCT = await euclideanDistanceTransform(imageDataCT.name, imageDataCT.volume, imageDataCT.dimensions, appData.transferFunction.boneCortical.interval.min, CACHE);
+    const squaredEuclideanDistanceToNonAirCT = await euclideanDistanceTransform(
+      imageDataCT.name,
+      imageDataCT.volume,
+      imageDataCT.dimensions,
+      appData.transferFunction.boneCortical.interval.min,
+      CACHE
+    );
 
     const resampledVolumePET = await resampleVolumePET(
       imageDataPET.volume,
@@ -161,13 +157,25 @@ window.onload = async function init()
       Float32Array
     );
 
-    // const squaredEuclideanDistanceToNonAirPET = await euclideanDistanceTransform(imageDataPET.name, resampledVolumePET, imageDataCT.dimensions, appData.transferFunction.pet.interval.min, CACHE);
+    // const squaredEuclideanDistanceToNonAirPET = await euclideanDistanceTransform(
+    //   imageDataPET.name,
+    //   resampledVolumePET,
+    //   imageDataCT.dimensions,
+    //   appData.transferFunction.pet.interval.min,
+    //   CACHE
+    // );
 
-    const interleavedVolumes = interleaveVolumeArrays(imageDataCT.volume, resampledVolumePET, squaredEuclideanDistanceToNonAirCT /** , squaredEuclideanDistanceToNonAirPET **/);
+    const interleavedVolumes = interleaveVolumeArrays(
+      imageDataCT.volume,
+      resampledVolumePET,
+      squaredEuclideanDistanceToNonAirCT
+      // , squaredEuclideanDistanceToNonAirPET
+    );
 
-    // NOTE: when all 4 textures are interleaved and used in the volume texture, the application crashes with WebGL context loss
-    // needs further testing of (V)RAM stress and/or leaks
-    const volumeTexture = createVolumeTexture(gl, interleavedVolumes, dimensions, 3);
+    // NOTE: when all 4 textures are interleaved and used in the volume texture,
+    // the application crashes with WebGL context loss.
+    // Needs further testing of (V)RAM stress and/or leaks.
+    const volumeTexture = createVolumeTexture(gl, interleavedVolumes, imageDataCT.dimensions, 3);
 
     appData.environment.scene.geometries.push(createVolumeGeometry(
       gl,
@@ -229,16 +237,19 @@ function renderLoop(currentTime)
 {
   update(currentTime);
 
+  const context = appData.context;
+  const environment = appData.environment;
+
   // Prepare idle framebuffer - fully render the scene
-  if (!appData.environment.state.idleRender)
+  if (!environment.state.idleRender)
   {
-    appData.context.gl.bindFramebuffer(appData.context.gl.FRAMEBUFFER, frameBuffer);
-    render(appData.context.gl, appData.context.canvas, appData.environment.viewport, appData.environment.scene, appData.environment.scene.geometries);
+    context.gl.bindFramebuffer(context.gl.FRAMEBUFFER, frameBuffer);
+    render(context.gl, context.canvas, environment.viewport, environment.scene, environment.scene.geometries);
   }
 
   // Idle render
-  appData.context.gl.bindFramebuffer(appData.context.gl.FRAMEBUFFER, null);
-  render(appData.context.gl, appData.context.canvas, appData.environment.viewport, sceneEmpty, idleGeometry);
+  context.gl.bindFramebuffer(context.gl.FRAMEBUFFER, null);
+  render(context.gl, context.canvas, environment.viewport, sceneEmpty, idleGeometries);
 
   // State reset
   updatePostFrame();
