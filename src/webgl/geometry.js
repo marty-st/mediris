@@ -85,17 +85,15 @@ export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimens
  * @param {*} appData object with application data - settings, environment, etc.
  * @returns transfer function object with the same exact structure as defined in the shader
  */
-function getTransferFunctionfromAppData(appData)
+function getTransferFunctionUniformBlock(transferFunction)
 {
   let tf = {
     media_array: [],
     media_array_size: 0,
   };
 
-  for (const key in appData.transferFunction)
+  for (const medium of Object.values(transferFunction))
   {
-    const medium = appData.transferFunction[key];
-
     if (!medium.enabled)
       continue;
 
@@ -117,13 +115,10 @@ function getTransferFunctionfromAppData(appData)
  * @param {*} shaderProgramInfo associated shader program
  * @param {*} shaderFileNames contains file names of associated shaders for reload purposes
  * @param {*} volumeTexture volume data 3D texture
- * @param {*} cubeMapTexture cubemap texture
- * @param {*} dimensions dimensions of provided volume texture
- * @param {*} appData object with application data - settings, environment, etc.
- * @param {*} camera object with camera-related uniforms
+ * @param {*} transferFunction transfer function object from application data
  * @returns geometry object of the volume for 3D volume rendering
  */
-export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, volumeTexture, materialTexture, cubeMapTexture, dimensions, appData)
+export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, volumeTexture, transferFunction)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
@@ -136,8 +131,6 @@ export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, vol
     programInfo: shaderProgramInfo,
     shaderFileNames: shaderFileNames,
     uniforms: {
-      u_material_texture: materialTexture,
-      u_cube_map_texture: cubeMapTexture,
       // Volume Data
       u_volume_texture: volumeTexture,
       u_bbox_min: bbox_min,
@@ -146,7 +139,7 @@ export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, vol
     // Transfer Function
     uniformBlock: {
       info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "TransferFunction"),
-      uniforms: getTransferFunctionfromAppData(appData),
+      uniforms: getTransferFunctionUniformBlock(transferFunction),
     },
   };
 }
@@ -156,10 +149,10 @@ export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, vol
  * @param {*} gl WebGL rendering context
  * @param {*} shaderProgramInfo associated shader program
  * @param {*} shaderFileNames contains file names of associated shaders for reload purposes
- * @param {*} appData object with application data - settings, environment, etc.
+ * @param {*} transferFunction transfer function object from application data
  * @returns geometry object of the sphere
  */
-export function createSphereGeometry(gl, shaderProgramInfo, shaderFileNames, appData)
+export function createSphereGeometry(gl, shaderProgramInfo, shaderFileNames, transferFunction)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
@@ -172,7 +165,7 @@ export function createSphereGeometry(gl, shaderProgramInfo, shaderFileNames, app
     // Transfer Function
     uniformBlock: {
       info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "TransferFunction"),
-      uniforms: getTransferFunctionfromAppData(appData),
+      uniforms: getTransferFunctionUniformBlock(transferFunction),
     },
   };
 }

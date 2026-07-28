@@ -169,7 +169,13 @@ window.onload = async function init()
     // needs further testing of (V)RAM stress and/or leaks
     const volumeTexture = createVolumeTexture(gl, interleavedVolumes, dimensions, 3);
 
-    appData.environment.scene.geometries.push(createVolumeGeometry(gl, volumeProgramInfo, mainShaderNames, volumeTexture, materialTexture, cubeMapTexture, dimensions, appData));
+    appData.environment.scene.geometries.push(createVolumeGeometry(
+      gl,
+      volumeProgramInfo,
+      mainShaderNames,
+      volumeTexture,
+      appData.transferFunction
+    ));
 
     /* --------------------- */
     /* RENDER LOOP --------- */
