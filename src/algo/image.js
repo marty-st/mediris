@@ -74,7 +74,7 @@ class StridedArrayView
  * @returns {TypedArray} resampled volume
  */
 export async function resampleVolumePET(
-  volumeCT, volumePET,
+  volumePET,
   dimCT, dimPET,
   originCT, originPET,
   spacingCT, spacingPET,

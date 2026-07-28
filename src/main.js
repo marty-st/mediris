@@ -135,12 +135,20 @@ window.onload = async function init()
   // Asynchronously load DICOM to display later
   Promise.all([imageDataCTPromise, imageDataPETPromise]).then(async ([imageDataCT, imageDataPET]) =>
   {
+    // buffer that gets filled up with volume data to help garbage collection and RAM usage
+    // const interleavedVolumesBuffer = {
+    //   buffer: new Float32Array(imageDataCT.volume.length * 4), // RGBA
+    //   interleave: function (array, offset)
+    //   {
+    //     array.forEach((element, index) => this.buffer[index + offset] = element);
+    //   },
+    // };
+
     const dimensions = imageDataCT.dimensions;
 
     const squaredEuclideanDistanceToNonAirCT = await euclideanDistanceTransform(imageDataCT.name, imageDataCT.volume, imageDataCT.dimensions, appData.transferFunction.boneCortical.interval.min, CACHE);
 
     const resampledVolumePET = await resampleVolumePET(
-      imageDataCT.volume,
       imageDataPET.volume,
       imageDataCT.dimensions,
       imageDataPET.dimensions,
