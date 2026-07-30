@@ -84,39 +84,60 @@ const environment = {
 const settings = {
   uniforms: {
     general: {
-      u_mode: 0, // 0 = Volume Data, 1 = Debug Sphere
+      u_mode: {
+        value: 0,
+        options: {
+          isList: true,
+          main: 0,        // Volume Data
+          debugShader: 1, // Debug Sphere
+        },
+      },
     },
     rayTracing: {
-      u_step_size: 0.0025,
-      u_gradient_delta: 0.0025,
-      u_curvature_delta_multiplier: 4.0,
-      u_shading_model: 0, // 0 = Stylized, 1 = Disney, 2 = Blinn-Phong, 3 = Lambert, 4 = normal, 5 = position, 6 = cubemap
+      u_step_size: { value: 0.0025, options: { min: 0.0001, max: 0.01, step: 0.0001 } },
+      u_gradient_delta: { value: 0.0025, options: { min: 0.0001, max: 0.05, step: 0.001 } },
+      u_curvature_delta_multiplier: { value: 4.0, options: { min: 0.5, max: 6.0, step: 0.1 } },
+      u_shading_model: {
+        value: 0,
+        options: {
+          isList: true,
+          stylized: 0,
+          disney: 1,
+          blinnPhong: 2,
+          lambert: 3,
+          normal: 4,
+          position: 5,
+          cubemap: 6,
+        },
+      },
     },
     shadingModel: {
       stylized: {
-        u_alpha: 0.05,
-        u_tau: -1.0,
-        u_lambda: 0.0,
-        u_mu: 0.0,
-        u_chi: 1.0,
-        u_beta: 0.5,
-        u_gamma: 0.4,
+        u_alpha: { value: 0.05, options: { min: 0, max: 1 } },
+        u_tau: { value: -1.0, options: { min: -Math.PI, max: Math.PI } },
+        u_lambda: { value: 0.0, options: { min: -0.999, max: 0.999 } },
+        u_mu: { value: 0.0, options: { min: -1.5, max: 1.5 } },
+        u_chi: { value: 1.0, options: { min: -1, max: 1 } },
+        u_beta: { value: 0.5, options: { min: -0.5, max: 0.5 } },
+        u_gamma: { value: 0.4, options: { min: 0.001, max: 30 } },
       },
       disney: {
         // diffuse model
-        u_roughness: 0.5,
-        u_subsurface: 0.0,
-        u_sheen: 0.0,
-        u_sheen_tint: 0.5,
+        u_roughness: { value: 0.5, options: { min: 0, max: 1 } },
+        u_subsurface: { value: 0.0, options: { min: 0, max: 1 } },
+        u_sheen: { value: 0.0, options: { min: 0, max: 1 } },
+        u_sheen_tint: { value: 0.5, options: { min: 0, max: 1 } },
         // specular model
-        u_specular: 0.5,
-        u_specular_tint: 0.0,
-        u_anisotropic: 0.0,
-        u_metallic: 0.0,
-        u_clearcoat: 0.0,
-        u_clearcoat_gloss: 1.0,
+        u_specular: { value: 0.5, options: { min: 0, max: 1 } },
+        u_specular_tint: { value: 0.0, options: { min: 0, max: 1 } },
+        u_anisotropic: { value: 0.0, options: { min: 0, max: 1 } },
+        u_metallic: { value: 0.0, options: { min: 0, max: 1 } },
+        u_clearcoat: { value: 0.0, options: { min: 0, max: 1 } },
+        u_clearcoat_gloss: { value: 1.0, options: { min: 0, max: 1 } },
       },
-      blinnPhong: { u_shininess: 100.0 },
+      blinnPhong: {
+        u_shininess: { value: 100.0, options: { min: 0, max: 1000 } },
+      },
       lambert: {},
       normal: {},
       position: {},
@@ -178,6 +199,7 @@ function initTransferFunctionProperties(tf)
       color: medium.color,
       intervalVec: initIntervalVec(medium),
       colorVec: initColorVec(medium),
+      options: medium.options,
     };
 
     transferFunction[key] = obj;

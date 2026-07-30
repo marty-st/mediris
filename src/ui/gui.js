@@ -45,12 +45,7 @@ function addTransferFunctionBindings(pane, GUIData)
     if (!medium.enabled)
       continue;
 
-    folderTF.addBinding(medium, "interval", {
-      label: key,
-      min: 0,
-      max: 32766, // TODO: set from volume range
-      step: 1,
-    })
+    folderTF.addBinding(medium, "interval", { label: key, ...medium.options })
       .on('change', event =>
       {
         const { min, max } = event.value;
@@ -115,28 +110,6 @@ function addLightsBindings(pane, GUIData)
 
 function addShadingModelBindings(pane, GUIData, modelBinding)
 {
-  // TODO: put intervals with the values
-  const intervals = {
-    u_alpha: { min: 0, max: 1 },
-    u_tau: { min: -Math.PI, max: Math.PI },
-    u_lambda: { min: -0.999, max: 0.999 },
-    u_mu: { min: -1.5, max: 1.5 },
-    u_chi: { min: -1, max: 1 },
-    u_beta: { min: -0.5, max: 0.5 },
-    u_gamma: { min: 0.001, max: 30 },
-    u_roughness: { min: 0, max: 1 },
-    u_subsurface: { min: 0, max: 1 },
-    u_sheen: { min: 0, max: 1 },
-    u_sheen_tint: { min: 0, max: 1 },
-    u_specular: { min: 0, max: 1 },
-    u_specular_tint: { min: 0, max: 1 },
-    u_anisotropic: { min: 0, max: 1 },
-    u_metallic: { min: 0, max: 1 },
-    u_clearcoat: { min: 0, max: 1 },
-    u_clearcoat_gloss: { min: 0, max: 1 },
-    u_shininess: { min: 0, max: 1000 },
-  };
-
   const folderSM = pane.addFolder({ title: "Shading Model" });
 
   const shadingModelBindings = {};
@@ -145,14 +118,11 @@ function addShadingModelBindings(pane, GUIData, modelBinding)
     shadingModelBindings[modelKey] = [];
     for (const paramKey in model)
     {
-      const uniformBinding = folderSM.addBinding(
-        model,
-        paramKey,
-        { min: intervals[paramKey].min, max: intervals[paramKey].max }
-      );
+      const setting = model[paramKey];
+      const uniformBinding = folderSM.addBinding(setting, "value", { label: paramKey, ...setting.options });
       const modelIndex = Object.keys(shadingModelBindings).length - 1;
       // Show only default
-      uniformBinding.hidden = modelIndex !== GUIData.settings.uniforms.rayTracing.u_shading_model;
+      uniformBinding.hidden = modelIndex !== GUIData.settings.uniforms.rayTracing.u_shading_model.value;
 
       shadingModelBindings[modelKey].push(uniformBinding);
     }
@@ -199,29 +169,27 @@ export function initDebugGUI(GUIData)
     max: 200,
   });
 
-  pane.addBinding(GUIData.settings.uniforms.general, "u_mode", {
-    options: {
-      main: 0,
-      debugShader: 1,
-    },
+  // General
+  pane.addBinding(GUIData.settings.uniforms.general.u_mode, "value", {
+    label: "u_mode",
+    options: GUIData.settings.uniforms.general.u_mode.options,
   });
 
   // Ray Tracing
   const folderRT = pane.addFolder({ title: "Ray Tracing" });
-  folderRT.addBinding(GUIData.settings.uniforms.rayTracing, "u_step_size", { min: 0.0001, max: 0.01, step: 0.0001 });
-  folderRT.addBinding(GUIData.settings.uniforms.rayTracing, "u_gradient_delta", { min: 0.0001, max: 0.05, step: 0.001 });
-  folderRT.addBinding(GUIData.settings.uniforms.rayTracing, "u_curvature_delta_multiplier", { min: 0.5, max: 6.0, step: 0.1 });
-  const modelBinding = folderRT.addBinding(GUIData.settings.uniforms.rayTracing, "u_shading_model", {
-    options: {
-      stylized: 0,
-      disney: 1,
-      blinnPhong: 2,
-      lambert: 3,
-      normal: 4,
-      position: 5,
-      cubemap: 6,
-    },
-  });
+  let modelBinding;
+
+  for (const [key, setting] of Object.entries(GUIData.settings.uniforms.rayTracing))
+  {
+    const optionalParameters = "isList" in setting.options
+      ? { label: key, options: setting.options }
+      : { label: key, ...setting.options };
+
+    const binding = folderRT.addBinding(setting, "value", optionalParameters);
+
+    if (key === "u_shading_model")
+      modelBinding = binding;
+  }
 
   addLightsBindings(pane, GUIData);
 
