@@ -140,7 +140,7 @@ window.onload = async function init()
       imageDataCT.name,
       imageDataCT.volume,
       imageDataCT.dimensions,
-      appData.transferFunction.boneCortical.interval.min,
+      appData.transferFunction.skin.interval.min,
       CACHE
     );
 

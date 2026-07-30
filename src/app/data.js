@@ -12,11 +12,12 @@ const hu = {
   air: { min: -1000 + C, max: -950 + C },
   lungs: { min: -750 + C, max: -700 + C },
   fat: { min: -120 + C, max: -90 + C },
+  skin: { min: -440 + C, max: 1900 + C },
   water: { min: 0 + C, max: 0 + C },
   muscle: { min: 35 + C, max: 55 + C },
   softTissueContrast: { min: 100 + C, max: 300 + C },
   boneCancellous: { min: 300 + C, max: 400 + C },
-  boneCortical: { min: -440 + C, max: 1900 + C }, // USE min: -440 for skin layer, 350 for the bone
+  boneCortical: { min: 350 + C, max: 1900 + C }, // USE min: -440 for skin layer, 350 for the bone
   pet: { min: 5000 + C, max: 40000 + C },
 
 };
@@ -24,14 +25,15 @@ const hu = {
 // Transfer Function Definition
 const tf = {
   air: { interval: hu.air, color: { r: 0, g: 0, b: 0, a: 0 }, channel: "ct", enabled: false },
-  lungs: { interval: hu.lungs, color: { r: 0.65, g: 0.35, b: 0.11, a: 0.00 }, channel: "ct", enabled: false },
-  fat: { interval: hu.fat, color: { r: 0.82, g: 0.83, b: 0.18, a: 0.00 }, channel: "ct", enabled: false },
-  water: { interval: hu.water, color: { r: 0.03, g: 0.49, b: 0.87, a: 0.00 }, channel: "ct", enabled: false },
-  muscle: { interval: hu.muscle, color: { r: 0.46, g: 0.02, b: 0.02, a: 0.00 }, channel: "ct", enabled: false },
-  softTissueContrast: { interval: hu.softTissueContrast, color: { r: 0.66, g: 0.36, b: 0.52, a: 0.00 }, channel: "ct", enabled: false },
-  boneCancellous: { interval: hu.boneCancellous, color: { r: 0.41, g: 0.66, b: 0.17, a: 0.0 }, channel: "ct", enabled: false },
-  boneCortical: { interval: hu.boneCortical, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, channel: "ct", enabled: true },
-  pet: { interval: hu.pet, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, channel: "pet", enabled: true },
+  // lungs: { interval: hu.lungs, color: { r: 0.65, g: 0.35, b: 0.11, a: 0.00 }, channel: "ct", enabled: false },
+  // fat: { interval: hu.fat, color: { r: 0.82, g: 0.83, b: 0.18, a: 0.00 }, channel: "ct", enabled: false },
+  // water: { interval: hu.water, color: { r: 0.03, g: 0.49, b: 0.87, a: 0.00 }, channel: "ct", enabled: false },
+  // muscle: { interval: hu.muscle, color: { r: 0.46, g: 0.02, b: 0.02, a: 0.00 }, channel: "ct", enabled: false },
+  // softTissueContrast: { interval: hu.softTissueContrast, color: { r: 0.66, g: 0.36, b: 0.52, a: 0.00 }, channel: "ct", enabled: false },
+  // boneCancellous: { interval: hu.boneCancellous, color: { r: 0.41, g: 0.66, b: 0.17, a: 0.0 }, channel: "ct", enabled: false },
+  // boneCortical: { interval: hu.boneCortical, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, channel: "ct", enabled: true },
+  skin: { interval: hu.skin, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, channel: "ct", enabled: true, options: { min: 50, max: 3000, step: 1 } },
+  pet: { interval: hu.pet, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, channel: "pet", enabled: true, options: { min: 3000, max: 40000, step: 1 } },
 };
 
 // Lights Setup
