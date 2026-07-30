@@ -3,7 +3,7 @@
 import { deleteCache } from '../file/cache.js';
 import { updateCamera } from '../webgl/camera.js';
 import { reloadShaders } from '../webgl/scene.js';
-import { updateSceneFloatUniforms, updateSceneLights } from '../webgl/scene.js';
+import { updateSceneLights } from '../webgl/scene.js';
 
 /**
  * Updates the application environment based on user input.
@@ -54,7 +54,6 @@ export function updateApp(appData, UI)
   updateAppFromUI(appData, UI);
   updateAppState(appData, UI);
   updateCamera(appData.environment.camera, UI.cameraControls, appData.environment.viewport, appData.environment.time.delta);
-  updateSceneFloatUniforms(appData.environment.scene, appData.settings.uniforms);
   updateSceneLights(appData.environment.scene, appData.environment.lights, appData.environment.camera);
 }
 

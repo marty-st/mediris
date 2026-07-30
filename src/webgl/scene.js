@@ -36,29 +36,31 @@ export async function reloadShaders(gl, scene)
 }
 
 /**
- * Updates copies of float-type uniform variables stored in scene.uniforms. These are not synchronized
- * with their appData counterpart as they are passed by value when scene is initialized, thus requiring
- * manual update each frame.
- * @param {*} scene object with scene data - uniforms, geometries, shader file names
- * @param {*} uniforms object with uniform data
- */
-export function updateSceneFloatUniforms(scene, uniforms)
+ * Copies primitive-type uniforms as attributes of a new 'uniforms' object where each
+ * uniform has a getter that takes value from the uniform's source object.
+ * This ensures that primitive-type uniforms stay synchronized between the scene and
+ * the rest of the application.
+ * @param  {...any} primitiveUniformSources source uniform objects to be used for the reference
+ * @returns object with uniforms tied to their source object values
+*/
+function createReferenceUniforms(...primitiveUniformSources)
 {
-  // TODO: rewrite to use recursion instead of spaghetti code
-  for (const values of Object.values(uniforms))
-  {
-    for (const [key, value] of Object.entries(values))
-    {
-      if (typeof value === 'object')
-      {
-        for (const [innerKey, innerValue] of Object.entries(value))
-          scene.uniforms[innerKey] = innerValue;
-      }
+  const uniforms = {};
 
-      else if (typeof value !== 'object' || value === null)
-        scene.uniforms[key] = value;
-    }
+  for (const [key, uniform] of primitiveUniformSources)
+  {
+    // See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
+    Object.defineProperty(uniforms, key, {
+      // By default, properties created with Object.defineProperty are non-enumerable
+      // TWGL enumerates over the uniforms object
+      enumerable: true,
+      // TWGL will access the newly created uniform (key) variable
+      // this getter will underneath return the value from the original uniform.value
+      get: () => uniform.value,
+    });
   }
+
+  return uniforms;
 }
 
 /**
@@ -133,17 +135,22 @@ export function createSceneEmpty()
  */
 export function createSceneRaycast(gl, shaderProgramInfo, uniforms, environment)
 {
-  let scene = {
+  // these are enumerable and contain getters that reach for the original
+  // value in the uniforms object given to this function as a parameter
+  const referenceUniforms = createReferenceUniforms(
+    ...Object.entries(uniforms.general),
+    ...Object.entries(uniforms.rayTracing),
+    ...Object.entries(Object.assign({}, ...Object.values(uniforms.shadingModel)))
+  );
+
+  // Camera uniforms
+  referenceUniforms.u_eye_position = environment.camera.u_eye_position;
+  referenceUniforms.u_view_inv = environment.camera.u_view_inv;
+  referenceUniforms.u_projection_inv = environment.camera.u_projection_inv;
+
+  const scene = {
     geometries: [],
-    uniforms: {
-      ...uniforms.general,
-      ...uniforms.rayTracing,
-      ...Object.assign({}, ...Object.values(uniforms.shadingModel)),
-      // Camera
-      u_eye_position: environment.camera.u_eye_position,
-      u_view_inv: environment.camera.u_view_inv,
-      u_projection_inv: environment.camera.u_projection_inv,
-    },
+    uniforms: referenceUniforms,
     // Lights
     uniformBlock: {
       info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "Lights"),
