@@ -112,7 +112,6 @@ async function loadImages(imageIds)
   return images;
 }
 
-// TODO: docs
 function sortSlicesByPosition(imageIds, images)
 {
   const pairs = imageIds.map((id, i) =>
@@ -153,7 +152,7 @@ function getDataDimensions(images)
 function getPixelMetaData(images, imageIds)
 {
   // Enable metadata provider so metaData.get works
-  // TODO: Throws error Uncaught (in promise) TypeError: providers[i].provider is not a function
+  // NOTE: Throws error Uncaught (in promise) TypeError: providers[i].provider is not a function
   // cornerstone.metaData.addProvider(
   //   cornerstoneWADOImageLoader.wadouri.metaDataProvider,
   //   9999
@@ -256,7 +255,6 @@ function arrayToXYZ(array)
  *   (0020,0032) Image Position Patient  → origin of this slice
  *   (0020,0037) Image Orientation Patient → row (3) + col (3) direction cosines
  */
-// TODO: docs
 function getGeometryFromDataset(dataset)
 {
   // dicomParser: backslash-separated decimal strings
@@ -285,7 +283,6 @@ function getGeometryFromDataset(dataset)
  * @param {string[]} imageIds
  * @param {Array} images - loaded cornerstone image objects (image.data is the dicomParser dataset)
  */
-// TODO: docs
 function getVolumeGeometry(imageIds, images)
 {
   // --- Try cornerstone metadata provider first ---
@@ -404,7 +401,7 @@ function getPixelDataRange(volume)
  */
 export default async function loadDicom(folderName, useCache = false)
 {
-  const start = startBenchmark("LOAD DICOM");
+  const start = startBenchmark("LOAD DICOM", folderName);
 
   if (useCache)
   {
