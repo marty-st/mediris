@@ -181,13 +181,13 @@ function getPixelMetaData(images, imageIds)
  * Determines the appropriate TypedArray constructor for storing volume pixel data
  * @param {number} bitsAllocated number of bits allocated per pixel (8, 16, or 32)
  * @param {number} pixelRepresentation 0 for unsigned, 1 for signed pixel values
- * @returns {typeof Float32Array} TypedArray constructor for the volume data
+ * @returns {typeof Uint16Array} TypedArray constructor for the volume data
  */
 function defineVolumeArrayType(bitsAllocated, pixelRepresentation)
 {
   // Data are typed as float for hardware-supported interpolation on the GPU
   // Otherwise Uint16Array is enough
-  return Float32Array;
+  return Uint16Array;
 
   // return bitsAllocated === 8 ? Uint8Array
   //   : bitsAllocated === 16 ? (pixelRepresentation === 1 ? Int16Array : Uint16Array)
@@ -200,8 +200,8 @@ function defineVolumeArrayType(bitsAllocated, pixelRepresentation)
  * @param {Array} images array of loaded cornerstone image objects
  * @param {{rows: number, cols: number, layers: number}} dimensions object containing the volume dimensions
  * @param {number} sliceSize number of pixels per slice (rows * cols)
- * @param {typeof Float32Array} Typed TypedArray constructor for the volume data
- * @returns {Float32Array} flattened volume array containing all slice pixel data
+ * @param {typeof Uint16Array} Typed TypedArray constructor for the volume data
+ * @returns {Uint16Array} flattened volume array containing all slice pixel data
  */
 function createVolume(images, dimensions, sliceSize, Typed)
 {
@@ -329,7 +329,7 @@ function getVolumeGeometry(imageIds, images)
  *  rowAxis: {x: number, y: number, z: number},
  *  colAxis: {x: number, y: number, z: number},
  *  imageIds: string[],
- *  volume: Float32Array
+ *  volume: Uint16Array
  * }} object containing DICOM slices metadata and pixel volume
  */
 function getImageData(folderName, imageIds, images)

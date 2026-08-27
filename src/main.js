@@ -127,14 +127,8 @@ window.onload = async function init()
   // Asynchronously load DICOM to display later
   Promise.all([imageDataCTPromise, imageDataPETPromise]).then(async ([imageDataCT, imageDataPET]) =>
   {
-    // buffer that gets filled up with volume data to help garbage collection and RAM usage
-    // const interleavedVolumesBuffer = {
-    //   buffer: new Float32Array(imageDataCT.volume.length * 4), // RGBA
-    //   interleave: function (array, offset)
-    //   {
-    //     array.forEach((element, index) => this.buffer[index + offset] = element);
-    //   },
-    // };
+    // NOTE: Consider using Web Workers
+    // See: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
 
     const squaredEuclideanDistanceToNonAirCT = await euclideanDistanceTransform(
       imageDataCT.name,
@@ -154,7 +148,7 @@ window.onload = async function init()
       imageDataPET.spacing,
       folderNameCT + folderNamePET,
       CACHE,
-      Float32Array
+      Uint16Array
     );
 
     // const squaredEuclideanDistanceToNonAirPET = await euclideanDistanceTransform(

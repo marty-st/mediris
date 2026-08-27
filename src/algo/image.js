@@ -16,7 +16,7 @@ const KEY_TYPE_EDT = "name";
 const STORE_NAME_EDT = "DistanceTransform";
 
 // Numerical limits
-const INT32_MAX = ~(1 << 31);
+const UINT16_MAX = ~(1 << 15);
 
 /**/
 
@@ -80,7 +80,7 @@ export async function resampleVolumePET(
   spacingCT, spacingPET,
   folderNames,
   useCache = false,
-  Typed = Float32Array
+  Typed = Uint16Array
 )
 {
   const start = startBenchmark("RESAMPLE CT PET");
@@ -282,7 +282,8 @@ export async function euclideanDistanceTransform(name, volume, dimensions, thres
   const widthHeight = width * height;
   const volumeSize = widthHeight * depth;
 
-  const distanceTransform = new Float32Array(volumeSize).map((value, index) => value = volume[index] > threshold ? 0 : INT32_MAX);
+  // NOTE: Whether Uint16 is big enough to store the resulting squared distances is TBFO
+  const distanceTransform = new Uint16Array(volumeSize).map((value, index) => value = volume[index] > threshold ? 0 : UINT16_MAX);
 
   // x
   for (let z = 0; z < depth; ++z)
@@ -332,6 +333,7 @@ export async function euclideanDistanceTransform(name, volume, dimensions, thres
  */
 function DT(f)
 {
+  // !!! NOTE: Using less than 32 bits for the computational arrays results in incorrect behavior
   const n = f.length;
   const v = new Int32Array(n);
   const z = new Float64Array(n + 1);
@@ -358,11 +360,11 @@ function DT(f)
     z[k + 1] = Infinity;
   }
 
-  // NOTE: Float has 24 mantissa bits -> integers are exact up to 2^24 = 16,777,216;
+  // NOTE: Float32 has 24 mantissa bits -> integers are exact up to 2^24 = 16,777,216;
   // so squared distances will be correct up to volume dimension of 2048^3 (max sq. distance ~12.6M).
   // However, if real-value sample spacing is used, subsequent calculations will have a small
   // floating point error.
-  const Df = new Float32Array(n);
+  const Df = new Int32Array(n);
   k = 0;
 
   for (let q = 0; q < n; ++q)
@@ -394,7 +396,7 @@ export function interleaveVolumeArrays(...volumeArrays)
   for (const volume of volumeArrays)
     totalLength += volume.length;
 
-  const interleaved = new Float32Array(totalLength);
+  const interleaved = new Float16Array(totalLength);
 
   let outIdx = 0;
   for (let i = 0; i < volumeArrays[0].length; ++i)

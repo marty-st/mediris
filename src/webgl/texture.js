@@ -94,23 +94,14 @@ export function createVolumeTexture(gl, volume, dimensions, channels)
     dimensions.layers,
     0,
     format,                  // format
-    gl.FLOAT,                // type
-    volume
+    gl.HALF_FLOAT,                // type
+    // WebGL requires Uint16 array to use HALF_FLOAT as a type.
+    // The underlying data, however, must be in the Float16 format to properly work.
+    // The following reinterprets the view of the volume array
+    // NOTE: 2nd, 3rd arguments are optional and may be useful when splitting the original
+    // texture into multiple subarrays
+    new Uint16Array(volume.buffer, volume.byteOffset, volume.length)
   );
-
-  // Also possible to use this (with gl.NEAREST):
-  // gl.texImage3D(
-  //   gl.TEXTURE_3D,
-  //   0,
-  //   gl.R16UI,             // internalFormat
-  //   dimensions.rows,
-  //   dimensions.cols,
-  //   dimensions.layers,
-  //   0,
-  //   gl.RED_INTEGER,       // format
-  //   gl.UNSIGNED_SHORT,    // type
-  //   volume
-  // );
 
   gl.bindTexture(gl.TEXTURE_3D, null);
   gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4); // reset to default value
