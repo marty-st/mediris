@@ -25,6 +25,8 @@ export function initGUIData(appData)
     //   .map(([key, medium]) => [key, medium.lights])), // TODO: Is it needed?
     transferFunction: Object.fromEntries(Object.entries(appData.environment.volumeMedia)
       .map(([key, medium]) => [key, medium.transferFunction])),
+    selectedVolumeMediumKey: Object.keys(appData.environment.volumeMedia)[0],
+    volumeMedia: appData.environment.volumeMedia,
   };
 
   return GUIData;
@@ -34,35 +36,53 @@ export function initGUIData(appData)
 /* TWEAKPANE INITIALIZATION ------------------------------------------------ */
 /* ------------------------------------------------------------------------- */
 
+function removeFolderBindings(folder)
+{
+  for (const child of folder.children)
+    folder.remove(child);
+}
+
+function addTransferFunctionBinding(folder, GUIData)
+{
+  const key = GUIData.selectedVolumeMediumKey;
+  const medium = GUIData.transferFunction[key];
+
+  folder.addBinding(medium, "interval", { label: key, ...medium.options })
+    .on('change', event =>
+    {
+      const { min, max } = event.value;
+      vec2.set(medium.intervalVec, min, max);
+    });
+
+  folder.addBinding(medium, "color", {
+    color: { type: "float" },
+    picker: "inline",
+    expanded: false,
+  })
+    .on('change', event =>
+    {
+      const { r, g, b, a } = event.value;
+      vec4.set(medium.colorVec, r, g, b, a);
+    });
+}
+
+function refreshTransferFunctionBinding(folder, GUIData)
+{
+  removeFolderBindings(folder);
+  addTransferFunctionBinding(folder, GUIData);
+}
+
 /**
  * Creates a GUI section for tuning of the transfer function.
- * @param {*} pane Tweakpane global-state object
+ * @param {*} folder Tweakfolder folder object
  * @param {*} GUIData mediator object between GUI and the rest of the application
  */
-function addTransferFunctionBindings(pane, GUIData)
+function addTransferFunctionFolder(folder, GUIData)
 {
-  const folderTF = pane.addFolder({ title: "Transfer Function" });
+  const folderTF = folder.addFolder({ title: "Transfer Function" });
+  addTransferFunctionBinding(folderTF, GUIData);
 
-  for (const [key, medium] of Object.entries(GUIData.transferFunction))
-  {
-    folderTF.addBinding(medium, "interval", { label: key, ...medium.options })
-      .on('change', event =>
-      {
-        const { min, max } = event.value;
-        vec2.set(medium.intervalVec, min, max);
-      });
-
-    folderTF.addBinding(medium, "color", {
-      color: { type: "float" },
-      picker: "inline",
-      expanded: false,
-    })
-      .on('change', event =>
-      {
-        const { r, g, b, a } = event.value;
-        vec4.set(medium.colorVec, r, g, b, a);
-      });
-  }
+  return folderTF;
 }
 
 /**
@@ -108,46 +128,74 @@ function addLightsBindings(pane, GUIData)
   }
 }
 
-function addShadingModelBindings(pane, GUIData, modelBinding)
+function addShadingModelSelectBinding(folder, GUIData)
 {
-  const folderSM = pane.addFolder({ title: "Shading Model" });
+  const shadingModel = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shadingModel;
+  const shadingModelsKeys = Object.keys(GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shadingModelParameters);
 
-  const shadingModelBindings = {};
-  for (const [modelKey, model] of Object.entries(GUIData.settings.uniforms.shadingModel))
-  {
-    shadingModelBindings[modelKey] = [];
-    for (const paramKey in model)
+  return folder.addBinding(shadingModel, "value", {
+    label: "select",
+    // WARN: This will probably need to pull the options list from somewhere else when changes are introduced
+    options: Object.fromEntries(shadingModelsKeys.map((key, index) => [key, index])),
+  })
+    .on('change', event =>
     {
-      const setting = model[paramKey];
-      const uniformBinding = folderSM.addBinding(setting, "value", { label: paramKey, ...setting.options });
-      const modelIndex = Object.keys(shadingModelBindings).length - 1;
-      // Show only default
-      uniformBinding.hidden = modelIndex !== GUIData.settings.uniforms.rayTracing.u_shading_model.value;
-
-      shadingModelBindings[modelKey].push(uniformBinding);
-    }
-  }
-
-  // Toggle visibility based on selected model
-  modelBinding.on('change', event =>
-  {
-    // Hide all first
-    for (const model of Object.values(shadingModelBindings))
-    {
-      model.forEach(uniformBinding =>
-      {
-        uniformBinding.hidden = true;
-      });
-    }
-
-    // Show only the selected model's bindings
-    const modelName = Object.keys(GUIData.settings.uniforms.shadingModel)[event.value];
-    shadingModelBindings[modelName].forEach(uniformBinding =>
-    {
-      uniformBinding.hidden = false;
+      // WARN: This is not flexible
+      const index = event.value;
+      shadingModel.key = shadingModelsKeys[index];
     });
+}
 
-  });
+function addShadingModelParametersBindings(folder, GUIData)
+{
+  const modelKey = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shadingModel.key;
+  const model = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shadingModelParameters[modelKey];
+  for (const [paramKey, param] of Object.entries(model))
+  {
+    folder.addBinding(param, "value", { label: paramKey, ...param.options });
+  }
+}
+
+function refreshShadingModelParametersBindings(folder, GUIData)
+{
+  removeFolderBindings(folder);
+  addShadingModelParametersBindings(folder, GUIData);
+}
+
+function addShadingModelParametersFolder(folder, GUIData)
+{
+  const folderP = folder.addFolder({ title: "Parameters" });
+
+  addShadingModelParametersBindings(folderP, GUIData);
+
+  return folderP;
+}
+
+function addShadingModelBindings(folder, GUIData)
+{
+  const modelSelectBinding = addShadingModelSelectBinding(folder, GUIData);
+  const folderP = addShadingModelParametersFolder(folder, GUIData);
+
+  modelSelectBinding
+    .on('change', () =>
+    {
+      refreshShadingModelParametersBindings(folderP, GUIData);
+    });
+}
+
+function refreshShadingModelBindings(folder, GUIData)
+{
+  removeFolderBindings(folder);
+  addShadingModelBindings(folder, GUIData);
+}
+
+function addShadingModelFolder(folder, GUIData)
+{
+  const folderSM = folder.addFolder({ title: "Shading Model" });
+
+  addShadingModelBindings(folderSM, GUIData);
+
+  return folderSM;
 }
 
 /**
@@ -177,7 +225,6 @@ export function initDebugGUI(GUIData)
 
   // Ray Tracing
   const folderRT = pane.addFolder({ title: "Ray Tracing" });
-  let modelBinding;
 
   for (const [key, setting] of Object.entries(GUIData.settings.uniforms.rayTracing))
   {
@@ -185,18 +232,32 @@ export function initDebugGUI(GUIData)
       ? { label: key, options: setting.options }
       : { label: key, ...setting.options };
 
-    const binding = folderRT.addBinding(setting, "value", optionalParameters);
-
-    if (key === "u_shading_model")
-      modelBinding = binding;
+    folderRT.addBinding(setting, "value", optionalParameters);
   }
 
   addLightsBindings(pane, GUIData);
 
-  // TODO: dynamic shading model parameters
-  // addShadingModelBindings(pane, GUIData, modelBinding);
+  const folderVM = pane.addFolder({ title: "Volume Medium" });
 
-  addTransferFunctionBindings(pane, GUIData);
+  const selectVMBinding = folderVM.addBinding(GUIData, "selectedVolumeMediumKey", {
+    label: "select",
+    options: Object.fromEntries(Object.keys(GUIData.volumeMedia).map(key => [key, key])),
+  });
+
+  folderVM.addBinding(GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].enabled, "value", {
+    label: "enable",
+  });
+
+  const folderSM = addShadingModelFolder(folderVM, GUIData);
+
+  const folderTF = addTransferFunctionFolder(folderVM, GUIData);
+
+  selectVMBinding
+    .on('change', () =>
+    {
+      refreshShadingModelBindings(folderSM, GUIData);
+      refreshTransferFunctionBinding(folderTF, GUIData);
+    });
 
   pane
     .on('change', event =>

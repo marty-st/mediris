@@ -60,19 +60,6 @@ const lights = {
 
 // Shading Model Setup
 const shadingModel = {
-  u_shading_model: {
-    value: 0,
-    options: {
-      isList: true,
-      stylized: 0,
-      disney: 1,
-      blinnPhong: 2,
-      lambert: 3,
-      normal: 4,
-      position: 5,
-      cubemap: 6,
-    },
-  },
   stylized: {
     u_alpha: { value: 0.05, options: { min: 0, max: 1 } },
     u_tau: { value: -1.0, options: { min: -Math.PI, max: Math.PI } },
@@ -106,12 +93,12 @@ const shadingModel = {
 };
 
 // TODO: What the fuck
-const STYLIZED = 0;
-const DISNEY = 1;
-const BLINN_PHONG = 2;
-const LAMBERT = 3;
-const NORMAL = 4;
-const POSITION = 5;
+const STYLIZED = { value: 0, key: "stylized" };
+const DISNEY = { value: 1, key: "disney" };
+const BLINN_PHONG = { value: 2, key: "blinnPhong" };
+const LAMBERT = { value: 3, key: "lambert" };
+const NORMAL = { value: 4, key: "normal" };
+const POSITION = { value: 5, key: "position" };
 
 // TODO: move lights into volumeMedia
 // TODO: make shading model parameters dynamic via GUI
@@ -119,7 +106,7 @@ const POSITION = 5;
 // TODO: make lights adjustable via GUI
 const volumeMedia = {
   bodyShell: {
-    enabled: true,
+    enabled: { value: true },
     channel: "ct",
     transferFunction: initTransferFunctionProperties(tf.bodyShell),
     lights: initLightsProperties([lights.backLight]),
@@ -127,7 +114,7 @@ const volumeMedia = {
     shadingModelParameters: structuredClone(shadingModel),
   },
   pet: {
-    enabled: true,
+    enabled: { value: true },
     channel: "pet",
     transferFunction: initTransferFunctionProperties(tf.pet),
     lights: initLightsProperties([lights.keyLight]),

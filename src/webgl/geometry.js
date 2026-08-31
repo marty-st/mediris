@@ -105,12 +105,11 @@ function createVolumeMediaUniformBlock(volumeMedia)
   for (const medium of Object.values(volumeMedia))
   {
     vm.media_array.push({
-      enabled: medium.enabled, // TODO: reference
+      enabled: medium.enabled.value, // TODO: reference
       channel: medium.channel === "ct" ? 0 : 1,
       tf: createTransferFunctionUniformBlock(medium.transferFunction),
-      // NOTE: Optimize by shared lights pool - worse dev exp
       // lights: createLightsUniformBlock(lights, cameraInvViewMat), // TODO + needs per-frame updates
-      shading_model: medium.shadingModel, // TODO: reference
+      shading_model: medium.shadingModel.value, // TODO: reference
       sm: createReferenceUniforms(...Object.entries(Object.assign({}, ...Object.values(medium.shadingModelParameters)))),
     });
   }
