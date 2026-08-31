@@ -134,7 +134,7 @@ window.onload = async function init()
       imageDataCT.name,
       imageDataCT.volume,
       imageDataCT.dimensions,
-      appData.transferFunction.skin.interval.min,
+      appData.environment.volumeMedia.bodyShell.transferFunction.interval.min,
       CACHE
     );
 
@@ -155,7 +155,7 @@ window.onload = async function init()
     //   imageDataPET.name,
     //   resampledVolumePET,
     //   imageDataCT.dimensions,
-    //   appData.transferFunction.pet.interval.min,
+    //   appData.environment.volumeMedia.pet.transferFunction.interval.min,
     //   CACHE
     // );
 
@@ -176,7 +176,7 @@ window.onload = async function init()
       volumeProgramInfo,
       mainShaderNames,
       volumeTexture,
-      appData.transferFunction
+      appData.environment.volumeMedia
     ));
 
     /* --------------------- */

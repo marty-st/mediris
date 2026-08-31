@@ -21,7 +21,10 @@ export function initGUIData(appData)
     // App Data
     settings: appData.settings,
     lights: appData.environment.lights,
-    transferFunction: appData.transferFunction,
+    // lights: Object.fromEntries(Object.entries(appData.environment.volumeMedia)
+    //   .map(([key, medium]) => [key, medium.lights])), // TODO: Is it needed?
+    transferFunction: Object.fromEntries(Object.entries(appData.environment.volumeMedia)
+      .map(([key, medium]) => [key, medium.transferFunction])),
   };
 
   return GUIData;
@@ -42,9 +45,6 @@ function addTransferFunctionBindings(pane, GUIData)
 
   for (const [key, medium] of Object.entries(GUIData.transferFunction))
   {
-    if (!medium.enabled)
-      continue;
-
     folderTF.addBinding(medium, "interval", { label: key, ...medium.options })
       .on('change', event =>
       {
@@ -193,7 +193,8 @@ export function initDebugGUI(GUIData)
 
   addLightsBindings(pane, GUIData);
 
-  addShadingModelBindings(pane, GUIData, modelBinding);
+  // TODO: dynamic shading model parameters
+  // addShadingModelBindings(pane, GUIData, modelBinding);
 
   addTransferFunctionBindings(pane, GUIData);
 

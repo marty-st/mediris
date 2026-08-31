@@ -4,6 +4,7 @@ import createShaderProgram from './program';
 
 import * as twgl from 'twgl.js';
 import { vec3 } from 'gl-matrix';
+import { createReferenceUniforms } from '../app/helper';
 
 /**
  * Reloads the shader programs by re-fetching their appropriate text files. Used for application development.
@@ -33,34 +34,6 @@ export async function reloadShaders(gl, scene)
   }
 
   console.log("Reloaded shaders");
-}
-
-/**
- * Copies primitive-type uniforms as attributes of a new 'uniforms' object where each
- * uniform has a getter that takes value from the uniform's source object.
- * This ensures that primitive-type uniforms stay synchronized between the scene and
- * the rest of the application.
- * @param  {...any} primitiveUniformSources source uniform objects to be used for the reference
- * @returns object with uniforms tied to their source object values
-*/
-function createReferenceUniforms(...primitiveUniformSources)
-{
-  const uniforms = {};
-
-  for (const [key, uniform] of primitiveUniformSources)
-  {
-    // See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
-    Object.defineProperty(uniforms, key, {
-      // By default, properties created with Object.defineProperty are non-enumerable
-      // TWGL enumerates over the uniforms object
-      enumerable: true,
-      // TWGL will access the newly created uniform (key) variable
-      // this getter will underneath return the value from the original uniform.value
-      get: () => uniform.value,
-    });
-  }
-
-  return uniforms;
 }
 
 /**
@@ -139,8 +112,7 @@ export function createSceneRaycast(gl, shaderProgramInfo, uniforms, environment)
   // value in the uniforms object given to this function as a parameter
   const referenceUniforms = createReferenceUniforms(
     ...Object.entries(uniforms.general),
-    ...Object.entries(uniforms.rayTracing),
-    ...Object.entries(Object.assign({}, ...Object.values(uniforms.shadingModel)))
+    ...Object.entries(uniforms.rayTracing)
   );
 
   // Camera uniforms

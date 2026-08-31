@@ -17,6 +17,7 @@
 
 import * as twgl from 'twgl.js';
 import { vec3 } from 'gl-matrix';
+import { createReferenceUniforms } from '../app/helper';
 
 /* GLOBAL VARIABLES */
 
@@ -85,28 +86,38 @@ export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimens
  * @param {*} appData object with application data - settings, environment, etc.
  * @returns transfer function object with the same exact structure as defined in the shader
  */
-function getTransferFunctionUniformBlock(transferFunction)
+function createTransferFunctionUniformBlock(mediumTF)
 {
-  let tf = {
+  return {
+    color: mediumTF.colorVec,
+    interval: mediumTF.intervalVec,
+  };
+}
+
+// TODO: needs reference uniforms due to primitive values (enabled, shadingModel uniforms)
+function createVolumeMediaUniformBlock(volumeMedia)
+{
+  let vm = {
     media_array: [],
     media_array_size: 0,
   };
 
-  for (const medium of Object.values(transferFunction))
+  for (const medium of Object.values(volumeMedia))
   {
-    if (!medium.enabled)
-      continue;
-
-    tf.media_array.push({
-      color: medium.colorVec,
-      interval: medium.intervalVec,
-      channel: medium.channel,
+    vm.media_array.push({
+      enabled: medium.enabled, // TODO: reference
+      channel: medium.channel === "ct" ? 0 : 1,
+      tf: createTransferFunctionUniformBlock(medium.transferFunction),
+      // NOTE: Optimize by shared lights pool - worse dev exp
+      // lights: createLightsUniformBlock(lights, cameraInvViewMat), // TODO + needs per-frame updates
+      shading_model: medium.shadingModel, // TODO: reference
+      sm: createReferenceUniforms(...Object.entries(Object.assign({}, ...Object.values(medium.shadingModelParameters)))),
     });
   }
 
-  tf.media_array_size = tf.media_array.length;
+  vm.media_array_size = vm.media_array.length;
 
-  return tf;
+  return vm;
 }
 
 /**
@@ -118,7 +129,7 @@ function getTransferFunctionUniformBlock(transferFunction)
  * @param {*} transferFunction transfer function object from application data
  * @returns geometry object of the volume for 3D volume rendering
  */
-export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, volumeTexture, transferFunction)
+export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, volumeTexture, volumeMedia)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
@@ -136,10 +147,10 @@ export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, vol
       u_bbox_min: bbox_min,
       u_bbox_max: bbox_max,
     },
-    // Transfer Function
+    // Volume Media, their Shading Model, and Transfer Function
     uniformBlock: {
-      info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "TransferFunction"),
-      uniforms: getTransferFunctionUniformBlock(transferFunction),
+      info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "VolumeMedia"),
+      uniforms: createVolumeMediaUniformBlock(volumeMedia),
     },
   };
 }
@@ -152,7 +163,7 @@ export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, vol
  * @param {*} transferFunction transfer function object from application data
  * @returns geometry object of the sphere
  */
-export function createSphereGeometry(gl, shaderProgramInfo, shaderFileNames, transferFunction)
+export function createSphereGeometry(gl, shaderProgramInfo, shaderFileNames, volumeMedia)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
@@ -162,10 +173,10 @@ export function createSphereGeometry(gl, shaderProgramInfo, shaderFileNames, tra
     vao: emptyVAO,
     programInfo: shaderProgramInfo,
     shaderFileNames: shaderFileNames,
-    // Transfer Function
+    // Volume Media, their Shading Model, and Transfer Function
     uniformBlock: {
-      info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "TransferFunction"),
-      uniforms: getTransferFunctionUniformBlock(transferFunction),
+      info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "VolumeMedia"),
+      uniforms: createVolumeMediaUniformBlock(volumeMedia),
     },
   };
 }

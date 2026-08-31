@@ -24,16 +24,16 @@ const hu = {
 
 // Transfer Function Definition
 const tf = {
-  air: { interval: hu.air, color: { r: 0, g: 0, b: 0, a: 0 }, channel: "ct", enabled: false },
-  // lungs: { interval: hu.lungs, color: { r: 0.65, g: 0.35, b: 0.11, a: 0.00 }, channel: "ct", enabled: false },
-  // fat: { interval: hu.fat, color: { r: 0.82, g: 0.83, b: 0.18, a: 0.00 }, channel: "ct", enabled: false },
-  // water: { interval: hu.water, color: { r: 0.03, g: 0.49, b: 0.87, a: 0.00 }, channel: "ct", enabled: false },
-  // muscle: { interval: hu.muscle, color: { r: 0.46, g: 0.02, b: 0.02, a: 0.00 }, channel: "ct", enabled: false },
-  // softTissueContrast: { interval: hu.softTissueContrast, color: { r: 0.66, g: 0.36, b: 0.52, a: 0.00 }, channel: "ct", enabled: false },
-  // boneCancellous: { interval: hu.boneCancellous, color: { r: 0.41, g: 0.66, b: 0.17, a: 0.0 }, channel: "ct", enabled: false },
-  // boneCortical: { interval: hu.boneCortical, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, channel: "ct", enabled: true },
-  skin: { interval: hu.skin, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, channel: "ct", enabled: true, options: { min: 50, max: 3000, step: 1 } },
-  pet: { interval: hu.pet, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, channel: "pet", enabled: true, options: { min: 3000, max: 40000, step: 1 } },
+  air: { interval: hu.air, color: { r: 0, g: 0, b: 0, a: 0 } },
+  // lungs: { interval: hu.lungs, color: { r: 0.65, g: 0.35, b: 0.11, a: 0.00 } },
+  // fat: { interval: hu.fat, color: { r: 0.82, g: 0.83, b: 0.18, a: 0.00 } },
+  // water: { interval: hu.water, color: { r: 0.03, g: 0.49, b: 0.87, a: 0.00 } },
+  // muscle: { interval: hu.muscle, color: { r: 0.46, g: 0.02, b: 0.02, a: 0.00 } },
+  // softTissueContrast: { interval: hu.softTissueContrast, color: { r: 0.66, g: 0.36, b: 0.52, a: 0.00 } },
+  // boneCancellous: { interval: hu.boneCancellous, color: { r: 0.41, g: 0.66, b: 0.17, a: 0.0 } },
+  // boneCortical: { interval: hu.boneCortical, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 } },
+  bodyShell: { interval: { min: hu.skin.min, max: hu.boneCortical.max }, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, options: { min: 50, max: 3000, step: 1 } },
+  pet: { interval: hu.pet, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, options: { min: 3000, max: 40000, step: 1 } },
 };
 
 // Lights Setup
@@ -58,6 +58,84 @@ const lights = {
   },
 };
 
+// Shading Model Setup
+const shadingModel = {
+  u_shading_model: {
+    value: 0,
+    options: {
+      isList: true,
+      stylized: 0,
+      disney: 1,
+      blinnPhong: 2,
+      lambert: 3,
+      normal: 4,
+      position: 5,
+      cubemap: 6,
+    },
+  },
+  stylized: {
+    u_alpha: { value: 0.05, options: { min: 0, max: 1 } },
+    u_tau: { value: -1.0, options: { min: -Math.PI, max: Math.PI } },
+    u_lambda: { value: 0.0, options: { min: -0.999, max: 0.999 } },
+    u_mu: { value: 0.0, options: { min: -1.5, max: 1.5 } },
+    u_chi: { value: 1.0, options: { min: -1, max: 1 } },
+    u_beta: { value: 0.5, options: { min: -0.5, max: 0.5 } },
+    u_gamma: { value: 0.4, options: { min: 0.001, max: 30 } },
+  },
+  disney: {
+    // diffuse model
+    u_roughness: { value: 0.5, options: { min: 0, max: 1 } },
+    u_subsurface: { value: 0.0, options: { min: 0, max: 1 } },
+    u_sheen: { value: 0.0, options: { min: 0, max: 1 } },
+    u_sheen_tint: { value: 0.5, options: { min: 0, max: 1 } },
+    // specular model
+    u_specular: { value: 0.5, options: { min: 0, max: 1 } },
+    u_specular_tint: { value: 0.0, options: { min: 0, max: 1 } },
+    u_anisotropic: { value: 0.0, options: { min: 0, max: 1 } },
+    u_metallic: { value: 0.0, options: { min: 0, max: 1 } },
+    u_clearcoat: { value: 0.0, options: { min: 0, max: 1 } },
+    u_clearcoat_gloss: { value: 1.0, options: { min: 0, max: 1 } },
+  },
+  blinnPhong: {
+    u_shininess: { value: 100.0, options: { min: 0, max: 1000 } },
+  },
+  lambert: {},
+  normal: {},
+  position: {},
+  cubemap: {},
+};
+
+// TODO: What the fuck
+const STYLIZED = 0;
+const DISNEY = 1;
+const BLINN_PHONG = 2;
+const LAMBERT = 3;
+const NORMAL = 4;
+const POSITION = 5;
+
+// TODO: move lights into volumeMedia
+// TODO: make shading model parameters dynamic via GUI
+// TODO: make enable/disable dynamic via GUI
+// TODO: make lights adjustable via GUI
+const volumeMedia = {
+  bodyShell: {
+    enabled: true,
+    channel: "ct",
+    transferFunction: initTransferFunctionProperties(tf.bodyShell),
+    lights: initLightsProperties([lights.backLight]),
+    shadingModel: STYLIZED,
+    shadingModelParameters: structuredClone(shadingModel),
+  },
+  pet: {
+    enabled: true,
+    channel: "pet",
+    transferFunction: initTransferFunctionProperties(tf.pet),
+    lights: initLightsProperties([lights.keyLight]),
+    shadingModel: LAMBERT,
+    shadingModelParameters: structuredClone(shadingModel),
+  },
+};
+
 // Application time keeping
 const time = {
   current: 0,
@@ -76,6 +154,7 @@ const environment = {
   state: state,
   camera: undefined,
   viewport: undefined,    // Viewport position and dimensions
+  volumeMedia: volumeMedia,
   scene: undefined,       // Current scene object
   lights: lights,
 };
@@ -97,113 +176,29 @@ const settings = {
       u_step_size: { value: 0.0025, options: { min: 0.0001, max: 0.01, step: 0.0001 } },
       u_gradient_delta: { value: 0.0025, options: { min: 0.0001, max: 0.05, step: 0.001 } },
       u_curvature_delta_multiplier: { value: 4.0, options: { min: 0.5, max: 6.0, step: 0.1 } },
-      u_shading_model: {
-        value: 0,
-        options: {
-          isList: true,
-          stylized: 0,
-          disney: 1,
-          blinnPhong: 2,
-          lambert: 3,
-          normal: 4,
-          position: 5,
-          cubemap: 6,
-        },
-      },
-    },
-    shadingModel: {
-      stylized: {
-        u_alpha: { value: 0.05, options: { min: 0, max: 1 } },
-        u_tau: { value: -1.0, options: { min: -Math.PI, max: Math.PI } },
-        u_lambda: { value: 0.0, options: { min: -0.999, max: 0.999 } },
-        u_mu: { value: 0.0, options: { min: -1.5, max: 1.5 } },
-        u_chi: { value: 1.0, options: { min: -1, max: 1 } },
-        u_beta: { value: 0.5, options: { min: -0.5, max: 0.5 } },
-        u_gamma: { value: 0.4, options: { min: 0.001, max: 30 } },
-      },
-      disney: {
-        // diffuse model
-        u_roughness: { value: 0.5, options: { min: 0, max: 1 } },
-        u_subsurface: { value: 0.0, options: { min: 0, max: 1 } },
-        u_sheen: { value: 0.0, options: { min: 0, max: 1 } },
-        u_sheen_tint: { value: 0.5, options: { min: 0, max: 1 } },
-        // specular model
-        u_specular: { value: 0.5, options: { min: 0, max: 1 } },
-        u_specular_tint: { value: 0.0, options: { min: 0, max: 1 } },
-        u_anisotropic: { value: 0.0, options: { min: 0, max: 1 } },
-        u_metallic: { value: 0.0, options: { min: 0, max: 1 } },
-        u_clearcoat: { value: 0.0, options: { min: 0, max: 1 } },
-        u_clearcoat_gloss: { value: 1.0, options: { min: 0, max: 1 } },
-      },
-      blinnPhong: {
-        u_shininess: { value: 100.0, options: { min: 0, max: 1000 } },
-      },
-      lambert: {},
-      normal: {},
-      position: {},
-      cubemap: {},
     },
   },
 };
 
 /**/
 
-import { vec2, vec3, vec4 } from 'gl-matrix';
-
-/**
- * Helper function, creates a GPU-compatible representation of the transfer function interval.
- * @param {*} medium transfer function medium object
- * @returns vec2 object containing the given interval
- */
-function initIntervalVec(medium)
-{
-  return vec2.fromValues(medium.interval.min, medium.interval.max);
-}
-
-/**
- * Helper function, creates a GPU-compatible representation of the transfer function color.
- * @param {*} medium transfer function medium object, must contain attribute `color`
- * @returns vec4 object containing the given color
- */
-function initColorVec(medium)
-{
-  return vec4.fromValues(medium.color.r, medium.color.g, medium.color.b, medium.color.a);
-}
-
-/**
- * Helper function, creates a GPU-compatible representation of a three element vector.
- * @param {*} v object containing x,y,z properties
- * @returns vec3 object containing the given values
- */
-function initVec3(v)
-{
-  return vec3.fromValues(v.x, v.y, v.z);
-}
+import { initIntervalVec, initColorVec, initVec3 } from "./helper";
 
 /**
  * Creates the `transferFunction` attribute for the data object. Creates duplicates of vector values
  * in a GPU-compatible format so that they can be sent directly to the GPU as uniforms.
- * @param {*} tf object that defines the transfer function
- * @returns object used in the application data object
+ * @param {*} mediumTF object that defines the medium's transfer function
+ * @returns object used in the volumeMedia data object
  */
-function initTransferFunctionProperties(tf)
+function initTransferFunctionProperties(mediumTF)
 {
-  let transferFunction = {};
-
-  for (const [key, medium] of Object.entries(tf))
-  {
-    const obj = {
-      enabled: medium.enabled,
-      channel: medium.channel === "ct" ? 0 : 1,
-      interval: medium.interval,
-      color: medium.color,
-      intervalVec: initIntervalVec(medium),
-      colorVec: initColorVec(medium),
-      options: medium.options,
-    };
-
-    transferFunction[key] = obj;
-  }
+  const transferFunction = {
+    interval: mediumTF.interval,
+    color: mediumTF.color,
+    intervalVec: initIntervalVec(mediumTF),
+    colorVec: initColorVec(mediumTF),
+    options: mediumTF.options,
+  };
 
   return transferFunction;
 }
@@ -254,13 +249,12 @@ function initEnvironmentProperties(environment)
  * @param {*} transferFunction object that defines the transfer function
  * @returns object with application related data
  */
-function initAppDataContent(settings, environment, transferFunction)
+function initAppDataContent(settings, environment)
 {
   return {
     context: null,
     settings: settings,
     environment: initEnvironmentProperties(environment),
-    transferFunction: initTransferFunctionProperties(transferFunction),
   };
 }
 
