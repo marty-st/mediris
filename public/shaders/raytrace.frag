@@ -72,8 +72,8 @@ struct VolumeMedium
 {
 	bool enabled;
 	int channel;
-	TransferFunction tf;
 	int shading_model;
+	TransferFunction tf;
 	ShadingModel sm;
 };
 
@@ -133,8 +133,8 @@ uniform Lights {
 // Volume Media
 uniform VolumeMedia
 {
-	int media_array_size;
  	VolumeMedium media_array[MAX_TF_ARRAY_SIZE];
+	int media_array_size;
 } vm;
 // Camera uniforms
 uniform vec3 u_eye_position;
