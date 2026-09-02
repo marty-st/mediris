@@ -104,14 +104,18 @@ function createVolumeMediaUniformBlock(volumeMedia)
 
   for (const medium of Object.values(volumeMedia))
   {
-    vm.media_array.push({
-      enabled: medium.enabled.value, // TODO: reference
+    const volumeMedium = {
+      enabled: undefined,
       channel: medium.channel === "ct" ? 0 : 1,
+      shading_model: undefined,
       tf: createTransferFunctionUniformBlock(medium.transferFunction),
       // lights: createLightsUniformBlock(lights, cameraInvViewMat), // TODO + needs per-frame updates
-      shading_model: medium.shadingModel.value, // TODO: reference
-      sm: createReferenceUniforms(...Object.entries(Object.assign({}, ...Object.values(medium.shadingModelParameters)))),
-    });
+      sm: createReferenceUniforms({}, ...Object.entries(Object.assign({}, ...Object.values(medium.shadingModelParameters)))),
+    };
+
+    createReferenceUniforms(volumeMedium, ["enabled", medium.enabled], ["shading_model", medium.shadingModel]);
+
+    vm.media_array.push(volumeMedium);
   }
 
   vm.media_array_size = vm.media_array.length;

@@ -7,17 +7,16 @@ import { vec2, vec3, vec4 } from 'gl-matrix';
  * uniform has a getter that takes value from the uniform's source object.
  * This ensures that primitive-type uniforms stay synchronized between the scene and
  * the rest of the application.
+ * @param  {Object} target target object to which reference uniforms are placed
  * @param  {...any} primitiveUniformSources source uniform objects to be used for the reference
  * @returns object with uniforms tied to their source object values
 */
-export function createReferenceUniforms(...primitiveUniformSources)
+export function createReferenceUniforms(target, ...primitiveUniformSources)
 {
-  const uniforms = {};
-
   for (const [key, uniform] of primitiveUniformSources)
   {
     // See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
-    Object.defineProperty(uniforms, key, {
+    Object.defineProperty(target, key, {
       // By default, properties created with Object.defineProperty are non-enumerable
       // TWGL enumerates over the uniforms object
       enumerable: true,
@@ -27,7 +26,7 @@ export function createReferenceUniforms(...primitiveUniformSources)
     });
   }
 
-  return uniforms;
+  return target;
 }
 
 /**

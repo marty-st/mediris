@@ -118,7 +118,7 @@ const volumeMedia = {
     channel: "pet",
     transferFunction: initTransferFunctionProperties(tf.pet),
     lights: initLightsProperties([lights.keyLight]),
-    shadingModel: LAMBERT,
+    shadingModel: NORMAL,
     shadingModelParameters: structuredClone(shadingModel),
   },
 };

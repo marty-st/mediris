@@ -111,6 +111,7 @@ export function createSceneRaycast(gl, shaderProgramInfo, uniforms, environment)
   // these are enumerable and contain getters that reach for the original
   // value in the uniforms object given to this function as a parameter
   const referenceUniforms = createReferenceUniforms(
+    {},
     ...Object.entries(uniforms.general),
     ...Object.entries(uniforms.rayTracing)
   );
