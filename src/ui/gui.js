@@ -36,6 +36,11 @@ export function initGUIData(appData)
 /* TWEAKPANE INITIALIZATION ------------------------------------------------ */
 /* ------------------------------------------------------------------------- */
 
+function removeFolderBinding(folder, binding)
+{
+  folder.remove(binding);
+}
+
 function removeFolderBindings(folder)
 {
   for (const child of folder.children)
@@ -198,6 +203,56 @@ function addShadingModelFolder(folder, GUIData)
   return folderSM;
 }
 
+function addVolumeMediumSelectBinding(folder, GUIData)
+{
+  return folder.addBinding(GUIData, "selectedVolumeMediumKey", {
+    label: "select",
+    options: Object.fromEntries(Object.keys(GUIData.volumeMedia).map(key => [key, key])),
+  });
+}
+
+function addVolumeMediumEnableBinding(folder, GUIData)
+{
+  return folder.addBinding(GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].enabled, "value", {
+    label: "enable",
+    index: 0,
+  });
+}
+
+function refreshVolumeMediumEnableBinding(folder, GUIData, binding)
+{
+  removeFolderBinding(folder, binding);
+  return addVolumeMediumEnableBinding(folder, GUIData);
+}
+
+function addVolumeMediumFolder(folder, GUIData)
+{
+  const folderVM = folder.addFolder({ title: "Volume Medium" });
+
+  const selectVMBinding = addVolumeMediumSelectBinding(folderVM, GUIData);
+
+  let enableVMBinding = addVolumeMediumEnableBinding(folderVM, GUIData);
+
+  const folderSM = addShadingModelFolder(folderVM, GUIData);
+
+  const folderTF = addTransferFunctionFolder(folderVM, GUIData);
+
+  selectVMBinding
+    .on('change', () =>
+    {
+      // NOTE: Needs to keep its existence for the remove function
+      enableVMBinding = refreshVolumeMediumEnableBinding(
+        folderVM,
+        GUIData,
+        enableVMBinding
+      );
+      refreshShadingModelBindings(folderSM, GUIData);
+      refreshTransferFunctionBinding(folderTF, GUIData);
+    });
+
+  return folderVM;
+}
+
 /**
  * Initializes the context of Tweakpane GUI elements for debugging purposes.
  * @param GUIData object that reflects states of Tweakpane controlled variables
@@ -237,27 +292,7 @@ export function initDebugGUI(GUIData)
 
   addLightsBindings(pane, GUIData);
 
-  const folderVM = pane.addFolder({ title: "Volume Medium" });
-
-  const selectVMBinding = folderVM.addBinding(GUIData, "selectedVolumeMediumKey", {
-    label: "select",
-    options: Object.fromEntries(Object.keys(GUIData.volumeMedia).map(key => [key, key])),
-  });
-
-  folderVM.addBinding(GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].enabled, "value", {
-    label: "enable",
-  });
-
-  const folderSM = addShadingModelFolder(folderVM, GUIData);
-
-  const folderTF = addTransferFunctionFolder(folderVM, GUIData);
-
-  selectVMBinding
-    .on('change', () =>
-    {
-      refreshShadingModelBindings(folderSM, GUIData);
-      refreshTransferFunctionBinding(folderTF, GUIData);
-    });
+  addVolumeMediumFolder(pane, GUIData);
 
   pane
     .on('change', event =>

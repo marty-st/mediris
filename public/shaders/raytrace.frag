@@ -683,6 +683,10 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 		// NOTE: Think about different color multiplier and opacity addition
 		for(int i = index_offset; i < vm.media_array_size; ++i)
 		{
+			// NOTE: Option to not send disabled media to the GPU for performance improvement
+			if (!vm.media_array[i].enabled)
+				continue;
+
 			vec2 medium_itv = get_medium_interval(i);
 			vec4 medium_color = get_medium_color(i);
 			int medium_channel = vm.media_array[i].channel;
