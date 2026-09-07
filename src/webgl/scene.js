@@ -4,7 +4,7 @@ import createShaderProgram from './program';
 
 import * as twgl from 'twgl.js';
 import { vec3 } from 'gl-matrix';
-import { createReferenceUniforms } from '../app/helper';
+import { createReferencePrimitives } from '../app/helper';
 
 /**
  * Reloads the shader programs by re-fetching their appropriate text files. Used for application development.
@@ -110,7 +110,7 @@ export function createSceneRaycast(gl, shaderProgramInfo, uniforms, environment)
 {
   // these are enumerable and contain getters that reach for the original
   // value in the uniforms object given to this function as a parameter
-  const referenceUniforms = createReferenceUniforms(
+  const referenceUniforms = createReferencePrimitives(
     {},
     ...Object.entries(uniforms.general),
     ...Object.entries(uniforms.rayTracing)

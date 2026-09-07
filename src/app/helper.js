@@ -3,17 +3,16 @@
 import { vec2, vec3, vec4 } from 'gl-matrix';
 
 /**
- * Copies primitive-type uniforms as attributes of a new 'uniforms' object where each
- * uniform has a getter that takes value from the uniform's source object.
- * This ensures that primitive-type uniforms stay synchronized between the scene and
- * the rest of the application.
- * @param  {Object} target target object to which reference uniforms are placed
- * @param  {...any} primitiveUniformSources source uniform objects to be used for the reference
- * @returns object with uniforms tied to their source object values
+ * Copies primitive-type variables as attributes of a new `target` object where each
+ * variable has a getter that takes value from the variable's source object.
+ * This ensures that primitive-type variables stay synchronized throughout the application.
+ * @param  {Object} target target object to which reference variables are placed
+ * @param  {...any} primitiveSources source objects to be used for the reference. Each must be: { value: ..., ... }
+ * @returns object with variables tied to their source object values
 */
-export function createReferenceUniforms(target, ...primitiveUniformSources)
+export function createReferencePrimitives(target, ...primitiveSources)
 {
-  for (const [key, uniform] of primitiveUniformSources)
+  for (const [key, data] of primitiveSources)
   {
     // See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
     Object.defineProperty(target, key, {
@@ -21,8 +20,8 @@ export function createReferenceUniforms(target, ...primitiveUniformSources)
       // TWGL enumerates over the uniforms object
       enumerable: true,
       // TWGL will access the newly created uniform (key) variable
-      // this getter will underneath return the value from the original uniform.value
-      get: () => uniform.value,
+      // this getter will underneath return the value from the original data.value
+      get: () => data.value,
     });
   }
 
