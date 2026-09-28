@@ -40,21 +40,21 @@ const tf = {
 const lights = {
   keyLight: {
     position: { x: 0, y: 1, z: -1 },
-    intensity: 1.0,
-    relativeToCamera: false,
-    enabled: false,
+    intensity: { value: 1.0 },
+    relativeToCamera: { value: false },
+    enabled: { value: false },
   },
   fillLight: {
     position: { x: 1, y: 0.75, z: 0 },
-    intensity: 0.5,
-    relativeToCamera: false,
-    enabled: false,
+    intensity: { value: 0.5 },
+    relativeToCamera: { value: false },
+    enabled: { value: false },
   },
   backLight: {
     position: { x: 0, y: 0, z: -10 }, // -10 hopes to be far enough to be behind the volume
-    intensity: 1.0,
-    relativeToCamera: true,
-    enabled: true,
+    intensity: { value: 1.0 },
+    relativeToCamera: { value: true },
+    enabled: { value: true },
   },
 };
 
@@ -92,7 +92,7 @@ const shadingModel = {
   cubemap: {},
 };
 
-// TODO: What the fuck
+// TODO: do more elegant
 const STYLIZED = { value: 0, key: "stylized" };
 const DISNEY = { value: 1, key: "disney" };
 const BLINN_PHONG = { value: 2, key: "blinnPhong" };
@@ -109,17 +109,25 @@ const volumeMedia = {
     enabled: { value: true },
     channel: "ct",
     transferFunction: initTransferFunctionProperties(tf.bodyShell),
-    lights: initLightsProperties([lights.backLight]),
-    shadingModel: STYLIZED,
-    shadingModelParameters: structuredClone(shadingModel),
+    shading: [
+      {
+        lights: initLightsProperties(lights.backLight),
+        model: STYLIZED,
+        parameters: structuredClone(shadingModel),
+      },
+    ],
   },
   pet: {
     enabled: { value: true },
     channel: "pet",
     transferFunction: initTransferFunctionProperties(tf.pet),
-    lights: initLightsProperties([lights.keyLight]),
-    shadingModel: NORMAL,
-    shadingModelParameters: structuredClone(shadingModel),
+    shading: [
+      {
+        lights: initLightsProperties(lights.keyLight),
+        model: NORMAL,
+        parameters: structuredClone(shadingModel),
+      },
+    ],
   },
 };
 
@@ -143,7 +151,7 @@ const environment = {
   viewport: undefined,    // Viewport position and dimensions
   volumeMedia: volumeMedia,
   scene: undefined,       // Current scene object
-  lights: lights,
+  // lights: lights,
 };
 
 // Application settings
@@ -196,11 +204,11 @@ function initTransferFunctionProperties(mediumTF)
  * @param {*} lights object that defines lights in a scene
  * @returns object used in the application data object
  */
-function initLightsProperties(lights)
+function initLightsProperties(...lights)
 {
-  let lightsProperties = {};
+  let lightsProperties = [];
 
-  for (const [key, light] of Object.entries(lights))
+  for (const light of lights)
   {
     const obj = {
       position: light.position,
@@ -210,23 +218,10 @@ function initLightsProperties(lights)
       enabled: light.enabled,
     };
 
-    lightsProperties[key] = obj;
+    lightsProperties.push(obj);
   }
 
   return lightsProperties;
-}
-
-/**
- * Creates the formatted `environment` attribute for the data object.
- * @param {*} environment to be formatted environment attribute
- * @returns formatted environment attribute
- */
-function initEnvironmentProperties(environment)
-{
-  return {
-    ...environment,
-    lights: initLightsProperties(environment.lights),
-  };
 }
 
 /**
@@ -241,7 +236,7 @@ function initAppDataContent(settings, environment)
   return {
     context: null,
     settings: settings,
-    environment: initEnvironmentProperties(environment),
+    environment: environment,
   };
 }
 

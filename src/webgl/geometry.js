@@ -17,7 +17,7 @@
 
 import * as twgl from 'twgl.js';
 import { vec3 } from 'gl-matrix';
-import { createReferenceUniforms } from '../app/helper';
+import { createVolumeMediaUniformBlock } from './uniform';
 
 /* GLOBAL VARIABLES */
 
@@ -79,48 +79,6 @@ export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimens
       u_slice_count: dimensions.layers,
     },
   };
-}
-
-/**
- * Creates a transfer function object that can be mapped by twgl.js to a Uniform Block on the GPU.
- * @param {*} appData object with application data - settings, environment, etc.
- * @returns transfer function object with the same exact structure as defined in the shader
- */
-function createTransferFunctionUniformBlock(mediumTF)
-{
-  return {
-    color: mediumTF.colorVec,
-    interval: mediumTF.intervalVec,
-  };
-}
-
-// TODO: needs reference uniforms due to primitive values (enabled, shadingModel uniforms)
-function createVolumeMediaUniformBlock(volumeMedia)
-{
-  let vm = {
-    media_array: [],
-    media_array_size: 0,
-  };
-
-  for (const medium of Object.values(volumeMedia))
-  {
-    const volumeMedium = {
-      enabled: undefined,
-      channel: medium.channel === "ct" ? 0 : 1,
-      shading_model: undefined,
-      tf: createTransferFunctionUniformBlock(medium.transferFunction),
-      // lights: createLightsUniformBlock(lights, cameraInvViewMat), // TODO + needs per-frame updates
-      sm: createReferenceUniforms({}, ...Object.entries(Object.assign({}, ...Object.values(medium.shadingModelParameters)))),
-    };
-
-    createReferenceUniforms(volumeMedium, ["enabled", medium.enabled], ["shading_model", medium.shadingModel]);
-
-    vm.media_array.push(volumeMedium);
-  }
-
-  vm.media_array_size = vm.media_array.length;
-
-  return vm;
 }
 
 /**

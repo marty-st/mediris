@@ -96,7 +96,7 @@ window.onload = async function init()
   appData.environment.camera = initCamera(appData.environment.viewport);
 
   sceneEmpty = createSceneEmpty();
-  const sceneRaycast = createSceneRaycast(gl, volumeProgramInfo, appData.settings.uniforms, appData.environment);
+  const sceneRaycast = createSceneRaycast(appData.settings.uniforms, appData.environment);
   appData.environment.scene = sceneRaycast;
 
   loadingScreenImagePromise.then(loadingScreenImage =>

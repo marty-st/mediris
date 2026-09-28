@@ -20,7 +20,6 @@ export function initGUIData(appData)
     framesPerSecond: 0,
     // App Data
     settings: appData.settings,
-    lights: appData.environment.lights,
     // lights: Object.fromEntries(Object.entries(appData.environment.volumeMedia)
     //   .map(([key, medium]) => [key, medium.lights])), // TODO: Is it needed?
     transferFunction: Object.fromEntries(Object.entries(appData.environment.volumeMedia)
@@ -135,8 +134,8 @@ function addLightsBindings(pane, GUIData)
 
 function addShadingModelSelectBinding(folder, GUIData)
 {
-  const shadingModel = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shadingModel;
-  const shadingModelsKeys = Object.keys(GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shadingModelParameters);
+  const shadingModel = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[0].model;
+  const shadingModelsKeys = Object.keys(GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[0].parameters);
 
   return folder.addBinding(shadingModel, "value", {
     label: "select",
@@ -153,8 +152,8 @@ function addShadingModelSelectBinding(folder, GUIData)
 
 function addShadingModelParametersBindings(folder, GUIData)
 {
-  const modelKey = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shadingModel.key;
-  const model = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shadingModelParameters[modelKey];
+  const modelKey = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[0].model.key;
+  const model = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[0].parameters[modelKey];
   for (const [paramKey, param] of Object.entries(model))
   {
     folder.addBinding(param, "value", { label: paramKey, ...param.options });
@@ -233,9 +232,9 @@ function addVolumeMediumFolder(folder, GUIData)
 
   let enableVMBinding = addVolumeMediumEnableBinding(folderVM, GUIData);
 
-  const folderSM = addShadingModelFolder(folderVM, GUIData);
-
   const folderTF = addTransferFunctionFolder(folderVM, GUIData);
+
+  const folderSM = addShadingModelFolder(folderVM, GUIData);
 
   selectVMBinding
     .on('change', () =>
@@ -246,8 +245,8 @@ function addVolumeMediumFolder(folder, GUIData)
         GUIData,
         enableVMBinding
       );
-      refreshShadingModelBindings(folderSM, GUIData);
       refreshTransferFunctionBinding(folderTF, GUIData);
+      refreshShadingModelBindings(folderSM, GUIData);
     });
 
   return folderVM;
@@ -290,7 +289,7 @@ export function initDebugGUI(GUIData)
     folderRT.addBinding(setting, "value", optionalParameters);
   }
 
-  addLightsBindings(pane, GUIData);
+  // addLightsBindings(pane, GUIData);
 
   addVolumeMediumFolder(pane, GUIData);
 

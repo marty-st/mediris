@@ -2,6 +2,32 @@
 precision mediump float;
 precision mediump sampler3D;
 
+/* --------CONSTANTS-------- */
+/* ------------------------- */
+// Math
+#define PI 3.14159265358979323846
+#define UP_VECTOR vec3(0.0, 1.0, 0.0)
+// Array size
+#define MAX_TF_ARRAY_SIZE 2
+#define MAX_LIGHT_ARRAY_SIZE 3
+#define MAX_SHADING_ARRAY_SIZE 1
+// Colors
+const vec4 GROUND_COLOR = vec4(0.15, 0.2, 0.2, 1.0);
+const vec4 SKY_COLOR = vec4(0.36f, 0.64f, 0.64f, 1.0f);
+const vec4 DIRECTION_COLOR = vec4(0.54f, 0.25f, 0.5f, 1.0f);
+const vec4 DIRECTION_COLOR2 = vec4(0.83f, 0.54f, 0.09f, 1.0f);
+// Render mode
+const int DICOM = 0;
+const int SPHERE_DEBUG = 1;
+// Shading model
+const int STYLIZED = 0;
+const int DISNEY = 1;
+const int BLINN_PHONG = 2;
+const int LAMBERT = 3;
+const int NORMAL = 4;
+const int POSITION = 5;
+const int CUBEMAP = 6;
+
 /* -------DEFINITIONS------- */
 /* ------------------------- */
 struct VaryingData 
@@ -35,6 +61,8 @@ struct Light
 {
 	vec3 position;
 	float intensity;
+	bool enabled;
+	bool camera_relative;
 };
 
 struct TransferFunction
@@ -43,7 +71,7 @@ struct TransferFunction
 	vec2 interval;
 };
 
-struct ShadingModel
+struct ShadingParameters
 {
 	// Stylized shading model
 	float u_alpha;
@@ -68,40 +96,27 @@ struct ShadingModel
 	float u_shininess;
 };
 
+struct Shading
+{
+	ShadingParameters params;
+	Light lights[MAX_LIGHT_ARRAY_SIZE];
+	int lights_array_size;
+	int model;
+};
+
 struct VolumeMedium
 {
-	bool enabled;
-	int channel;
-	int shading_model;
 	TransferFunction tf;
-	ShadingModel sm;
+	Shading shd[MAX_SHADING_ARRAY_SIZE];
+	int shading_array_size;
+	int channel;
+	bool enabled;
 };
 
 /* -----LOCAL VARIABLES----- */
 /* ------------------------- */
-const float PI = 3.14159265358979323846;
-const int MAX_TF_ARRAY_SIZE = 5;
-const int MAX_LIGHT_ARRAY_SIZE = 5;
-const float AIR_UPPER_LIMIT_CT = 50.0;
-const float BENIGN_UPPER_LIMIT_PET = 6000.0;
-const vec3 UP_VECTOR = vec3(0.0, 1.0, 0.0);
-const vec4 GROUND_COLOR = vec4(0.15, 0.2, 0.2, 1.0);
-const vec4 SKY_COLOR = vec4(0.36f, 0.64f, 0.64f, 1.0f);
-const vec4 DIRECTION_COLOR = vec4(0.54f, 0.25f, 0.5f, 1.0f);
-const vec4 DIRECTION_COLOR2 = vec4(0.83f, 0.54f, 0.09f, 1.0f);
 const RayIntersectionData no_intersection = RayIntersectionData(1e20, vec3(0.0), vec3(0.0));
 const Hit miss = Hit(1e20, 1e20, vec3(0.0), vec3(0.0));
-// Render mode
-const int DICOM = 0;
-const int SPHERE_DEBUG = 1;
-// Shading model
-const int STYLIZED = 0;
-const int DISNEY = 1;
-const int BLINN_PHONG = 2;
-const int LAMBERT = 3;
-const int NORMAL = 4;
-const int POSITION = 5;
-const int CUBEMAP = 6;
 
 /* ----------INPUT---------- */
 /* ------------------------- */
@@ -125,17 +140,17 @@ uniform vec3 u_bbox_max;
 uniform float u_step_size;
 uniform float u_gradient_delta;
 uniform float u_curvature_delta_multiplier;
-// Light
-uniform Lights {
-	int lights_array_size;
-	Light lights_array[MAX_LIGHT_ARRAY_SIZE];
-} lights;
 // Volume Media
 uniform VolumeMedia
 {
  	VolumeMedium media_array[MAX_TF_ARRAY_SIZE];
 	int media_array_size;
 } vm;
+// Volume Media macros
+#define MEDIUM vm.media_array[vm_index]
+#define SHADING MEDIUM.shd[s]
+#define LIGHT SHADING.lights[l]
+#define PARAMS vm.media_array[vm_index].shd[shd_index].params
 // Camera uniforms
 uniform vec3 u_eye_position;
 uniform mat4 u_view_inv;
@@ -233,6 +248,7 @@ vec3 compute_gradient(vec4 sample_point, float delta)
 {
 	// NOTE: Sadly WebGL doesn't support GL_CLAMP_TO_BORDER nor border color so edge cases
 	// have to be dealt with manually
+	// TODO: use dot(sample, mask) instead of dynamically accessing sample[channel]
 
 	int channel = int(sample_point.a);
 
@@ -357,28 +373,26 @@ vec3 mon2lin(vec3 color)
     return vec3(pow(color[0], 2.2), pow(color[1], 2.2), pow(color[2], 2.2));
 }
 
-vec3 shade_lambert(vec4 medium_color, vec3 N, Light light)
+vec3 shade_lambert(vec4 medium_color, vec3 N, vec3 light_position, float light_intensity)
 {
-	vec3 L = normalize(light.position);
+	vec3 L = normalize(light_position);
 	float NdotL = max(dot(N, L), 0.0);
 
-	return light.intensity * NdotL * medium_color.rgb;
+	return light_intensity * NdotL * medium_color.rgb;
 }
 
-vec3 shade_blinn_phong(int vm_index, vec4 medium_color, vec4 sample_point, vec3 N, Light light)
+vec3 shade_blinn_phong(int vm_index, int shd_index, vec4 medium_color, vec4 sample_point, vec3 N, vec3 light_position, float light_intensity)
 {
-	ShadingModel sm = vm.media_array[vm_index].sm;
-
-	vec3 L = normalize(light.position);
+	vec3 L = normalize(light_position);
 	vec3 V = normalize(u_eye_position - sample_point.xyz);
 	vec3 H = normalize(L + V);
 	float NdotH = max(dot(N, H), 0.0001);
 	float NdotL = max(dot(N, L), 0.0);
 
-	return light.intensity * NdotL * (medium_color.rgb + pow(NdotH, sm.u_shininess)); 
+	return light_intensity * NdotL * (medium_color.rgb + pow(NdotH, PARAMS.u_shininess)); 
 }
 
-vec3 shade_disney(int vm_index, vec4 medium_color, vec4 sample_point, vec3 N, Light light)
+vec3 shade_disney(int vm_index, int shd_index, vec4 medium_color, vec4 sample_point, vec3 N, vec3 light_position, float light_intensity)
 {
 	// Base Diffuse
 	// ThetaL = dot(N, L)
@@ -386,7 +400,7 @@ vec3 shade_disney(int vm_index, vec4 medium_color, vec4 sample_point, vec3 N, Li
 	// ThetaD = dot(L, H)
 	// FD90 = 0.5 + 2 * roughness * cos^2ThetaD
 	// base_diffuse = (baseColor / pi) * (1 + (FD90 - 1) * (1 - cosThetaL) ^ 5) * (1 + (FD90 - 1) * (1 - cosThetaV) ^ 5)
-	vec3 L = normalize(light.position);
+	vec3 L = normalize(light_position);
 	vec3 V = normalize(u_eye_position - sample_point.xyz);
 	vec3 H = normalize(L + V);
 	float LdotH = dot(L, H);
@@ -402,11 +416,9 @@ vec3 shade_disney(int vm_index, vec4 medium_color, vec4 sample_point, vec3 N, Li
 		return vec3(0.0);
 	}
 
-	ShadingModel sm = vm.media_array[vm_index].sm;
-
 	NdotV = clamp(NdotV, 0.0, 1.0);
 
-	float FD90 = 0.5 + 2.0 * sm.u_roughness * LdotH * LdotH;
+	float FD90 = 0.5 + 2.0 * PARAMS.u_roughness * LdotH * LdotH;
 	// NOTE: ? This is the rewritten formula from the Disney 2012 paper, however not equivalent to the code below, possibly for cases
 	// where dot product is < 0 -> needs to be clamped?
 	// vec3 base_diffuse = (1.0 + (FD90 - 1.0) * pow(1.0 - NdotL, 5.0)) * (1.0 + (FD90 - 1.0) * pow(1.0 - NdotV, 5.0));
@@ -417,7 +429,7 @@ vec3 shade_disney(int vm_index, vec4 medium_color, vec4 sample_point, vec3 N, Li
 	float base_diffuse = mix(1.0, FD90, FL) * mix(1.0, FD90, FV);
 
 	// Subsurface diffuse
-	float FSS90 = LdotH * LdotH * sm.u_roughness;
+	float FSS90 = LdotH * LdotH * PARAMS.u_roughness;
 	float FSS = mix(1.0, FSS90, FL) * mix(1.0, FSS90, FV);
 	float subsurface_diffuse = 1.25 * (FSS * (1.0 / (NdotL + NdotV) - 0.5) + 0.5);
 
@@ -430,23 +442,23 @@ vec3 shade_disney(int vm_index, vec4 medium_color, vec4 sample_point, vec3 N, Li
 
 	float luminescence = 0.3 * medium_color.r + 0.6 * medium_color.g  + 0.1 * medium_color.b; // approximation
 	vec3 tint_comp = luminescence > 0.0 ? medium_color.rgb / luminescence : vec3(1.0);
-	vec3 sheen_comp = mix(vec3(1.0), tint_comp, sm.u_sheen_tint);
+	vec3 sheen_comp = mix(vec3(1.0), tint_comp, PARAMS.u_sheen_tint);
 
 	float FH = fresnel_schlick(LdotH);
-	vec3 sheen_color = FH * sm.u_sheen * sheen_comp;
+	vec3 sheen_color = FH * PARAMS.u_sheen * sheen_comp;
 
-	vec3 diffuse = medium_color.rgb * (1.0 / PI) * mix(base_diffuse, subsurface_diffuse, sm.u_subsurface) + sheen_color;
+	vec3 diffuse = medium_color.rgb * (1.0 / PI) * mix(base_diffuse, subsurface_diffuse, PARAMS.u_subsurface) + sheen_color;
 
 	float NdotH = dot(N,H);
 	// surface tangent and bitanget for anisotropy:
 	vec3 help_vector = abs(N.y) > 0.99999999 ? vec3(1.0, 0.0, 0.0) : UP_VECTOR;
 	vec3 X = normalize(cross(N, help_vector));
 	vec3 Y = normalize(cross(N, X));
-	vec3 specular0_comp = mix(sm.u_specular * 0.08 * mix(vec3(1.0), tint_comp, sm.u_specular_tint), medium_color.rgb, sm.u_metallic);
+	vec3 specular0_comp = mix(PARAMS.u_specular * 0.08 * mix(vec3(1.0), tint_comp, PARAMS.u_specular_tint), medium_color.rgb, PARAMS.u_metallic);
 	// specular
-	float aspect = sqrt(1.0 - sm.u_anisotropic * 0.9);
-	float ax = max(0.001, sqr(sm.u_roughness) / aspect);
-	float ay = max(0.001, sqr(sm.u_roughness) * aspect);
+	float aspect = sqrt(1.0 - PARAMS.u_anisotropic * 0.9);
+	float ax = max(0.001, sqr(PARAMS.u_roughness) / aspect);
+	float ay = max(0.001, sqr(PARAMS.u_roughness) * aspect);
 	float Ds = GTR2_aniso(NdotH, dot(H, X), dot(H, Y), ax, ay);
 	// float FH = fresnel_schlick(LdotH);
 	vec3 Fs = mix(specular0_comp, vec3(1.0), FH);
@@ -455,27 +467,26 @@ vec3 shade_disney(int vm_index, vec4 medium_color, vec4 sample_point, vec3 N, Li
 	Gs *= smithG_GGX_aniso(NdotV, dot(V, X), dot(V, Y), ax, ay);
 
 	// clearcoat (ior = 1.5 -> F0 = 0.04)
-	float Dr = GTR1(NdotH, mix(0.1, 0.001, sm.u_clearcoat_gloss));
+	float Dr = GTR1(NdotH, mix(0.1, 0.001, PARAMS.u_clearcoat_gloss));
 	float Fr = mix(0.04, 1.0, FH);
 	float Gr = smithG_GGX(NdotL, 0.25) * smithG_GGX(NdotV, 0.25);
 
 	// TODO: environment mapping
-	return light.intensity * NdotL * (diffuse * (1.0 - sm.u_metallic) + Gs * Fs * Ds + 0.25 * sm.u_clearcoat * Gr * Fr * Dr);
+	return light_intensity * NdotL * (diffuse * (1.0 - PARAMS.u_metallic) + Gs * Fs * Ds + 0.25 * PARAMS.u_clearcoat * Gr * Fr * Dr);
 }
 
 // u: S^2 X S^2 X S^2 -> [0, PI]
-float u(int vm_index, vec4 sample_point, vec3 n, vec3 l, vec3 v)
+float u(int vm_index, int shd_index, vec4 sample_point, vec3 n, vec3 l, vec3 v)
 {
-	ShadingModel sm = vm.media_array[vm_index].sm;
 	// Anisotropy of the specular highlight
 	vec3 help_vector = abs(n.y) > 0.99999999 ? vec3(1.0, 0.0, 0.0) : UP_VECTOR;
 	vec3 t = normalize(cross(n, help_vector));
 	vec3 b = normalize(cross(n, t));
 	vec3 h = normalize(l + v);
 	float eta = dot(l, v) * 0.5 + 0.5;
-	float S_l = sm.u_lambda >= 0.0 
-		? 1.0 / (1.0 - sm.u_lambda) * eta + (1.0 - eta)
-		: 1.0 / (1.0 / (1.0 + sm.u_lambda) * eta + (1.0 - eta));
+	float S_l = PARAMS.u_lambda >= 0.0 
+		? 1.0 / (1.0 - PARAMS.u_lambda) * eta + (1.0 - eta)
+		: 1.0 / (1.0 / (1.0 + PARAMS.u_lambda) * eta + (1.0 - eta));
 
 		// Q: should tangent space t,b,n be used?
 		vec3 ht = dot(h, t) * t;
@@ -487,26 +498,25 @@ float u(int vm_index, vec4 sample_point, vec3 n, vec3 l, vec3 v)
 
 		// Light response d_alpha
 		vec3 r = reflect(-v, n);
-		vec3 d = normalize((1.0 - sm.u_alpha) * n + sm.u_alpha * r);
+		vec3 d = normalize((1.0 - PARAMS.u_alpha) * n + PARAMS.u_alpha * r);
 
 	// Curvature
 	float kappa = compute_curvature(sample_point);
 
 	// Offset tau based on local surface curvature
-	float tau = sm.u_tau + (sm.u_mu * tanh(kappa * sm.u_chi));
+	float tau = PARAMS.u_tau + (PARAMS.u_mu * tanh(kappa * PARAMS.u_chi));
 
 	// angular response u
 	return clamp(acos(dot(d, l)) - tau, 0.0, PI);
 }
 
 // I: [0, PI] -> [0, 1]
-float I(int vm_index, float u)
+float I(int vm_index, int shd_index, float u)
 {
-	ShadingModel sm = vm.media_array[vm_index].sm;
-	return pow(max(sm.u_beta + (1.0 - sm.u_beta) * cos(u), 0.0), sm.u_gamma);
+	return pow(max(PARAMS.u_beta + (1.0 - PARAMS.u_beta) * cos(u), 0.0), PARAMS.u_gamma);
 }
 
-vec4 shade_stylized(int vm_index, vec4 medium_color, vec4 sample_point, vec3 n, Light light)
+vec4 shade_stylized(int vm_index, int shd_index, vec4 medium_color, vec4 sample_point, vec3 n, vec3 light_position, float light_intensity)
 {
 	// description:
 	// n 				normal
@@ -528,11 +538,11 @@ vec4 shade_stylized(int vm_index, vec4 medium_color, vec4 sample_point, vec3 n, 
 	// beta			[-0.5, 0.5] allows to extend primitive intensity toward the interval [0.5*PI, PI]
 	// gamma		<0, INF> intensity fall of rate
 
-	vec3 l = normalize(light.position);
+	vec3 l = normalize(light_position);
 	vec3 v = normalize(u_eye_position - sample_point.xyz);
 
-	float u = u(vm_index, sample_point, n, l, v);
-	float I = I(vm_index, u);
+	float u = u(vm_index, shd_index, sample_point, n, l, v);
+	float I = I(vm_index, shd_index, u);
 
 	// TODO: use a color ramp
 	// NOTE: possible to use color ramps for concave/convex transitions
@@ -543,7 +553,7 @@ vec4 shade_stylized(int vm_index, vec4 medium_color, vec4 sample_point, vec3 n, 
 	// return vec4(light.intensity * I * medium_color.rgb * (PI - u) / PI, I);
 
 	// alpha affects intensity
-	return vec4(light.intensity * medium_color.a * I * mix(vec3(1.0), medium_color.rgb, (PI - u) / PI), I * medium_color.a);
+	return vec4(light_intensity * medium_color.a * I * mix(vec3(1.0), medium_color.rgb, (PI - u) / PI), I * medium_color.a);
 
 	// test curvature
 	// return vec4(vec3(compute_curvature(sample_point)), 1.0);
@@ -557,43 +567,60 @@ vec4 shade_stylized(int vm_index, vec4 medium_color, vec4 sample_point, vec3 n, 
 vec4 shade(int vm_index, vec4 medium_color, vec4 sample_point, vec3 normal)
 {
 	vec4 color = vec4(0.0);
-	int shading_model = vm.media_array[vm_index].shading_model;
 
-	switch(shading_model)
+	for (int s = 0; s < MEDIUM.shading_array_size; ++s)
 	{
-		case STYLIZED:
-			for (int l = 0; l < lights.lights_array_size; ++l)
-			{
-				color += shade_stylized(vm_index, medium_color, sample_point, normal, lights.lights_array[l]);
-			}
-			break;
-		case DISNEY:
-			for (int l = 0; l < lights.lights_array_size; ++l)
-			{
-				color += vec4(shade_disney(vm_index, medium_color, sample_point, normal, lights.lights_array[l]), 1.0);
-			}
-			break;
-		case BLINN_PHONG:
-			for (int l = 0; l < lights.lights_array_size; ++l)
-			{
-				color += vec4(shade_blinn_phong(vm_index, medium_color, sample_point, normal, lights.lights_array[l]), 1.0);
-			}
-			break;
-		case LAMBERT:
-			for (int l = 0; l < lights.lights_array_size; ++l)
-			{
-				color += vec4(shade_lambert(medium_color, normal, lights.lights_array[l]), 1.0);
-			}
-			break;
-		case NORMAL:
-			color = vec4(vec3((normal + 1.0) * 0.5), 1.0);
-			break;
-		case POSITION:
-			color = vec4(sample_point.xyz, 1.0);
-			break;
-		case CUBEMAP:
-			color = texture(u_cube_map_texture, normal);
-			break;
+		
+		int shading_model = SHADING.model;
+
+		switch(shading_model)
+		{
+			case STYLIZED:
+				for (int l = 0; l < SHADING.lights_array_size; ++l)
+				{
+					vec3 light_position = LIGHT.position;
+					if (LIGHT.camera_relative)
+						light_position = vec3(u_view_inv * vec4(light_position, 1.0));
+					color += shade_stylized(vm_index, s, medium_color, sample_point, normal, light_position, LIGHT.intensity);
+				}
+				break;
+			case DISNEY:
+				for (int l = 0; l < SHADING.lights_array_size; ++l)
+				{
+					vec3 light_position = LIGHT.position;
+					if (LIGHT.camera_relative)
+						light_position = vec3(u_view_inv * vec4(light_position, 1.0));
+					color += vec4(shade_disney(vm_index, s, medium_color, sample_point, normal, light_position, LIGHT.intensity), 1.0);
+				}
+				break;
+			case BLINN_PHONG:
+				for (int l = 0; l < SHADING.lights_array_size; ++l)
+				{
+					vec3 light_position = LIGHT.position;
+					if (LIGHT.camera_relative)
+						light_position = vec3(u_view_inv * vec4(light_position, 1.0));
+					color += vec4(shade_blinn_phong(vm_index, s, medium_color, sample_point, normal, light_position, LIGHT.intensity), 1.0);
+				}
+				break;
+			case LAMBERT:
+				for (int l = 0; l < SHADING.lights_array_size; ++l)
+				{
+					vec3 light_position = LIGHT.position;
+					if (LIGHT.camera_relative)
+						light_position = vec3(u_view_inv * vec4(light_position, 1.0));
+					color += vec4(shade_lambert(medium_color, normal, light_position, LIGHT.intensity), 1.0);
+				}
+				break;
+			case NORMAL:
+				color = vec4(vec3((normal + 1.0) * 0.5), 1.0);
+				break;
+			case POSITION:
+				color = vec4(sample_point.xyz, 1.0);
+				break;
+			case CUBEMAP:
+				color = texture(u_cube_map_texture, normal);
+				break;
+		}
 	}
 
 	return color;

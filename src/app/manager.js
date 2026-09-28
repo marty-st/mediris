@@ -3,7 +3,7 @@
 import { deleteCache } from '../file/cache.js';
 import { updateCamera } from '../webgl/camera.js';
 import { reloadShaders } from '../webgl/scene.js';
-import { updateSceneLights } from '../webgl/scene.js';
+// import { updateVolumeMediaLights } from '../webgl/uniform.js';
 
 /**
  * Updates the application environment based on user input.
@@ -35,6 +35,14 @@ function updateAppState(appData, UI)
     state.idleRender = false;
 }
 
+// function updateLights(appData)
+// {
+//   if (appData.environment.state.idleRender)
+//     return;
+
+//   updateVolumeMediaLights(appData.environment.cameraRelativeLights, appData.environment.camera);
+// }
+
 /**
  * Resets frame-dependent app states.
  * @param {*} state `appData` state object
@@ -54,7 +62,7 @@ export function updateApp(appData, UI)
   updateAppFromUI(appData, UI);
   updateAppState(appData, UI);
   updateCamera(appData.environment.camera, UI.cameraControls, appData.environment.viewport, appData.environment.time.delta);
-  updateSceneLights(appData.environment.scene, appData.environment.lights, appData.environment.camera);
+  // updateLights(appData);
 }
 
 /**
