@@ -39,20 +39,20 @@ const tf = {
 // Lights Setup
 const lights = {
   keyLight: {
-    position: { x: 0, y: 1, z: -1 },
-    intensity: { value: 1.0 },
+    position: { x: 0, y: 1, z: -1, options: { min: -1, max: 1 } },
+    intensity: { value: 1.0, options: { min: 0, max: 1 } },
     relativeToCamera: { value: false },
-    enabled: { value: false },
+    enabled: { value: true },
   },
   fillLight: {
-    position: { x: 1, y: 0.75, z: 0 },
-    intensity: { value: 0.5 },
+    position: { x: 1, y: 0.75, z: 0, options: { min: -1, max: 1 } },
+    intensity: { value: 0.5, options: { min: 0, max: 1 } },
     relativeToCamera: { value: false },
-    enabled: { value: false },
+    enabled: { value: true },
   },
   backLight: {
-    position: { x: 0, y: 0, z: -10 }, // -10 hopes to be far enough to be behind the volume
-    intensity: { value: 1.0 },
+    position: { x: 0, y: 0, z: -10, options: { min: -10, max: 10 } }, // -10 hopes to be far enough to be behind the volume
+    intensity: { value: 1.0, options: { min: 0, max: 1 } },
     relativeToCamera: { value: true },
     enabled: { value: true },
   },
@@ -117,7 +117,7 @@ const volumeMedia = {
         enabled: { value: true },
       },
       {
-        lights: initLightsProperties(lights.keyLight),
+        lights: initLightsProperties(lights.keyLight, lights.fillLight),
         model: structuredClone(STYLIZED),
         parameters: structuredClone(shadingModel),
         enabled: { value: false },

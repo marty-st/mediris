@@ -44,10 +44,6 @@ function createLightsUniformBlock(lightsArray)
 
   for (const light of lightsArray)
   {
-    // TODO: dynamic light enable
-    if (!light.enabled)
-      continue;
-
     const l = {
       position: light.positionVec,
     };

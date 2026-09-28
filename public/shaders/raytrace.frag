@@ -581,36 +581,52 @@ vec4 shade(int vm_index, vec4 medium_color, vec4 sample_point, vec3 normal)
 			case STYLIZED:
 				for (int l = 0; l < SHADING.lights_array_size; ++l)
 				{
+					if (!LIGHT.enabled)
+						continue;
+
 					vec3 light_position = LIGHT.position;
 					if (LIGHT.camera_relative)
 						light_position = vec3(u_view_inv * vec4(light_position, 1.0));
+
 					color += shade_stylized(vm_index, s, medium_color, sample_point, normal, light_position, LIGHT.intensity);
 				}
 				break;
 			case DISNEY:
 				for (int l = 0; l < SHADING.lights_array_size; ++l)
 				{
+					if (!LIGHT.enabled)
+						continue;
+
 					vec3 light_position = LIGHT.position;
 					if (LIGHT.camera_relative)
 						light_position = vec3(u_view_inv * vec4(light_position, 1.0));
+
 					color += vec4(shade_disney(vm_index, s, medium_color, sample_point, normal, light_position, LIGHT.intensity), 1.0);
 				}
 				break;
 			case BLINN_PHONG:
 				for (int l = 0; l < SHADING.lights_array_size; ++l)
 				{
+					if (!LIGHT.enabled)
+						continue;
+
 					vec3 light_position = LIGHT.position;
 					if (LIGHT.camera_relative)
 						light_position = vec3(u_view_inv * vec4(light_position, 1.0));
+
 					color += vec4(shade_blinn_phong(vm_index, s, medium_color, sample_point, normal, light_position, LIGHT.intensity), 1.0);
 				}
 				break;
 			case LAMBERT:
 				for (int l = 0; l < SHADING.lights_array_size; ++l)
 				{
+					if (!LIGHT.enabled)
+						continue;
+
 					vec3 light_position = LIGHT.position;
 					if (LIGHT.camera_relative)
 						light_position = vec3(u_view_inv * vec4(light_position, 1.0));
+
 					color += vec4(shade_lambert(medium_color, normal, light_position, LIGHT.intensity), 1.0);
 				}
 				break;

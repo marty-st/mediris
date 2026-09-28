@@ -151,25 +151,25 @@ window.onload = async function init()
       Uint16Array
     );
 
-    // const squaredEuclideanDistanceToNonAirPET = await euclideanDistanceTransform(
-    //   imageDataPET.name,
-    //   resampledVolumePET,
-    //   imageDataCT.dimensions,
-    //   appData.environment.volumeMedia.pet.transferFunction.interval.min,
-    //   CACHE
-    // );
+    const squaredEuclideanDistanceToNonAirPET = await euclideanDistanceTransform(
+      imageDataPET.name,
+      resampledVolumePET,
+      imageDataCT.dimensions,
+      appData.environment.volumeMedia.pet.transferFunction.interval.min,
+      CACHE
+    );
 
     const interleavedVolumes = interleaveVolumeArrays(
       imageDataCT.volume,
       resampledVolumePET,
-      squaredEuclideanDistanceToNonAirCT
-      // , squaredEuclideanDistanceToNonAirPET
+      squaredEuclideanDistanceToNonAirCT,
+      squaredEuclideanDistanceToNonAirPET
     );
 
     // NOTE: when all 4 textures are interleaved and used in the volume texture,
     // the application crashes with WebGL context loss.
     // Needs further testing of (V)RAM stress and/or leaks.
-    const volumeTexture = createVolumeTexture(gl, interleavedVolumes, imageDataCT.dimensions, 3);
+    const volumeTexture = createVolumeTexture(gl, interleavedVolumes, imageDataCT.dimensions, 4);
 
     appData.environment.scene.geometries.push(createVolumeGeometry(
       gl,

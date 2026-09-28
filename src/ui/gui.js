@@ -89,47 +89,28 @@ function addTransferFunctionFolder(folder, GUIData)
   return folderTF;
 }
 
-/**
- * Creates a GUI section for controlling the light sources.
- * @param {*} pane Tweakpane global-state object
- * @param {*} GUIData mediator object between GUI and the rest of the application
- */
-function addLightsBindings(pane, GUIData)
+function addLightBindings(shadingIndex, lightIndex, folder, GUIData)
 {
-  const folderLights = pane.addFolder({ title: "Lights" });
+  const light = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[shadingIndex].lights[lightIndex];
 
-  for (const [key, light] of Object.entries(GUIData.lights))
-  {
-    const lightToggle = folderLights.addBinding(light, "enabled", { label: "toggle " + key });
+  /* const enableLightBinding = */ folder.addBinding(light.enabled, "value", { label: "enable" });
 
-    const lightPosition = folderLights.addBinding(light, "position", {
-      label: key,
-      min: -10,
-      max: 10,
-    })
-      .on('change', event =>
-      {
-        const { x, y, z } = event.value;
-        vec3.set(light.positionVec, x, y, z);
-      });
-
-    const lightIntensity = folderLights.addBinding(light, "intensity", {
-      min: 0,
-      max: 1,
+  /* const lightPosition = */ folder.addBinding(light, "position", {
+    label: "position",
+    min: -10,
+    max: 10,
+  })
+    .on('change', event =>
+    {
+      const { x, y, z } = event.value;
+      vec3.set(light.positionVec, x, y, z);
     });
 
-    // initial visibility
-    lightPosition.hidden = !light.enabled;
-    lightIntensity.hidden = !light.enabled;
-
-    // visibility toggle
-    lightToggle
-      .on('change', event =>
-      {
-        lightPosition.hidden = !event.value;
-        lightIntensity.hidden = !event.value;
-      });
-  }
+  /* const lightIntensity = */ folder.addBinding(light.intensity, "value", {
+    label: "intensity",
+    min: 0,
+    max: 1,
+  });
 }
 
 function addShadingModelEnableBinding(index, folder, GUIData)
@@ -192,11 +173,29 @@ function addShadingModelParametersFolder(index, folder, GUIData)
   return folderP;
 }
 
+function addLightFolders(index, folder, GUIData)
+{
+  let lightsArray = [];
+
+  for (let i = 0; i < GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[index].lights.length; ++i)
+  {
+    const folderL = folder.addFolder({
+      title: `Light ${i + 1}`,
+      expanded: false,
+    });
+    lightsArray.push(folderL);
+    addLightBindings(index, i, folderL, GUIData);
+  }
+
+  return lightsArray;
+}
+
 function addShadingModelBindings(index, folder, GUIData)
 {
   let enableModelBinding = addShadingModelEnableBinding(index, folder, GUIData);
   const modelSelectBinding = addShadingModelSelectBinding(index, folder, GUIData);
   const folderP = addShadingModelParametersFolder(index, folder, GUIData);
+  /* const folderLArray = */ addLightFolders(index, folder, GUIData);
 
   modelSelectBinding
     .on('change', () =>
@@ -211,11 +210,11 @@ function addShadingModelBindings(index, folder, GUIData)
     });
 }
 
-function refreshShadingModelBindings(index, folder, GUIData)
-{
-  removeFolderBindings(folder);
-  addShadingModelBindings(index, folder, GUIData);
-}
+// function refreshShadingModelBindings(index, folder, GUIData)
+// {
+//   removeFolderBindings(folder);
+//   addShadingModelBindings(index, folder, GUIData);
+// }
 
 function addShadingFolders(folder, GUIData)
 {
@@ -228,6 +227,18 @@ function addShadingFolders(folder, GUIData)
   }
 
   return shadingsArray;
+}
+
+function refreshShadingFolders(folder, folderSArray, GUIData)
+{
+  for (const folderS of folderSArray)
+  {
+    folder.remove(folderS);
+  }
+
+  folderSArray.length = 0;
+
+  folderSArray.push(...addShadingFolders(folder, GUIData));
 }
 
 function addVolumeMediumSelectBinding(folder, GUIData)
@@ -274,8 +285,7 @@ function addVolumeMediumFolder(folder, GUIData)
         enableVMBinding
       );
       refreshTransferFunctionBinding(folderTF, GUIData);
-      for (let i = 0; i < folderSArray.length; ++i)
-        refreshShadingModelBindings(i, folderSArray[i], GUIData);
+      refreshShadingFolders(folderVM, folderSArray, GUIData);
     });
 
   return folderVM;
