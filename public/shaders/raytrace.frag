@@ -10,7 +10,7 @@ precision mediump sampler3D;
 // Array size
 #define MAX_TF_ARRAY_SIZE 2
 #define MAX_LIGHT_ARRAY_SIZE 3
-#define MAX_SHADING_ARRAY_SIZE 1
+#define MAX_SHADING_ARRAY_SIZE 2
 // Colors
 const vec4 GROUND_COLOR = vec4(0.15, 0.2, 0.2, 1.0);
 const vec4 SKY_COLOR = vec4(0.36f, 0.64f, 0.64f, 1.0f);
@@ -102,6 +102,7 @@ struct Shading
 	Light lights[MAX_LIGHT_ARRAY_SIZE];
 	int lights_array_size;
 	int model;
+	bool enabled;
 };
 
 struct VolumeMedium
@@ -570,7 +571,9 @@ vec4 shade(int vm_index, vec4 medium_color, vec4 sample_point, vec3 normal)
 
 	for (int s = 0; s < MEDIUM.shading_array_size; ++s)
 	{
-		
+		if (!SHADING.enabled)
+			continue;
+	
 		int shading_model = SHADING.model;
 
 		switch(shading_model)

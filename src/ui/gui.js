@@ -132,13 +132,27 @@ function addLightsBindings(pane, GUIData)
   }
 }
 
-function addShadingModelSelectBinding(folder, GUIData)
+function addShadingModelEnableBinding(index, folder, GUIData)
 {
-  const shadingModel = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[0].model;
-  const shadingModelsKeys = Object.keys(GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[0].parameters);
+  return folder.addBinding(GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[index].enabled, "value", {
+    label: "enable",
+    index: 0,
+  });
+}
+
+function refreshShadingModelEnableBinding(index, folder, GUIData, binding)
+{
+  removeFolderBinding(folder, binding);
+  return addShadingModelEnableBinding(index, folder, GUIData);
+}
+
+function addShadingModelSelectBinding(index, folder, GUIData)
+{
+  const shadingModel = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[index].model;
+  const shadingModelsKeys = Object.keys(GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[index].parameters);
 
   return folder.addBinding(shadingModel, "value", {
-    label: "select",
+    label: "model",
     // WARN: This will probably need to pull the options list from somewhere else when changes are introduced
     options: Object.fromEntries(shadingModelsKeys.map((key, index) => [key, index])),
   })
@@ -150,56 +164,70 @@ function addShadingModelSelectBinding(folder, GUIData)
     });
 }
 
-function addShadingModelParametersBindings(folder, GUIData)
+function addShadingModelParametersBindings(index, folder, GUIData)
 {
-  const modelKey = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[0].model.key;
-  const model = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[0].parameters[modelKey];
+  const modelKey = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[index].model.key;
+  const model = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[index].parameters[modelKey];
   for (const [paramKey, param] of Object.entries(model))
   {
     folder.addBinding(param, "value", { label: paramKey, ...param.options });
   }
 }
 
-function refreshShadingModelParametersBindings(folder, GUIData)
+function refreshShadingModelParametersBindings(index, folder, GUIData)
 {
   removeFolderBindings(folder);
-  addShadingModelParametersBindings(folder, GUIData);
+  addShadingModelParametersBindings(index, folder, GUIData);
 }
 
-function addShadingModelParametersFolder(folder, GUIData)
+function addShadingModelParametersFolder(index, folder, GUIData)
 {
-  const folderP = folder.addFolder({ title: "Parameters" });
+  const folderP = folder.addFolder({
+    title: "Parameters",
+    expanded: false,
+  });
 
-  addShadingModelParametersBindings(folderP, GUIData);
+  addShadingModelParametersBindings(index, folderP, GUIData);
 
   return folderP;
 }
 
-function addShadingModelBindings(folder, GUIData)
+function addShadingModelBindings(index, folder, GUIData)
 {
-  const modelSelectBinding = addShadingModelSelectBinding(folder, GUIData);
-  const folderP = addShadingModelParametersFolder(folder, GUIData);
+  let enableModelBinding = addShadingModelEnableBinding(index, folder, GUIData);
+  const modelSelectBinding = addShadingModelSelectBinding(index, folder, GUIData);
+  const folderP = addShadingModelParametersFolder(index, folder, GUIData);
 
   modelSelectBinding
     .on('change', () =>
     {
-      refreshShadingModelParametersBindings(folderP, GUIData);
+      enableModelBinding = refreshShadingModelEnableBinding(
+        index,
+        folder,
+        GUIData,
+        enableModelBinding
+      );
+      refreshShadingModelParametersBindings(index, folderP, GUIData);
     });
 }
 
-function refreshShadingModelBindings(folder, GUIData)
+function refreshShadingModelBindings(index, folder, GUIData)
 {
   removeFolderBindings(folder);
-  addShadingModelBindings(folder, GUIData);
+  addShadingModelBindings(index, folder, GUIData);
 }
 
-function addShadingModelFolder(folder, GUIData)
+function addShadingFolders(folder, GUIData)
 {
-  const folderSM = folder.addFolder({ title: "Shading Model" });
+  let shadingsArray = [];
+  for (let i = 0; i < GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading.length; ++i)
+  {
+    const folderS = folder.addFolder({ title: `Shading ${i + 1}` });
+    shadingsArray.push(folderS);
+    addShadingModelBindings(i, folderS, GUIData);
+  }
 
-  addShadingModelBindings(folderSM, GUIData);
-
-  return folderSM;
+  return shadingsArray;
 }
 
 function addVolumeMediumSelectBinding(folder, GUIData)
@@ -234,7 +262,7 @@ function addVolumeMediumFolder(folder, GUIData)
 
   const folderTF = addTransferFunctionFolder(folderVM, GUIData);
 
-  const folderSM = addShadingModelFolder(folderVM, GUIData);
+  const folderSArray = addShadingFolders(folderVM, GUIData);
 
   selectVMBinding
     .on('change', () =>
@@ -246,7 +274,8 @@ function addVolumeMediumFolder(folder, GUIData)
         enableVMBinding
       );
       refreshTransferFunctionBinding(folderTF, GUIData);
-      refreshShadingModelBindings(folderSM, GUIData);
+      for (let i = 0; i < folderSArray.length; ++i)
+        refreshShadingModelBindings(i, folderSArray[i], GUIData);
     });
 
   return folderVM;

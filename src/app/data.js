@@ -112,8 +112,15 @@ const volumeMedia = {
     shading: [
       {
         lights: initLightsProperties(lights.backLight),
-        model: STYLIZED,
+        model: structuredClone(STYLIZED),
         parameters: structuredClone(shadingModel),
+        enabled: { value: true },
+      },
+      {
+        lights: initLightsProperties(lights.keyLight),
+        model: structuredClone(STYLIZED),
+        parameters: structuredClone(shadingModel),
+        enabled: { value: false },
       },
     ],
   },
@@ -124,8 +131,9 @@ const volumeMedia = {
     shading: [
       {
         lights: initLightsProperties(lights.keyLight),
-        model: NORMAL,
+        model: structuredClone(NORMAL),
         parameters: structuredClone(shadingModel),
+        enabled: { value: true },
       },
     ],
   },

@@ -74,11 +74,13 @@ function createShadingUniformBlock(shadingArray, mediumShading)
       lights: createLightsUniformBlock(shading.lights),
       // lights_array_size: shading.lights.length,
       model: undefined,
+      enabled: undefined,
     };
 
     shadingElement.lights_array_size = shadingElement.lights.length;
 
     createReferencePrimitives(shadingElement, ["model", shading.model]);
+    createReferencePrimitives(shadingElement, ["enabled", shading.enabled]);
 
     shadingArray.push(shadingElement);
   }
