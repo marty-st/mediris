@@ -16,7 +16,7 @@ const KEY_TYPE_EDT = "name";
 const STORE_NAME_EDT = "DistanceTransform";
 
 // Numerical limits
-const UINT16_MAX = ~(1 << 15);
+const UINT16_MAX = 1 << 15;
 
 /**/
 
