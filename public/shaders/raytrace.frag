@@ -715,7 +715,7 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 		vec4 float_sample_color = get_sample_color(sample_point.xyz);
 
 		// EUCLIDEAN DISTANCE TO NON-AIR VOXELS SKIP
-		float distance = float_sample_color.b; // squared distance in voxels
+		float distance = !surface_colored ? float_sample_color.b : float_sample_color.a; // squared distance in voxels
 		if (u_mode == DICOM && distance > 1.0)
 		{
 			float stride = max((sqrt(distance) - 1.0), 1.0) / 256.0; // 256 = textureSize.x / 2.0 as sampled cube is <-1, 1>
@@ -726,7 +726,6 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 			continue;
 		}
 
-		// NOTE: Think about different color multiplier and opacity addition
 		for(int i = index_offset; i < vm.media_array_size; ++i)
 		{
 			// NOTE: Option to not send disabled media to the GPU for performance improvement
@@ -744,25 +743,14 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 			vec3 normal = get_shading_normal(sample_point, surface_normal);
 			
 			// TODO: do systematically
+			color += shade(i, medium_color, sample_point, normal);
 			if (!surface_colored)
 			{
-				color += shade(i, medium_color, sample_point, normal);
-				// surface_colored = true;
-				return color;
+				surface_colored = true;
+				++index_offset;
 			}
-		
-			// TODO: figure out efficient way to also include values below the skin
-			// if (!surface_colored)
-			// {
-			// 	color += shade(medium_color, sample_point, normal);
-			// 	surface_colored = true;
-			// 	++index_offset;
-			// 	continue;
-			// 	// return color;
-			// }
-
-			// color += shade(medium_color, sample_point, normal);
-			// return color;
+			else
+				return color;
 
 			// TODO: alpha should be consistent for all step sizes so: alpha = medium_alpha * (step size / reference step size)
 			// float available_alpha = min(medium_color.a, 1.0 - color.a);
