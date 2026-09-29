@@ -1,7 +1,7 @@
 'use strict';
 
 import loadDicom from './file/dicom.js';
-import { euclideanDistanceTransform, interleaveVolumeArrays, resampleVolumePET } from './algo/image.js';
+import { blurVolume, euclideanDistanceTransform, interleaveVolumeArrays, resampleVolumePET } from './algo/image.js';
 import { initDebugGUI, initGUIData, resetGUIState } from './ui/gui.js';
 import { initUI, control, resetControls } from './ui/manager.js';
 import { initGLCanvas, initGLContext, initGLStates, setOutputResolution } from './webgl/init.js';
@@ -130,9 +130,11 @@ window.onload = async function init()
     // NOTE: Consider using Web Workers
     // See: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
 
+    const blurredVolumeCT = blurVolume(imageDataCT.volume, imageDataCT.dimensions, 10);
+
     const squaredEuclideanDistanceToNonAirCT = await euclideanDistanceTransform(
       imageDataCT.name,
-      imageDataCT.volume,
+      blurredVolumeCT,
       imageDataCT.dimensions,
       appData.environment.volumeMedia.bodyShell.transferFunction.interval.min,
       CACHE
@@ -160,7 +162,7 @@ window.onload = async function init()
     );
 
     const interleavedVolumes = interleaveVolumeArrays(
-      imageDataCT.volume,
+      blurredVolumeCT,
       resampledVolumePET,
       squaredEuclideanDistanceToNonAirCT,
       squaredEuclideanDistanceToNonAirPET

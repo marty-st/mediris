@@ -409,3 +409,108 @@ export function interleaveVolumeArrays(...volumeArrays)
 
   return interleaved;
 }
+
+/**
+ * Blurs a given volume using a convolution kernel.
+ * @param {*} volume 1D array representing a 3D image
+ * @param {*} dimensions volume dimensions
+ * @param {*} kernelSize convolution kernel size
+ */
+export function blurVolume(volume, dimensions, kernelSize)
+{
+  const { rows: width, cols: height, layers: depth } = dimensions;
+  const widthHeight = width * height;
+  // const volumeSize = widthHeight * depth;
+
+  const blurredVolume = new Float16Array(volume);
+
+  const gaussKernel = generateKernel(kernelSize);
+
+  // x
+  for (let z = 0; z < depth; ++z)
+  {
+    for (let y = 0; y < height; ++y)
+    {
+      const startIndex = z * widthHeight + y * width;
+      const row = new StridedArrayView(blurredVolume, startIndex, startIndex + width, 1);
+      row.setAll(convolve(row, gaussKernel));
+    }
+  }
+
+  // y
+  for (let z = 0; z < depth; ++z)
+  {
+    for (let x = 0; x < width; ++x)
+    {
+      const startIndex = z * widthHeight + x;
+      const column = new StridedArrayView(blurredVolume, startIndex, startIndex + height * width, width);
+      column.setAll(convolve(column, gaussKernel));
+    }
+  }
+
+  // z
+  for (let y = 0; y < height; ++y)
+  {
+    for (let x = 0; x < width; ++x)
+    {
+      const startIndex = y * width + x;
+      const layer = new StridedArrayView(blurredVolume, startIndex, startIndex + depth * widthHeight, widthHeight);
+      layer.setAll(convolve(layer, gaussKernel));
+    }
+  }
+
+  volume = blurredVolume;
+  return volume;
+}
+
+/**
+ * Generates a convolution kernel of size n.
+ * @param {*} n kernel size
+ * @returns normalized convolution kernel
+ */
+function generateKernel(n)
+{
+  const triangleLine = generatePascal(n - 1);
+
+  const triangleLineSum = (1 << (triangleLine.length - 1));
+
+  return triangleLine.map(value => value / triangleLineSum);
+}
+
+/**
+ * Generates an n-th row (indexed from 0) of a Pascal triangle row.
+ * This row has a length of n + 1.
+ * @param {*} n row index (0..)
+ * @returns an array of Pascal triangle row elements
+ */
+function generatePascal(n)
+{
+  const triangleLine = new Float32Array(n + 1);
+  triangleLine[0] = 1.0;
+
+  for (let k = 0; k < n; ++k)
+    triangleLine[k + 1] = triangleLine[k] * (n - k) / (k + 1);
+
+  return triangleLine;
+}
+
+/**
+ * Blurs a 1D array using a given convolution kernel.
+ * @param {StridedArrayView} array 1D array of voxels
+ * @param {*} kernel convolution kernel array
+ */
+function convolve(array, kernel)
+{
+  let result = new Float16Array(array.length);
+  const radius = Math.floor(kernel.length / 2);
+  for (let x = 0; x < array.length; ++x)
+  {
+    for (let k = 0; k < kernel.length; ++k)
+    {
+      const xk = Math.min(Math.max(x - radius + k, 0), array.length - 1);
+      result[x] += array.at(xk) * kernel[k];
+    }
+  }
+
+  return result;
+}
