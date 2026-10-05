@@ -710,12 +710,12 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 	{
 		++heat_counter;
 		// CORNER SKIP - Skips tracing outside of the scanned cylinder. Values closer to 1 produce artifacts.
-		if (abs(sample_point.x * sample_point.x) + abs(sample_point.y * sample_point.y) > 1.1)
-		{
-			sample_point.xyz += ray_direction * u_step_size;
-			volume_travel_distance -= u_step_size;
-			continue;
-		}
+		// if (abs(sample_point.x * sample_point.x) + abs(sample_point.y * sample_point.y) > 1.1)
+		// {
+		// 	sample_point.xyz += ray_direction * u_step_size;
+		// 	volume_travel_distance -= u_step_size;
+		// 	continue;
+		// }
 
 		vec4 float_sample_color = get_sample_color(sample_point.xyz);
 
