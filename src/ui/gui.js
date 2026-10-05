@@ -328,7 +328,16 @@ export function initDebugGUI(GUIData)
     folderRT.addBinding(setting, "value", optionalParameters);
   }
 
-  // addLightsBindings(pane, GUIData);
+  // Debug
+  const folderDB = pane.addFolder({ title: "Debug" });
+  for (const [key, setting] of Object.entries(GUIData.settings.uniforms.debug))
+  {
+    const optionalParameters = "isList" in setting.options
+      ? { label: key, options: setting.options }
+      : { label: key, ...setting.options };
+
+    folderDB.addBinding(setting, "value", optionalParameters);
+  }
 
   addVolumeMediumFolder(pane, GUIData);
 

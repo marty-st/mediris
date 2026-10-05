@@ -118,9 +118,10 @@ window.onload = async function init()
   });
 
   const renderTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
+  const heatmapTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
   const depthTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "depth");
 
-  frameBuffer = createFramebuffer(gl, { color: [renderTexture], depth: depthTexture });
+  frameBuffer = createFramebuffer(gl, { color: [renderTexture, heatmapTexture], depth: depthTexture });
 
   idleGeometries = [createFullScreenGeometry(gl, idleShaderProgramInfo, idleShaderNames, renderTexture)];
 

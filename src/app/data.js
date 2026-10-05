@@ -180,6 +180,9 @@ const settings = {
       u_gradient_delta: { value: 0.0025, options: { min: 0.0001, max: 0.05, step: 0.001 } },
       u_curvature_delta_multiplier: { value: 4.0, options: { min: 0.5, max: 6.0, step: 0.1 } },
     },
+    debug: {
+      u_heatmap_div: { value: 32.0, options: { min: 1.0, max: 128.0, step: 1 } },
+    },
   },
 };
 

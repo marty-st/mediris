@@ -60,7 +60,8 @@ export function createSceneRaycast(uniforms, environment)
   const referenceUniforms = createReferencePrimitives(
     {},
     ...Object.entries(uniforms.general),
-    ...Object.entries(uniforms.rayTracing)
+    ...Object.entries(uniforms.rayTracing),
+    ...Object.entries(uniforms.debug)
   );
 
   // Camera uniforms

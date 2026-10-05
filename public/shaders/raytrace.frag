@@ -118,6 +118,7 @@ struct VolumeMedium
 /* ------------------------- */
 const RayIntersectionData no_intersection = RayIntersectionData(1e20, vec3(0.0), vec3(0.0));
 const Hit miss = Hit(1e20, 1e20, vec3(0.0), vec3(0.0));
+int heat_counter = 0;
 
 /* ----------INPUT---------- */
 /* ------------------------- */
@@ -141,6 +142,8 @@ uniform vec3 u_bbox_max;
 uniform float u_step_size;
 uniform float u_gradient_delta;
 uniform float u_curvature_delta_multiplier;
+// Debug
+uniform float u_heatmap_div;
 // Volume Media
 uniform VolumeMedia
 {
@@ -159,7 +162,8 @@ uniform mat4 u_projection_inv;
 
 /* ---------OUTPUT---------- */
 /* ------------------------- */
-out vec4 o_color;
+layout (location = 0) out vec4 o_color;
+layout (location = 1) out vec4 o_heat_color;
 
 /* ------LOCAL METHODS------ */
 /* ------------------------- */
@@ -704,6 +708,7 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 
 	while (volume_travel_distance >= 0.0 && color.a < 1.0)
 	{
+		++heat_counter;
 		// CORNER SKIP - Skips tracing outside of the scanned cylinder. Values closer to 1 produce artifacts.
 		if (abs(sample_point.x * sample_point.x) + abs(sample_point.y * sample_point.y) > 1.1)
 		{
@@ -801,6 +806,17 @@ vec4 trace(Ray ray)
   return color;
 }
 
+vec3 heatmap(float t)
+{
+	t = clamp(t, 0.0, 1.0);
+	vec3 cold = vec3(0.0, 0.2, 1.0);        // blue
+	vec3 mid  = vec3(1.0, 0.6, 0.0);        // orange
+	vec3 hot  = vec3(1.0, 0.0, 0.0);        // red
+	return t < 0.5
+		? mix(cold, mid, t * 2.0)
+		: mix(mid, hot, (t - 0.5) * 2.0);
+}
+
 void main()
 {
   vec3 ray_origin = (u_view_inv * u_projection_inv * vec4(var.tex_coord * 2.0 - 1.0, -1.0, 1.0)).xyz;
@@ -814,6 +830,9 @@ void main()
 	// Gamma Correction
 	float gamma = 2.2;
 	color.rgb = pow(color.rgb, vec3(1.0 / gamma));
+
+ 	float heat = float(heat_counter) / u_heatmap_div;
+	o_heat_color = vec4(heatmap(heat), 1.0);
 
 	o_color = color;
 }
