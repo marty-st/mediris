@@ -226,7 +226,13 @@ export function createFramebuffer(gl, attachments)
   const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
   console.log("[FRAMEBUFFER STATUS]", status == 36053 ? "complete" : "incomplete " + status);
 
-  gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
+  let drawBuffersArray = [];
+
+  for (let i = 0; i < attachments.color.length; ++i)
+  {
+    drawBuffersArray.push(gl.COLOR_ATTACHMENT0 + i);
+  }
+  gl.drawBuffers(drawBuffersArray);
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
