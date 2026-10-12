@@ -5,15 +5,27 @@ import { setWorldPositionFromCameraSpace } from "./math";
 
 /**
  * Creates a transfer function object that can be mapped by twgl.js to a Uniform Block on the GPU.
- * @param {*} appData object with application data - settings, environment, etc.
+ * @param {*} flatTransferFunction array of transfer function parameters for each medium
  * @returns transfer function object with the same exact structure as defined in the shader
  */
-function createTransferFunctionUniformBlock(mediumTF)
+export function createTransferFunctionUniformBlock(flatTransferFunction)
 {
-  return {
-    color: mediumTF.colorVec,
-    interval: mediumTF.intervalVec,
+  const tf = {
+    array: [],
+    array_size: 0,
   };
+
+  for (const mediumTF of flatTransferFunction)
+  {
+    tf.array.push({
+      color: mediumTF.colorVec,
+      interval: mediumTF.intervalVec,
+    });
+  }
+
+  tf.array_size = tf.array.length;
+
+  return tf;
 }
 
 /**
@@ -34,15 +46,16 @@ export function updateVolumeMediaLights(cameraRelativeLights, camera)
 /**
  * Transforms information about user-controlled light properties into a GPU compatible
  * format (UBO).
- * @param {*} environment object with environment data - lights, camera, scene, etc.
- * @param {*} cameraInvViewMat camera inverse view matrix
- * @returns object containing an array with per-light data and the array size
+ * @param {*} flatLights array of all lights
+ * @returns lights uniform buffer object (shader-compatible)
  */
-function createLightsUniformBlock(lightsArray)
+export function createLightsUniformBlock(flatLights)
 {
-  let lights_array = [];
+  const lights = {
+    array: [],
+  };
 
-  for (const light of lightsArray)
+  for (const light of flatLights)
   {
     const l = {
       position: light.positionVec,
@@ -55,31 +68,61 @@ function createLightsUniformBlock(lightsArray)
       ["camera_relative", light.relativeToCamera]
     );
 
-    lights_array.push(l);
+    lights.array.push(l);
   }
 
-  return lights_array;
+  return lights;
 }
 
-function createShadingUniformBlock(shadingArray, mediumShading)
+/**
+ * Creates a GPU-compatible object containing an array of shading parameters.
+ * @param {*} flatShadingParameters array of all shading parameters
+ * @returns shading parameters uniform buffer object (shader-compatible)
+ */
+export function createShadingParametersUniformBlock(flatShadingParameters)
 {
-  for (const shading of mediumShading)
+  const params = {
+    array: [],
+  };
+
+  for (const parameters of flatShadingParameters)
+  {
+    params.array.push(createReferencePrimitives({}, ...Object.entries(Object.assign({}, ...Object.values(parameters)))));
+  }
+
+  return params;
+}
+
+/**
+ * Creates a GPU-compatible object containing an array of shading information.
+ * @param {*} flatShading array of all shading information
+ * @param {*} flatShadingParameters array of all shading parameters
+ * @param {*} flatLights array of all lights
+ * @returns shading uniform buffer object (shader-compatible)
+ */
+export function createShadingUniformBlock(flatShading, flatShadingParameters, flatLights)
+{
+  const shd = {
+    array: [],
+  };
+
+  for (const shading of flatShading)
   {
     const shadingElement = {
-      params: createReferencePrimitives({}, ...Object.entries(Object.assign({}, ...Object.values(shading.parameters)))),
-      lights: createLightsUniformBlock(shading.lights),
-      // lights_array_size: shading.lights.length,
+      params_index: flatShadingParameters.findIndex(fsp => shading.parameters === fsp),
+      light_indices: shading.lights.map(l => flatLights.findIndex(fl => l === fl)),
+      light_count: shading.lights.length,
       model: undefined,
       enabled: undefined,
     };
 
-    shadingElement.lights_array_size = shadingElement.lights.length;
-
     createReferencePrimitives(shadingElement, ["model", shading.model]);
     createReferencePrimitives(shadingElement, ["enabled", shading.enabled]);
 
-    shadingArray.push(shadingElement);
+    shd.array.push(shadingElement);
   }
+
+  return shd;
 }
 
 /**
@@ -99,30 +142,29 @@ function createShadingUniformBlock(shadingArray, mediumShading)
     dynamic light properties
     other frame-dependent values
  */
-export function createVolumeMediaUniformBlock(volumeMedia)
+export function createVolumeMediaUniformBlock(flatVolumeMedia, flatShading, flatTransferFunction)
 {
-  let vm = {
-    media_array: [],
-    media_array_size: 0,
+  const vm = {
+    array: [],
+    array_size: 0,
   };
 
-  for (const medium of Object.values(volumeMedia))
+  for (const medium of flatVolumeMedia)
   {
     const volumeMedium = {
-      tf: createTransferFunctionUniformBlock(medium.transferFunction),
-      shd: [],
-      shading_array_size: medium.shading.length,
+      tf_index: flatTransferFunction.findIndex(ftf => medium.transferFunction === ftf),
+      shd_indices: medium.shading.map(s => flatShading.findIndex(fs => s === fs)),
+      shading_count: medium.shading.length,
       channel: medium.channel === "ct" ? 0 : 1,
       enabled: undefined,
     };
 
     createReferencePrimitives(volumeMedium, ["enabled", medium.enabled]);
-    createShadingUniformBlock(volumeMedium.shd, medium.shading);
 
-    vm.media_array.push(volumeMedium);
+    vm.array.push(volumeMedium);
   }
 
-  vm.media_array_size = vm.media_array.length;
+  vm.array_size = vm.array.length;
 
   return vm;
 }

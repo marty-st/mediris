@@ -17,7 +17,14 @@
 
 import * as twgl from 'twgl.js';
 import { vec3 } from 'gl-matrix';
-import { createVolumeMediaUniformBlock } from './uniform';
+import {
+  createLightsUniformBlock,
+  createShadingParametersUniformBlock,
+  createShadingUniformBlock,
+  createTransferFunctionUniformBlock,
+  createVolumeMediaUniformBlock
+} from './uniform';
+import { flattenVolumeMedia } from '../app/helper';
 
 /* GLOBAL VARIABLES */
 
@@ -97,6 +104,8 @@ export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, vol
   const bbox_min = vec3.fromValues(-1, -1, -1);
   const bbox_max = vec3.fromValues(1, 1, 1);
 
+  const flatVolumeMedia = flattenVolumeMedia(volumeMedia);
+
   return {
     bufferInfo: fullScreenQuadBufferInfo,
     vao: emptyVAO,
@@ -109,10 +118,28 @@ export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, vol
       u_bbox_max: bbox_max,
     },
     // Volume Media, their Shading Model, and Transfer Function
-    uniformBlock: {
-      info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "VolumeMedia"),
-      uniforms: createVolumeMediaUniformBlock(volumeMedia),
-    },
+    uniformBlocks: [
+      {
+        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "TransferFunction"),
+        uniforms: createTransferFunctionUniformBlock(flatVolumeMedia.tf),
+      },
+      {
+        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "Lights"),
+        uniforms: createLightsUniformBlock(flatVolumeMedia.lights),
+      },
+      {
+        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "ShadingParameters"),
+        uniforms: createShadingParametersUniformBlock(flatVolumeMedia.params),
+      },
+      {
+        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "Shadings"),
+        uniforms: createShadingUniformBlock(flatVolumeMedia.shd, flatVolumeMedia.params, flatVolumeMedia.lights),
+      },
+      {
+        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "VolumeMedia"),
+        uniforms: createVolumeMediaUniformBlock(flatVolumeMedia.vm, flatVolumeMedia.shd, flatVolumeMedia.tf),
+      },
+    ],
   };
 }
 
@@ -129,15 +156,35 @@ export function createSphereGeometry(gl, shaderProgramInfo, shaderFileNames, vol
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
 
+  const flatVolumeMedia = flattenVolumeMedia(volumeMedia);
+
   return {
     bufferInfo: fullScreenQuadBufferInfo,
     vao: emptyVAO,
     programInfo: shaderProgramInfo,
     shaderFileNames: shaderFileNames,
     // Volume Media, their Shading Model, and Transfer Function
-    uniformBlock: {
-      info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "VolumeMedia"),
-      uniforms: createVolumeMediaUniformBlock(volumeMedia),
-    },
+    uniformBlocks: [
+      {
+        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "TransferFunction"),
+        uniforms: createTransferFunctionUniformBlock(flatVolumeMedia.tf),
+      },
+      {
+        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "Lights"),
+        uniforms: createLightsUniformBlock(flatVolumeMedia.lights),
+      },
+      {
+        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "ShadingParameters"),
+        uniforms: createShadingParametersUniformBlock(flatVolumeMedia.params),
+      },
+      {
+        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "Shadings"),
+        uniforms: createShadingUniformBlock(flatVolumeMedia.shd, flatVolumeMedia.params, flatVolumeMedia.lights),
+      },
+      {
+        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "VolumeMedia"),
+        uniforms: createVolumeMediaUniformBlock(flatVolumeMedia.vm, flatVolumeMedia.shd, flatVolumeMedia.tf),
+      },
+    ],
   };
 }

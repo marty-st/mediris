@@ -57,3 +57,43 @@ export function initVec3(v)
 {
   return vec3.fromValues(v.x, v.y, v.z);
 }
+
+/**
+ * Flattens the nested `VolumeMedia` data structure into separate arrays. These arrays
+ * are used to create uniform buffers for the GPU.
+ * @param {*} volumeMedia nested VolumeMedia data structure
+ * @returns object with arrays (vm, tf, shd, params, lights)
+ */
+export function flattenVolumeMedia(volumeMedia)
+{
+  let vm = [];
+  let tf = [];
+  let shd = [];
+  let params = [];
+  let lights = [];
+
+  for (const medium of Object.values(volumeMedia))
+  {
+    vm.push(medium);
+    tf.push(medium.transferFunction);
+
+    for (const s of medium.shading)
+    {
+      shd.push(s);
+      params.push(s.parameters);
+
+      for (const light of s.lights)
+      {
+        lights.push(light);
+      }
+    }
+  }
+
+  return {
+    vm,
+    tf,
+    shd,
+    params,
+    lights,
+  };
+}
