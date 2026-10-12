@@ -39,10 +39,13 @@ export default function render(gl, canvas, viewport, scene, geometries)
     if (geometry.uniforms)
       twgl.setUniforms(geometry.programInfo, geometry.uniforms);
 
-    if (geometry.uniformBlock)
+    if (geometry.uniformBlocks)
     {
-      twgl.setBlockUniforms(geometry.uniformBlock.info, geometry.uniformBlock.uniforms);
-      twgl.setUniformBlock(gl, geometry.programInfo, geometry.uniformBlock.info);
+      for (const uniformBlock of geometry.uniformBlocks)
+      {
+        twgl.setBlockUniforms(uniformBlock.info, uniformBlock.uniforms);
+        twgl.setUniformBlock(gl, geometry.programInfo, uniformBlock.info);
+      }
     }
 
     twgl.drawBufferInfo(gl, geometry.bufferInfo);
