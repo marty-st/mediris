@@ -9,8 +9,10 @@ precision mediump sampler3D;
 #define UP_VECTOR vec3(0.0, 1.0, 0.0)
 // Array size
 #define MAX_TF_ARRAY_SIZE 2
-#define MAX_LIGHT_ARRAY_SIZE 3
-#define MAX_SHADING_ARRAY_SIZE 2
+#define MAX_LIGHT_ARRAY_SIZE 5
+#define MAX_LIGHT_INDICES 3
+#define MAX_SHADING_ARRAY_SIZE 5
+#define MAX_SHADING_INDICES 2
 // Colors
 const vec4 GROUND_COLOR = vec4(0.15, 0.2, 0.2, 1.0);
 const vec4 SKY_COLOR = vec4(0.36f, 0.64f, 0.64f, 1.0f);
@@ -65,13 +67,13 @@ struct Light
 	bool camera_relative;
 };
 
-struct TransferFunction
+struct TransferFunctionMedium
 {
 	vec4 color;
 	vec2 interval;
 };
 
-struct ShadingParameters
+struct ShadingModelParameters
 {
 	// Stylized shading model
 	float u_alpha;
@@ -98,18 +100,18 @@ struct ShadingParameters
 
 struct Shading
 {
-	ShadingParameters params;
-	Light lights[MAX_LIGHT_ARRAY_SIZE];
-	int lights_array_size;
+	int params_index;
+	int light_indices[MAX_LIGHT_INDICES];
+	int light_count;
 	int model;
 	bool enabled;
 };
 
 struct VolumeMedium
 {
-	TransferFunction tf;
-	Shading shd[MAX_SHADING_ARRAY_SIZE];
-	int shading_array_size;
+	int tf_index;
+	int shd_indices[MAX_SHADING_INDICES];
+	int shading_count;
 	int channel;
 	bool enabled;
 };
@@ -144,17 +146,38 @@ uniform float u_gradient_delta;
 uniform float u_curvature_delta_multiplier;
 // Debug
 uniform float u_heatmap_div;
-// Volume Media
+// Lights array
+uniform Lights
+{
+	Light array[MAX_LIGHT_ARRAY_SIZE];
+} lights;
+// Shading Parameters array
+uniform ShadingParameters
+{
+	ShadingModelParameters array[MAX_SHADING_ARRAY_SIZE];
+} params;
+// Shading array
+uniform Shadings
+{
+	Shading array[MAX_SHADING_ARRAY_SIZE];
+} shd;
+// Transfer Function array
+uniform TransferFunction
+{
+	TransferFunctionMedium array[MAX_TF_ARRAY_SIZE];
+	int array_size;
+} tf;
+// Volume Media array
 uniform VolumeMedia
 {
- 	VolumeMedium media_array[MAX_TF_ARRAY_SIZE];
-	int media_array_size;
+ 	VolumeMedium array[MAX_TF_ARRAY_SIZE];
+	int array_size;
 } vm;
 // Volume Media macros
-#define MEDIUM vm.media_array[vm_index]
-#define SHADING MEDIUM.shd[s]
-#define LIGHT SHADING.lights[l]
-#define PARAMS vm.media_array[vm_index].shd[shd_index].params
+#define MEDIUM vm.array[vm_index]
+#define SHADING shd.array[MEDIUM.shd_indices[s]]
+#define LIGHT lights.array[shd.array[vm.array[vm_index].shd_indices[s]].light_indices[l]]
+#define PARAMS params.array[shd.array[MEDIUM.shd_indices[shd_index]].params_index]
 // Camera uniforms
 uniform vec3 u_eye_position;
 uniform mat4 u_view_inv;
@@ -573,8 +596,10 @@ vec4 shade(int vm_index, vec4 medium_color, vec4 sample_point, vec3 normal)
 {
 	vec4 color = vec4(0.0);
 
-	for (int s = 0; s < MEDIUM.shading_array_size; ++s)
+// MEDIUM = vm.array[vm_index]
+	for (int s = 0; s < MEDIUM.shading_count; ++s)
 	{
+		// SHADING = shd.array[vm.array[vm_index].shd_indices[s]]
 		if (!SHADING.enabled)
 			continue;
 	
@@ -583,8 +608,9 @@ vec4 shade(int vm_index, vec4 medium_color, vec4 sample_point, vec3 normal)
 		switch(shading_model)
 		{
 			case STYLIZED:
-				for (int l = 0; l < SHADING.lights_array_size; ++l)
+				for (int l = 0; l < SHADING.light_count; ++l)
 				{
+					// LIGHT = lights.array[shd.array[vm.array[vm_index].shd_indices[s]].light_indices[l]]
 					if (!LIGHT.enabled)
 						continue;
 
@@ -596,7 +622,7 @@ vec4 shade(int vm_index, vec4 medium_color, vec4 sample_point, vec3 normal)
 				}
 				break;
 			case DISNEY:
-				for (int l = 0; l < SHADING.lights_array_size; ++l)
+				for (int l = 0; l < SHADING.light_count; ++l)
 				{
 					if (!LIGHT.enabled)
 						continue;
@@ -609,7 +635,7 @@ vec4 shade(int vm_index, vec4 medium_color, vec4 sample_point, vec3 normal)
 				}
 				break;
 			case BLINN_PHONG:
-				for (int l = 0; l < SHADING.lights_array_size; ++l)
+				for (int l = 0; l < SHADING.light_count; ++l)
 				{
 					if (!LIGHT.enabled)
 						continue;
@@ -622,7 +648,7 @@ vec4 shade(int vm_index, vec4 medium_color, vec4 sample_point, vec3 normal)
 				}
 				break;
 			case LAMBERT:
-				for (int l = 0; l < SHADING.lights_array_size; ++l)
+				for (int l = 0; l < SHADING.light_count; ++l)
 				{
 					if (!LIGHT.enabled)
 						continue;
@@ -656,29 +682,29 @@ vec4 get_sample_color(vec3 sample_point)
 		case DICOM:
 			return sample_voxel(sample_point);
 		case SPHERE_DEBUG:
-			return vec4(vm.media_array[vm.media_array_size - 1].tf.interval.x);
+			return vec4(tf.array[vm.array[vm.array_size - 1].tf_index].interval.x);
 	}
 }
 
-vec2 get_medium_interval(int index)
+vec2 get_medium_interval(int vm_index)
 {
 	switch(u_mode)
 	{
 		case DICOM:
-			return vm.media_array[index].tf.interval;
+			return tf.array[vm.array[vm_index].tf_index].interval;
 		case SPHERE_DEBUG:
-			return vm.media_array[vm.media_array_size - 1].tf.interval; // TODO: index of 1 selected medium
+			return tf.array[vm.array[vm.array_size - 1].tf_index].interval; // TODO: index of 1 selected medium
 	}
 }
 
-vec4 get_medium_color(int index)
+vec4 get_medium_color(int vm_index)
 {
 	switch(u_mode)
 	{
 		case DICOM:
-			return vm.media_array[index].tf.color;
+			return tf.array[vm.array[vm_index].tf_index].color;
 		case SPHERE_DEBUG:
-			return vm.media_array[vm.media_array_size - 1].tf.color; // TODO: index of 1 selected medium
+			return tf.array[vm.array[vm.array_size - 1].tf_index].color; // TODO: index of 1 selected medium
 	}
 }
 
@@ -709,13 +735,6 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 	while (volume_travel_distance >= 0.0 && color.a < 1.0)
 	{
 		++heat_counter;
-		// CORNER SKIP - Skips tracing outside of the scanned cylinder. Values closer to 1 produce artifacts.
-		// if (abs(sample_point.x * sample_point.x) + abs(sample_point.y * sample_point.y) > 1.1)
-		// {
-		// 	sample_point.xyz += ray_direction * u_step_size;
-		// 	volume_travel_distance -= u_step_size;
-		// 	continue;
-		// }
 
 		vec4 float_sample_color = get_sample_color(sample_point.xyz);
 
@@ -731,15 +750,15 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 			continue;
 		}
 
-		for(int i = index_offset; i < vm.media_array_size; ++i)
+		for(int i = index_offset; i < vm.array_size; ++i)
 		{
 			// NOTE: Option to not send disabled media to the GPU for performance improvement
-			if (!vm.media_array[i].enabled)
+			if (!vm.array[i].enabled)
 				continue;
 
 			vec2 medium_itv = get_medium_interval(i);
 			vec4 medium_color = get_medium_color(i);
-			int medium_channel = vm.media_array[i].channel;
+			int medium_channel = vm.array[i].channel;
 
 			if (float_sample_color[medium_channel] < medium_itv.x || float_sample_color[medium_channel] >= medium_itv.y)
 				continue;
