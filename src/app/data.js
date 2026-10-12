@@ -100,10 +100,6 @@ const LAMBERT = { value: 3, key: "lambert" };
 const NORMAL = { value: 4, key: "normal" };
 const POSITION = { value: 5, key: "position" };
 
-// TODO: move lights into volumeMedia
-// TODO: make shading model parameters dynamic via GUI
-// TODO: make enable/disable dynamic via GUI
-// TODO: make lights adjustable via GUI
 const volumeMedia = {
   bodyShell: {
     enabled: { value: true },
