@@ -123,7 +123,20 @@ window.onload = async function init()
 
   frameBuffer = createFramebuffer(gl, { color: [renderTexture, heatmapTexture], depth: depthTexture });
 
-  idleGeometries = [createFullScreenGeometry(gl, idleShaderProgramInfo, idleShaderNames, renderTexture)];
+  idleGeometries = [
+    createFullScreenGeometry(
+      gl,
+      idleShaderProgramInfo,
+      idleShaderNames,
+      renderTexture
+    ),
+    createFullScreenGeometry(
+      gl,
+      idleShaderProgramInfo,
+      idleShaderNames,
+      heatmapTexture
+    ),
+  ];
 
   // Asynchronously load DICOM to display later
   Promise.all([imageDataCTPromise, imageDataPETPromise]).then(async ([imageDataCT, imageDataPET]) =>
@@ -265,7 +278,18 @@ function renderLoop(currentTime)
 
   // Idle render
   context.gl.bindFramebuffer(context.gl.FRAMEBUFFER, null);
-  render(context.gl, context.canvas, environment.viewport, sceneEmpty, idleGeometries);
+
+  switch (appData.settings.uniforms.debug.u_output.value)
+  {
+    case 0: // FINAL
+      render(context.gl, context.canvas, environment.viewport, sceneEmpty, idleGeometries.slice(0, 1));
+      break;
+    case 1: // HEATMAP
+      render(context.gl, context.canvas, environment.viewport, sceneEmpty, idleGeometries.slice(1, 2));
+      break;
+    default:
+      render(context.gl, context.canvas, environment.viewport, sceneEmpty, idleGeometries);
+  }
 
   // State reset
   updatePostFrame();
