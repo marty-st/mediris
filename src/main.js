@@ -29,7 +29,8 @@ const appData = initAppData();
 
 let sceneEmpty = undefined;
 let idleGeometries = undefined;
-let frameBuffer = undefined;
+let raytraceframeBuffer = undefined;
+let frameBufferShade = undefined;
 
 // Wrapper object for the UI controls & GUI, managed by the UI manager
 let UI = undefined;
@@ -37,7 +38,8 @@ let UI = undefined;
 // Shader program file names
 const loadingScreenShaderNames = { vert: "fsquad", frag: "fstexture" };
 const idleShaderNames = { vert: "fsquad", frag: "fstexture" };
-const mainShaderNames = { vert: "fsquad", frag: "raytrace" };
+const raytraceShaderNames = { vert: "fsquad", frag: "raytrace" };
+const shadeShaderNames = { vert: "fsquad", frag: "shade" };
 
 // FILE PRELOAD
 // Load DICOM during module load
@@ -78,7 +80,8 @@ window.onload = async function init()
 
   const loadingScreenProgramInfo = await createShaderProgram(gl, loadingScreenShaderNames.vert, loadingScreenShaderNames.frag, NO_CACHE);
   const idleShaderProgramInfo = await createShaderProgram(gl, idleShaderNames.vert, idleShaderNames.frag, NO_CACHE);
-  const volumeProgramInfo = await createShaderProgram(gl, mainShaderNames.vert, mainShaderNames.frag, NO_CACHE);
+  const volumeProgramInfo = await createShaderProgram(gl, raytraceShaderNames.vert, raytraceShaderNames.frag, NO_CACHE);
+  const shadeProgramInfo = await createShaderProgram(gl, shadeShaderNames.vert, shadeShaderNames.frag, NO_CACHE);
 
   /* --------------------- */
   /* DATA INITIALIZATION - */
@@ -118,10 +121,12 @@ window.onload = async function init()
   });
 
   const renderTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
+  const samplePointTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "float");
   const heatmapTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
   const depthTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "depth");
 
-  frameBuffer = createFramebuffer(gl, { color: [renderTexture, heatmapTexture], depth: depthTexture });
+  frameBufferShade = createFramebuffer(gl, { color: [renderTexture], depth: depthTexture });
+  raytraceframeBuffer = createFramebuffer(gl, { color: [samplePointTexture, heatmapTexture], depth: depthTexture });
 
   idleGeometries = [
     createFullScreenGeometry(
@@ -208,9 +213,11 @@ window.onload = async function init()
 
     appData.environment.scene.geometries.push(createVolumeGeometry(
       gl,
-      volumeProgramInfo,
-      mainShaderNames,
+      [volumeProgramInfo, shadeProgramInfo],
+      [raytraceShaderNames, shadeShaderNames],
+      [raytraceframeBuffer, frameBufferShade],
       volumeTexture,
+      samplePointTexture,
       appData.environment.volumeMedia
     ));
 
@@ -272,7 +279,6 @@ function renderLoop(currentTime)
   // Prepare idle framebuffer - fully render the scene
   if (!environment.state.idleRender)
   {
-    context.gl.bindFramebuffer(context.gl.FRAMEBUFFER, frameBuffer);
     render(context.gl, context.canvas, environment.viewport, environment.scene, environment.scene.geometries);
   }
 

@@ -186,6 +186,55 @@ function createDepthTexture(gl, dimensions)
   return depthTexture;
 }
 
+function createFloatTexture(gl, dimensions, channels)
+{
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+
+  // NOTE: Needs gl.NEAREST for some reason
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+  let internalFormat;
+  let format;
+  switch (channels)
+  {
+    case 1:
+      internalFormat = gl.R32F;
+      format = gl.RED;
+      break;
+    case 2:
+      internalFormat = gl.RG32F;
+      format = gl.RG;
+      break;
+    case 3:
+      internalFormat = gl.RGB32F;
+      format = gl.RGB;
+      break;
+    case 4:
+      internalFormat = gl.RGBA32F;
+      format = gl.RGBA;
+      break;
+    default:
+      throw new Error("Float texture: Invalid number of color channels.");
+  }
+
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    internalFormat,
+    dimensions.width,
+    dimensions.height,
+    0,
+    format,
+    gl.FLOAT,
+    null
+  );
+
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  return texture;
+}
+
 /**
  * Creates a WebGL texture used for custom framebuffer use.
  * @param {*} gl WebGL rendering context
@@ -201,6 +250,15 @@ export function createFramebufferTexture(gl, dimensions, type)
       return create2DTexture(gl, null, dimensions);
     case "depth":
       return createDepthTexture(gl, dimensions);
+    case "floatR":
+      return createFloatTexture(gl, dimensions, 1);
+    case "floatRG":
+      return createFloatTexture(gl, dimensions, 2);
+    case "floatRGB":
+      return createFloatTexture(gl, dimensions, 3);
+    case "floatRGBA":
+    case "float":
+      return createFloatTexture(gl, dimensions, 4);
     default:
       console.error("invalid frambebuffer texture type");
   }

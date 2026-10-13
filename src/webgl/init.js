@@ -51,6 +51,11 @@ export function initGLStates(gl)
   gl.clearColor(0.25, 0.25, 0.25, 1.0);
   gl.enable(gl.SCISSOR_TEST);
 
+  // gl.enable(gl.BLEND);
+  // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+  gl.getExtension("EXT_color_buffer_float");
+
   twgl.setDefaults({
     attribPrefix: "i_",
   });
