@@ -131,17 +131,15 @@ window.onload = async function init()
     // NOTE: Consider using Web Workers
     // See: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
 
-    const blurredVolumeCT = await blurVolume(imageDataCT.name, imageDataCT.volume, imageDataCT.dimensions, 10, CACHE);
-
-    const squaredEuclideanDistanceToNonAirCT = await euclideanDistanceTransform(
+    const blurredVolumeCTPromise = blurVolume(
       imageDataCT.name,
-      blurredVolumeCT,
+      imageDataCT.volume,
       imageDataCT.dimensions,
-      appData.environment.volumeMedia.bodyShell.transferFunction.interval.min,
+      10,
       CACHE
     );
 
-    const resampledVolumePET = await resampleVolumePET(
+    const resampledVolumePETPromise = resampleVolumePET(
       imageDataPET.volume,
       imageDataCT.dimensions,
       imageDataPET.dimensions,
@@ -154,13 +152,37 @@ window.onload = async function init()
       Uint16Array
     );
 
-    const squaredEuclideanDistanceToNonAirPET = await euclideanDistanceTransform(
-      imageDataPET.name,
+    const squaredEuclideanDistanceToNonAirCTPromise =
+      blurredVolumeCTPromise
+        .then(blurredVolumeCT => euclideanDistanceTransform(
+          imageDataCT.name,
+          blurredVolumeCT,
+          imageDataCT.dimensions,
+          appData.environment.volumeMedia.bodyShell.transferFunction.interval.min,
+          CACHE
+        ));
+
+    const squaredEuclideanDistanceToNonAirPETPromise =
+      resampledVolumePETPromise
+        .then(resampledVolumePET => euclideanDistanceTransform(
+          imageDataPET.name,
+          resampledVolumePET,
+          imageDataCT.dimensions,
+          appData.environment.volumeMedia.pet.transferFunction.interval.min,
+          CACHE
+        ));
+
+    const [
+      blurredVolumeCT,
       resampledVolumePET,
-      imageDataCT.dimensions,
-      appData.environment.volumeMedia.pet.transferFunction.interval.min,
-      CACHE
-    );
+      squaredEuclideanDistanceToNonAirCT,
+      squaredEuclideanDistanceToNonAirPET,
+    ] = await Promise.all([
+      blurredVolumeCTPromise,
+      resampledVolumePETPromise,
+      squaredEuclideanDistanceToNonAirCTPromise,
+      squaredEuclideanDistanceToNonAirPETPromise,
+    ]);
 
     const interleavedVolumes = interleaveVolumeArrays(
       blurredVolumeCT,
@@ -169,9 +191,6 @@ window.onload = async function init()
       squaredEuclideanDistanceToNonAirPET
     );
 
-    // NOTE: when all 4 textures are interleaved and used in the volume texture,
-    // the application crashes with WebGL context loss.
-    // Needs further testing of (V)RAM stress and/or leaks.
     const volumeTexture = createVolumeTexture(gl, interleavedVolumes, imageDataCT.dimensions, 4);
 
     appData.environment.scene.geometries.push(createVolumeGeometry(
