@@ -131,7 +131,7 @@ window.onload = async function init()
     // NOTE: Consider using Web Workers
     // See: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
 
-    const blurredVolumeCT = blurVolume(imageDataCT.volume, imageDataCT.dimensions, 10);
+    const blurredVolumeCT = await blurVolume(imageDataCT.name, imageDataCT.volume, imageDataCT.dimensions, 10, CACHE);
 
     const squaredEuclideanDistanceToNonAirCT = await euclideanDistanceTransform(
       imageDataCT.name,

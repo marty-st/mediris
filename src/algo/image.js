@@ -15,6 +15,10 @@ const DATABASE_NAME_EDT = "DistanceTransformCache";
 const KEY_TYPE_EDT = "name";
 const STORE_NAME_EDT = "DistanceTransform";
 
+const DATABASE_NAME_BLUR = "BlurredVolumeCache";
+const KEY_TYPE_BLUR = "name";
+const STORE_NAME_BLUR = "BlurredVolume";
+
 // Numerical limits
 const UINT16_MAX = 1 << 15;
 
@@ -416,8 +420,20 @@ export function interleaveVolumeArrays(...volumeArrays)
  * @param {*} dimensions volume dimensions
  * @param {*} kernelSize convolution kernel size
  */
-export function blurVolume(volume, dimensions, kernelSize)
+export async function blurVolume(name, volume, dimensions, kernelSize, useCache)
 {
+  const start = startBenchmark("BLUR VOLUME", name);
+
+  if (useCache)
+  {
+    const cache = await getCache(DATABASE_NAME_BLUR, STORE_NAME_BLUR, KEY_TYPE_BLUR, name, DATABASE_VERSION);
+    if (cache)
+    {
+      endBenchmark("BLUR VOLUME", start, true, name);
+      return cache;
+    }
+  }
+
   const { rows: width, cols: height, layers: depth } = dimensions;
   const widthHeight = width * height;
   // const volumeSize = widthHeight * depth;
@@ -460,6 +476,11 @@ export function blurVolume(volume, dimensions, kernelSize)
   }
 
   volume = blurredVolume;
+
+  await setCache(DATABASE_NAME_BLUR, STORE_NAME_BLUR, KEY_TYPE_BLUR, name, volume, DATABASE_VERSION);
+
+  endBenchmark("BLUR VOLUME", start, false, name);
+
   return volume;
 }
 
