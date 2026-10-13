@@ -2,6 +2,7 @@
 
 import * as twgl from 'twgl.js';
 import fetchShaderTexts from '../file/shader.js';
+import { startBenchmark, endBenchmark } from '../app/log.js';
 
 /* GLOBAL VARIABLES */
 
@@ -53,7 +54,11 @@ export default async function createShaderProgram(gl, vertexShaderName, fragment
     fragmentShaderText,
   } = await fetchShaderTexts(shaderPath + vertexShaderNameParsed, shaderPath + fragmentShaderNameParsed, useCache);
 
+  const start = startBenchmark("GPU | SHADER PROGRAM", vertexShaderNameParsed, fragmentShaderNameParsed);
+
   const programInfo = twgl.createProgramInfo(gl, [vertexShaderText, fragmentShaderText]);
+
+  endBenchmark("GPU | SHADER PROGRAM", start);
 
   return programInfo;
 }
