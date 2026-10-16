@@ -22,33 +22,40 @@ export default function render(gl, canvas, viewport, scene, geometries)
 
   for (const geometry of geometries)
   {
-    gl.useProgram(geometry.programInfo.program);
-    gl.bindVertexArray(geometry.vao);
-
-    // Scene uniforms & UBOs
-    if (scene.uniforms)
-      twgl.setUniforms(geometry.programInfo, scene.uniforms);
-
-    if (scene.uniformBlock)
+    for (const draw of geometry.draws)
     {
-      twgl.setBlockUniforms(scene.uniformBlock.info, scene.uniformBlock.uniforms);
-      twgl.setUniformBlock(gl, geometry.programInfo, scene.uniformBlock.info);
-    }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, draw.frameBuffer);
+      gl.drawBuffers(draw.drawBuffers);
+      // NOTE: Maybe useful
+      // gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.useProgram(draw.programInfo.program);
+      gl.bindVertexArray(draw.vao);
 
-    // Geometry uniforms & UBOs
-    if (geometry.uniforms)
-      twgl.setUniforms(geometry.programInfo, geometry.uniforms);
+      // Scene uniforms & UBOs
+      if (scene.uniforms)
+        twgl.setUniforms(draw.programInfo, scene.uniforms);
 
-    if (geometry.uniformBlocks)
-    {
-      for (const uniformBlock of geometry.uniformBlocks)
+      if (scene.uniformBlock)
       {
-        twgl.setBlockUniforms(uniformBlock.info, uniformBlock.uniforms);
-        twgl.setUniformBlock(gl, geometry.programInfo, uniformBlock.info);
+        twgl.setBlockUniforms(scene.uniformBlock.info, scene.uniformBlock.uniforms);
+        twgl.setUniformBlock(gl, draw.programInfo, scene.uniformBlock.info);
       }
-    }
 
-    twgl.drawBufferInfo(gl, geometry.bufferInfo);
+      // Shader uniforms & UBOs
+      if (draw.uniforms)
+        twgl.setUniforms(draw.programInfo, draw.uniforms);
+
+      if (draw.uniformBlocks)
+      {
+        for (const uniformBlock of draw.uniformBlocks)
+        {
+          twgl.setBlockUniforms(uniformBlock.info, uniformBlock.uniforms);
+          twgl.setUniformBlock(gl, draw.programInfo, uniformBlock.info);
+        }
+      }
+
+      twgl.drawBufferInfo(gl, draw.bufferInfo);
+    }
   }
 
   gl.bindVertexArray(null);

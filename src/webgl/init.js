@@ -51,6 +51,8 @@ export function initGLStates(gl)
   gl.clearColor(0.25, 0.25, 0.25, 1.0);
   gl.enable(gl.SCISSOR_TEST);
 
+  gl.getExtension("EXT_color_buffer_float");
+
   twgl.setDefaults({
     attribPrefix: "i_",
   });

@@ -100,10 +100,14 @@ const LAMBERT = { value: 3, key: "lambert" };
 const NORMAL = { value: 4, key: "normal" };
 const POSITION = { value: 5, key: "position" };
 
+const CHANNEL_SHELL = 0;
+const CHANNEL_PET = 0;
+// const CHANNEL_BONES = 1
+
 const volumeMedia = {
   bodyShell: {
     enabled: { value: true },
-    channel: "ct",
+    channel: CHANNEL_SHELL,
     transferFunction: initTransferFunctionProperties(tf.bodyShell),
     shading: [
       {
@@ -122,7 +126,7 @@ const volumeMedia = {
   },
   pet: {
     enabled: { value: true },
-    channel: "pet",
+    channel: CHANNEL_PET,
     transferFunction: initTransferFunctionProperties(tf.pet),
     shading: [
       {

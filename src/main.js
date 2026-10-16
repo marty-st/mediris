@@ -29,7 +29,10 @@ const appData = initAppData();
 
 let sceneEmpty = undefined;
 let idleGeometries = undefined;
-let frameBuffer = undefined;
+let raytraceFrameBuffer = undefined;
+let shadeShellFrameBuffer = undefined;
+let shadePETFrameBuffer = undefined;
+let blendFrameBuffer = undefined;
 
 // Wrapper object for the UI controls & GUI, managed by the UI manager
 let UI = undefined;
@@ -37,7 +40,9 @@ let UI = undefined;
 // Shader program file names
 const loadingScreenShaderNames = { vert: "fsquad", frag: "fstexture" };
 const idleShaderNames = { vert: "fsquad", frag: "fstexture" };
-const mainShaderNames = { vert: "fsquad", frag: "raytrace" };
+const raytraceShaderNames = { vert: "fsquad", frag: "raytrace" };
+const shadeShaderNames = { vert: "fsquad", frag: "shade" };
+const blendShaderNames = { vert: "fsquad", frag: "blend" };
 
 // FILE PRELOAD
 // Load DICOM during module load
@@ -78,7 +83,10 @@ window.onload = async function init()
 
   const loadingScreenProgramInfo = await createShaderProgram(gl, loadingScreenShaderNames.vert, loadingScreenShaderNames.frag, NO_CACHE);
   const idleShaderProgramInfo = await createShaderProgram(gl, idleShaderNames.vert, idleShaderNames.frag, NO_CACHE);
-  const volumeProgramInfo = await createShaderProgram(gl, mainShaderNames.vert, mainShaderNames.frag, NO_CACHE);
+  const raytraceProgramInfo = await createShaderProgram(gl, raytraceShaderNames.vert, raytraceShaderNames.frag, NO_CACHE);
+  const shadeProgramInfoCT = await createShaderProgram(gl, shadeShaderNames.vert, shadeShaderNames.frag, NO_CACHE);
+  const shadeProgramInfoPET = await createShaderProgram(gl, shadeShaderNames.vert, shadeShaderNames.frag, NO_CACHE);
+  const blendProgramInfo = await createShaderProgram(gl, blendShaderNames.vert, blendShaderNames.frag, NO_CACHE);
 
   /* --------------------- */
   /* DATA INITIALIZATION - */
@@ -117,18 +125,24 @@ window.onload = async function init()
     render(gl, canvas, appData.environment.viewport, sceneEmpty, [loadingScreenGeometry]);
   });
 
-  const renderTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
-  const heatmapTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
+  const blendTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
+  const colorTextureShell = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
+  const colorTexturePET = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
   const depthTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "depth");
+  const samplePointTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "float");
+  const heatmapTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
 
-  frameBuffer = createFramebuffer(gl, { color: [renderTexture, heatmapTexture], depth: depthTexture });
+  raytraceFrameBuffer = createFramebuffer(gl, { color: [samplePointTexture, heatmapTexture], depth: depthTexture });
+  shadeShellFrameBuffer = createFramebuffer(gl, { color: [colorTextureShell], depth: depthTexture });
+  shadePETFrameBuffer = createFramebuffer(gl, { color: [colorTexturePET], depth: depthTexture });
+  blendFrameBuffer = createFramebuffer(gl, { color: [blendTexture], depth: depthTexture });
 
   idleGeometries = [
     createFullScreenGeometry(
       gl,
       idleShaderProgramInfo,
       idleShaderNames,
-      renderTexture
+      blendTexture
     ),
     createFullScreenGeometry(
       gl,
@@ -197,20 +211,47 @@ window.onload = async function init()
       squaredEuclideanDistanceToNonAirPETPromise,
     ]);
 
-    const interleavedVolumes = interleaveVolumeArrays(
+    const interleavedVolumesCT = interleaveVolumeArrays(
       blurredVolumeCT,
+      squaredEuclideanDistanceToNonAirCT
+    );
+
+    const interleavedVolumesPET = interleaveVolumeArrays(
       resampledVolumePET,
-      squaredEuclideanDistanceToNonAirCT,
       squaredEuclideanDistanceToNonAirPET
     );
 
-    const volumeTexture = createVolumeTexture(gl, interleavedVolumes, imageDataCT.dimensions, 4);
+    const volumeTextureCT = createVolumeTexture(gl, interleavedVolumesCT, imageDataCT.dimensions, 2);
+    const volumeTexturePET = createVolumeTexture(gl, interleavedVolumesPET, imageDataCT.dimensions, 2);
 
     appData.environment.scene.geometries.push(createVolumeGeometry(
       gl,
-      volumeProgramInfo,
-      mainShaderNames,
-      volumeTexture,
+      {
+        raytrace: {
+          shaderProgramInfo: raytraceProgramInfo,
+          shaderFileNames: raytraceShaderNames,
+          frameBuffer: raytraceFrameBuffer,
+          textureUniforms: { volumeTextureCT, volumeTexturePET },
+        },
+        shadeShell: {
+          shaderProgramInfo: shadeProgramInfoCT,
+          shaderFileNames: shadeShaderNames,
+          frameBuffer: shadeShellFrameBuffer,
+          textureUniforms: { volumeTextureCT, samplePointTexture },
+        },
+        shadePET: {
+          shaderProgramInfo: shadeProgramInfoPET,
+          shaderFileNames: shadeShaderNames,
+          frameBuffer: shadePETFrameBuffer,
+          textureUniforms: { volumeTexturePET, samplePointTexture },
+        },
+        blend: {
+          shaderProgramInfo: blendProgramInfo,
+          shaderFileNames: blendShaderNames,
+          frameBuffer: blendFrameBuffer,
+          textureUniforms: { colorTextureShell, colorTexturePET },
+        },
+      },
       appData.environment.volumeMedia
     ));
 
@@ -270,9 +311,8 @@ function renderLoop(currentTime)
   const environment = appData.environment;
 
   // Prepare idle framebuffer - fully render the scene
-  if (!environment.state.idleRender)
+  // if (!environment.state.idleRender)
   {
-    context.gl.bindFramebuffer(context.gl.FRAMEBUFFER, frameBuffer);
     render(context.gl, context.canvas, environment.viewport, environment.scene, environment.scene.geometries);
   }
 

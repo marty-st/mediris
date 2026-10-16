@@ -155,7 +155,7 @@ export function createVolumeMediaUniformBlock(flatVolumeMedia, flatShading, flat
       tf_index: flatTransferFunction.findIndex(ftf => medium.transferFunction === ftf),
       shd_indices: medium.shading.map(s => flatShading.findIndex(fs => s === fs)),
       shading_count: medium.shading.length,
-      channel: medium.channel === "ct" ? 0 : 1,
+      channel: medium.channel,
       enabled: undefined,
     };
 

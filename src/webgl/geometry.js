@@ -51,40 +51,19 @@ export function createFullScreenGeometry(gl, shaderProgramInfo, shaderFileNames,
   const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
 
   return {
-    bufferInfo: fullScreenQuadBufferInfo,
-    vao: emptyVAO,
-    programInfo: shaderProgramInfo,
-    shaderFileNames: shaderFileNames,
-    uniforms: {
-      u_texture: texture,
-    },
-  };
-}
-
-/**
- * Creates a geometry object compatible with the rendering pipeline.
- * @param {*} gl WebGL rendering context
- * @param {*} shaderProgramInfo associated shader program
- * @param {*} shaderFileNames contains file names of associated shaders for reload purposes
- * @param {*} volumeTexture volume data 3D texture
- * @param {*} dimensions dimensions of provided volume texture
- * @param {*} appData object with application data - settings, environment, etc.
- * @returns geometry object of the volume for individual slice rendering
- */
-export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimensions, appData)
-{
-  const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
-  const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
-
-  return {
-    bufferInfo: fullScreenQuadBufferInfo,
-    vao: emptyVAO,
-    programInfo: shaderProgramInfo,
-    uniforms: {
-      u_volume_texture: volumeTexture,
-      u_slice_number: appData.settings.slice,
-      u_slice_count: dimensions.layers,
-    },
+    draws: [
+      {
+        frameBuffer: null,
+        drawBuffers: [gl.BACK],
+        bufferInfo: fullScreenQuadBufferInfo,
+        vao: emptyVAO,
+        programInfo: shaderProgramInfo,
+        shaderFileNames: shaderFileNames,
+        uniforms: {
+          u_texture: texture,
+        },
+      },
+    ],
   };
 }
 
@@ -97,93 +76,142 @@ export function createSliceGeometry(gl, shaderProgramInfo, volumeTexture, dimens
  * @param {*} transferFunction transfer function object from application data
  * @returns geometry object of the volume for 3D volume rendering
  */
-export function createVolumeGeometry(gl, shaderProgramInfo, shaderFileNames, volumeTexture, volumeMedia)
+export function createVolumeGeometry(gl, drawInfo, volumeMedia)
 {
   const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
-  const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
+  const emptyVAO = twgl.createVAOFromBufferInfo(gl, drawInfo.raytrace.shaderProgramInfo, fullScreenQuadBufferInfo);
   const bbox_min = vec3.fromValues(-1, -1, -1);
   const bbox_max = vec3.fromValues(1, 1, 1);
 
   const flatVolumeMedia = flattenVolumeMedia(volumeMedia);
 
   return {
-    bufferInfo: fullScreenQuadBufferInfo,
-    vao: emptyVAO,
-    programInfo: shaderProgramInfo,
-    shaderFileNames: shaderFileNames,
-    uniforms: {
-      // Volume Data
-      u_volume_texture: volumeTexture,
-      u_bbox_min: bbox_min,
-      u_bbox_max: bbox_max,
-    },
-    // Volume Media, their Shading Model, and Transfer Function
-    uniformBlocks: [
-      {
-        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "TransferFunction"),
-        uniforms: createTransferFunctionUniformBlock(flatVolumeMedia.tf),
+    draws: [
+      { // Raytrace Shell
+        frameBuffer: drawInfo.raytrace.frameBuffer,
+        drawBuffers: [gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1],
+        bufferInfo: fullScreenQuadBufferInfo,
+        vao: emptyVAO,
+        programInfo: drawInfo.raytrace.shaderProgramInfo,
+        shaderFileNames: drawInfo.raytrace.shaderFileNames,
+        uniforms: {
+          u_volume_texture: drawInfo.raytrace.textureUniforms.volumeTextureCT,
+          u_bbox_min: bbox_min,
+          u_bbox_max: bbox_max,
+        },
+        uniformBlocks: [
+          {
+            info: twgl.createUniformBlockInfo(gl, drawInfo.raytrace.shaderProgramInfo, "TransferFunction"),
+            uniforms: createTransferFunctionUniformBlock(flatVolumeMedia.tf),
+          },
+          {
+            info: twgl.createUniformBlockInfo(gl, drawInfo.raytrace.shaderProgramInfo, "VolumeMedia"),
+            uniforms: createVolumeMediaUniformBlock(flatVolumeMedia.vm, flatVolumeMedia.shd, flatVolumeMedia.tf),
+          },
+        ],
       },
-      {
-        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "Lights"),
-        uniforms: createLightsUniformBlock(flatVolumeMedia.lights),
+      { // Shade Shell
+        frameBuffer: drawInfo.shadeShell.frameBuffer,
+        drawBuffers: [gl.COLOR_ATTACHMENT0],
+        bufferInfo: fullScreenQuadBufferInfo,
+        vao: emptyVAO,
+        programInfo: drawInfo.shadeShell.shaderProgramInfo,
+        shaderFileNames: drawInfo.shadeShell.shaderFileNames,
+        uniforms: {
+          u_volume_texture: drawInfo.shadeShell.textureUniforms.volumeTextureCT,
+          u_sample_point_texture: drawInfo.shadeShell.textureUniforms.samplePointTexture,
+        },
+        uniformBlocks: [
+          {
+            info: twgl.createUniformBlockInfo(gl, drawInfo.shadeShell.shaderProgramInfo, "TransferFunction"),
+            uniforms: createTransferFunctionUniformBlock(flatVolumeMedia.tf),
+          },
+          {
+            info: twgl.createUniformBlockInfo(gl, drawInfo.shadeShell.shaderProgramInfo, "Lights"),
+            uniforms: createLightsUniformBlock(flatVolumeMedia.lights),
+          },
+          {
+            info: twgl.createUniformBlockInfo(gl, drawInfo.shadeShell.shaderProgramInfo, "ShadingParameters"),
+            uniforms: createShadingParametersUniformBlock(flatVolumeMedia.params),
+          },
+          {
+            info: twgl.createUniformBlockInfo(gl, drawInfo.shadeShell.shaderProgramInfo, "Shadings"),
+            uniforms: createShadingUniformBlock(flatVolumeMedia.shd, flatVolumeMedia.params, flatVolumeMedia.lights),
+          },
+          {
+            info: twgl.createUniformBlockInfo(gl, drawInfo.shadeShell.shaderProgramInfo, "VolumeMedia"),
+            uniforms: createVolumeMediaUniformBlock(flatVolumeMedia.vm, flatVolumeMedia.shd, flatVolumeMedia.tf),
+          },
+        ],
       },
-      {
-        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "ShadingParameters"),
-        uniforms: createShadingParametersUniformBlock(flatVolumeMedia.params),
+      { // Raytrace PET
+        frameBuffer: drawInfo.raytrace.frameBuffer,
+        drawBuffers: [gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1],
+        bufferInfo: fullScreenQuadBufferInfo,
+        vao: emptyVAO,
+        programInfo: drawInfo.raytrace.shaderProgramInfo,
+        shaderFileNames: drawInfo.raytrace.shaderFileNames,
+        uniforms: {
+          u_volume_texture: drawInfo.raytrace.textureUniforms.volumeTexturePET,
+          u_bbox_min: bbox_min,
+          u_bbox_max: bbox_max,
+        },
+        uniformBlocks: [
+          {
+            info: twgl.createUniformBlockInfo(gl, drawInfo.raytrace.shaderProgramInfo, "TransferFunction"),
+            uniforms: createTransferFunctionUniformBlock(flatVolumeMedia.tf),
+          },
+          {
+            info: twgl.createUniformBlockInfo(gl, drawInfo.raytrace.shaderProgramInfo, "VolumeMedia"),
+            uniforms: createVolumeMediaUniformBlock(flatVolumeMedia.vm, flatVolumeMedia.shd, flatVolumeMedia.tf),
+          },
+        ],
       },
-      {
-        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "Shadings"),
-        uniforms: createShadingUniformBlock(flatVolumeMedia.shd, flatVolumeMedia.params, flatVolumeMedia.lights),
+      { // Shade PET
+        frameBuffer: drawInfo.shadePET.frameBuffer,
+        drawBuffers: [gl.COLOR_ATTACHMENT0],
+        bufferInfo: fullScreenQuadBufferInfo,
+        vao: emptyVAO,
+        programInfo: drawInfo.shadePET.shaderProgramInfo,
+        shaderFileNames: drawInfo.shadePET.shaderFileNames,
+        uniforms: {
+          u_volume_texture: drawInfo.shadePET.textureUniforms.volumeTexturePET,
+          u_sample_point_texture: drawInfo.shadePET.textureUniforms.samplePointTexture,
+        },
+        uniformBlocks: [
+          {
+            info: twgl.createUniformBlockInfo(gl, drawInfo.shadePET.shaderProgramInfo, "TransferFunction"),
+            uniforms: createTransferFunctionUniformBlock(flatVolumeMedia.tf),
+          },
+          {
+            info: twgl.createUniformBlockInfo(gl, drawInfo.shadePET.shaderProgramInfo, "Lights"),
+            uniforms: createLightsUniformBlock(flatVolumeMedia.lights),
+          },
+          {
+            info: twgl.createUniformBlockInfo(gl, drawInfo.shadePET.shaderProgramInfo, "ShadingParameters"),
+            uniforms: createShadingParametersUniformBlock(flatVolumeMedia.params),
+          },
+          {
+            info: twgl.createUniformBlockInfo(gl, drawInfo.shadePET.shaderProgramInfo, "Shadings"),
+            uniforms: createShadingUniformBlock(flatVolumeMedia.shd, flatVolumeMedia.params, flatVolumeMedia.lights),
+          },
+          {
+            info: twgl.createUniformBlockInfo(gl, drawInfo.shadePET.shaderProgramInfo, "VolumeMedia"),
+            uniforms: createVolumeMediaUniformBlock(flatVolumeMedia.vm, flatVolumeMedia.shd, flatVolumeMedia.tf),
+          },
+        ],
       },
-      {
-        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "VolumeMedia"),
-        uniforms: createVolumeMediaUniformBlock(flatVolumeMedia.vm, flatVolumeMedia.shd, flatVolumeMedia.tf),
-      },
-    ],
-  };
-}
-
-/**
- * Creates a simple debug sphere.
- * @param {*} gl WebGL rendering context
- * @param {*} shaderProgramInfo associated shader program
- * @param {*} shaderFileNames contains file names of associated shaders for reload purposes
- * @param {*} transferFunction transfer function object from application data
- * @returns geometry object of the sphere
- */
-export function createSphereGeometry(gl, shaderProgramInfo, shaderFileNames, volumeMedia)
-{
-  const fullScreenQuadBufferInfo = twgl.createBufferInfoFromArrays(gl, fullScreenQuadArrays);
-  const emptyVAO = twgl.createVAOFromBufferInfo(gl, shaderProgramInfo, fullScreenQuadBufferInfo);
-
-  const flatVolumeMedia = flattenVolumeMedia(volumeMedia);
-
-  return {
-    bufferInfo: fullScreenQuadBufferInfo,
-    vao: emptyVAO,
-    programInfo: shaderProgramInfo,
-    shaderFileNames: shaderFileNames,
-    // Volume Media, their Shading Model, and Transfer Function
-    uniformBlocks: [
-      {
-        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "TransferFunction"),
-        uniforms: createTransferFunctionUniformBlock(flatVolumeMedia.tf),
-      },
-      {
-        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "Lights"),
-        uniforms: createLightsUniformBlock(flatVolumeMedia.lights),
-      },
-      {
-        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "ShadingParameters"),
-        uniforms: createShadingParametersUniformBlock(flatVolumeMedia.params),
-      },
-      {
-        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "Shadings"),
-        uniforms: createShadingUniformBlock(flatVolumeMedia.shd, flatVolumeMedia.params, flatVolumeMedia.lights),
-      },
-      {
-        info: twgl.createUniformBlockInfo(gl, shaderProgramInfo, "VolumeMedia"),
-        uniforms: createVolumeMediaUniformBlock(flatVolumeMedia.vm, flatVolumeMedia.shd, flatVolumeMedia.tf),
+      { // Blend
+        frameBuffer: drawInfo.blend.frameBuffer,
+        drawBuffers: [gl.COLOR_ATTACHMENT0],
+        bufferInfo: fullScreenQuadBufferInfo,
+        vao: emptyVAO,
+        programInfo: drawInfo.blend.shaderProgramInfo,
+        shaderFileNames: drawInfo.blend.shaderFileNames,
+        uniforms: {
+          u_texture_shell: drawInfo.blend.textureUniforms.colorTextureShell,
+          u_texture_pet: drawInfo.blend.textureUniforms.colorTexturePET,
+        },
       },
     ],
   };
