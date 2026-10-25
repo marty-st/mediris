@@ -17,7 +17,7 @@ const hu = {
   muscle: { min: 35 + C, max: 55 + C },
   softTissueContrast: { min: 100 + C, max: 300 + C },
   boneCancellous: { min: 300 + C, max: 400 + C },
-  boneCortical: { min: 350 + C, max: 1900 + C }, // USE min: -440 for skin layer, 350 for the bone
+  boneCortical: { min: 200 + C, max: 1900 + C }, // USE min: -440 for skin layer, 350 for the bone
   pet: { min: 5000 + C, max: 40000 + C },
 
 };
@@ -31,7 +31,7 @@ const tf = {
   // muscle: { interval: hu.muscle, color: { r: 0.46, g: 0.02, b: 0.02, a: 0.00 } },
   // softTissueContrast: { interval: hu.softTissueContrast, color: { r: 0.66, g: 0.36, b: 0.52, a: 0.00 } },
   // boneCancellous: { interval: hu.boneCancellous, color: { r: 0.41, g: 0.66, b: 0.17, a: 0.0 } },
-  // boneCortical: { interval: hu.boneCortical, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 } },
+  boneCortical: { interval: hu.boneCortical, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, options: { min: 1000, max: 4100, step: 1 } },
   bodyShell: { interval: { min: hu.skin.min, max: hu.boneCortical.max }, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, options: { min: 50, max: 3000, step: 1 } },
   pet: { interval: hu.pet, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, options: { min: 3000, max: 40000, step: 1 } },
 };
@@ -101,8 +101,8 @@ const NORMAL = { value: 4, key: "normal" };
 const POSITION = { value: 5, key: "position" };
 
 const CHANNEL_SHELL = 0;
+const CHANNEL_BONE = 0;
 const CHANNEL_PET = 0;
-// const CHANNEL_BONES = 1
 
 const volumeMedia = {
   bodyShell: {
@@ -134,6 +134,25 @@ const volumeMedia = {
         model: structuredClone(NORMAL),
         parameters: structuredClone(shadingModel),
         enabled: { value: true },
+      },
+    ],
+  },
+  bone: {
+    enabled: { value: true },
+    channel: CHANNEL_BONE,
+    transferFunction: initTransferFunctionProperties(tf.boneCortical),
+    shading: [
+      {
+        lights: initLightsProperties(lights.backLight),
+        model: structuredClone(STYLIZED),
+        parameters: structuredClone(shadingModel),
+        enabled: { value: true },
+      },
+      {
+        lights: initLightsProperties(lights.keyLight, lights.fillLight),
+        model: structuredClone(STYLIZED),
+        parameters: structuredClone(shadingModel),
+        enabled: { value: false },
       },
     ],
   },

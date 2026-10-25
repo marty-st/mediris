@@ -18,16 +18,14 @@ export default function render(gl, canvas, viewport, scene, geometries)
   gl.viewport(viewport.leftX, viewport.bottomY, viewport.width, viewport.height);
   gl.scissor(viewport.leftX, viewport.bottomY, viewport.width, viewport.height);
 
-  gl.clear(gl.COLOR_BUFFER_BIT);
-
   for (const geometry of geometries)
   {
     for (const draw of geometry.draws)
     {
       gl.bindFramebuffer(gl.FRAMEBUFFER, draw.frameBuffer);
       gl.drawBuffers(draw.drawBuffers);
-      // NOTE: Maybe useful
-      // gl.clear(gl.COLOR_BUFFER_BIT);
+      // NOTE: Shouldn't be executed always (?)
+      gl.clear(gl.COLOR_BUFFER_BIT);
       gl.useProgram(draw.programInfo.program);
       gl.bindVertexArray(draw.vao);
 

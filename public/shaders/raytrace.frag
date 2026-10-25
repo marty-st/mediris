@@ -7,13 +7,14 @@ precision mediump sampler3D;
 // Math
 #define PI 3.14159265358979323846
 // Array size
-#define MAX_TF_ARRAY_SIZE 2
+#define MAX_TF_ARRAY_SIZE 3
 #define MAX_SHADING_INDICES 2
 // Render mode
 const int DICOM = 0;
 const int SPHERE_DEBUG = 1;
 // Variable macros
 #define DISTANCE_MAP_CHANNEL g
+#define TRAVEL_DISTANCE_CHANNEL a
 
 /* -------DEFINITIONS------- */
 /* ------------------------- */
@@ -62,6 +63,7 @@ struct VolumeMedium
 /* -----LOCAL VARIABLES----- */
 /* ------------------------- */
 const Hit miss = Hit(1e20, 1e20, vec3(0.0), vec3(0.0));
+const vec4 no_sample_point = vec4(1e10, 1e10, 1e10, -1.0);
 int heat_counter = 0;
 
 /* ----------INPUT---------- */
@@ -72,6 +74,8 @@ in VaryingData var;
 /* ------------------------- */
 // Render mode
 uniform int u_mode;
+// Previous ray-trace pass sample point texture
+uniform sampler2D u_end_sample_point_texture;
 // Volume data texture
 uniform sampler3D u_volume_texture;
 // Bounding box lower left corner
@@ -80,6 +84,10 @@ uniform vec3 u_bbox_min;
 uniform vec3 u_bbox_max;
 // Ray Tracing
 uniform float u_step_size;
+// Volume Medium index
+uniform int u_vm_index;
+// Early stop
+uniform bool u_use_early_stop_texture;
 // Debug
 uniform float u_heatmap_div;
 // Camera uniforms
@@ -216,9 +224,11 @@ vec2 get_medium_interval(int vm_index)
 	}
 }
 
-vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_normal, float volume_travel_distance)
+vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, float volume_travel_distance)
 {
 	vec4 sample_point = vec4(first_interesection, -1.0);
+
+	float max_volume_travel_distance = volume_travel_distance;
 
 	while (volume_travel_distance >= 0.0)
 	{
@@ -239,27 +249,21 @@ vec4 sample_volume(vec3 ray_direction, vec3 first_interesection, vec3 surface_no
 		}
 
 		// TODO: send vms that are relevant for this raytrace pass
-		for(int i = 0; i < vm.array_size; ++i)
-		{
-			// NOTE: Option to not send disabled media to the GPU for performance improvement
-			if (!vm.array[i].enabled)
-				continue;
+		// NOTE: Option to not send disabled media to the GPU for performance improvement
+		if (!vm.array[u_vm_index].enabled)
+			return no_sample_point;
 
-			vec2 medium_itv = get_medium_interval(i);
-			int medium_channel = vm.array[i].channel;
+		vec2 medium_itv = get_medium_interval(u_vm_index);
+		int medium_channel = vm.array[u_vm_index].channel;
 
-			if (float_sample_color[medium_channel] < medium_itv.x || float_sample_color[medium_channel] >= medium_itv.y)
-				continue;
-			else
-				return vec4(sample_point.xyz, 1.0);
-
-		}
+		if (float_sample_color[medium_channel] >= medium_itv.x && float_sample_color[medium_channel] < medium_itv.y)
+			return vec4(sample_point.xyz, max_volume_travel_distance - volume_travel_distance);
 
 		sample_point.xyz += ray_direction * u_step_size;
 		volume_travel_distance -= u_step_size;
 	}
 
-	return vec4(1e10, 1e10, 1e10, -1.0);
+	return no_sample_point;
 }
 
 // Traces the ray trough the scene and accumulates the color.
@@ -267,20 +271,27 @@ vec4 trace(Ray ray)
 {
   int bounces = 0;
 
-	vec4 sample_point = vec4(1e10, 1e10, 1e10, -1.0);
+	vec4 sample_point = no_sample_point;
 
 	for (int i = 0; i < bounces + 1; ++i) 
 	{
 		Hit hit = evaluate(ray);
-
-		// First intersection depth, costs some perfomance
-		if (i == 0) 
-			gl_FragDepth = (1.0 / hit.t_first - 1.0) / -0.999; // (1.0 / hit.t - 1.0 / near) / (1.0 / far - 1.0 / near)
 		
 		if (hit.t_first == miss.t_first)
 			break;
+
+		float cube_travel_distance = hit.t_last - hit.t_first;
+		float early_stop_distance = 1e10;
+
+		// Stop at other opaque medium
+		if (u_use_early_stop_texture)
+		{
+			float travel_distance = texture(u_end_sample_point_texture, var.tex_coord).TRAVEL_DISTANCE_CHANNEL;
+			if (travel_distance >= 0.0)
+				early_stop_distance = travel_distance;
+		}
     
-		sample_point = sample_volume(ray.direction, hit.intersection, hit.normal, hit.t_last - hit.t_first);
+		sample_point = sample_volume(ray.direction, hit.intersection, min(cube_travel_distance, early_stop_distance));
   }
 
   return sample_point;

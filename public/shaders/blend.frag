@@ -26,6 +26,7 @@ in VaryingData var;
 // Textures
 uniform sampler2D u_texture_shell;
 uniform sampler2D u_texture_pet;
+uniform sampler2D u_texture_bone;
 // Camera uniforms
 uniform vec3 u_eye_position;
 uniform mat4 u_view_inv;
@@ -40,12 +41,14 @@ void main()
   vec3 ray_origin = (u_view_inv * u_projection_inv * vec4(var.tex_coord * 2.0 - 1.0, -1.0, 1.0)).xyz;
   vec3 ray_direction = normalize(ray_origin - u_eye_position);
 
+  // Color textures
   vec4 shell = texture(u_texture_shell, var.tex_coord);
   vec4 pet = texture(u_texture_pet, var.tex_coord);
+  vec4 bone = texture(u_texture_bone, var.tex_coord);
 
   // Blend
-  o_color.rgb = shell.rgb + pet.rgb * (1.0 - shell.a);
-  o_color.a = shell.a + pet.a * (1.0 - shell.a);
+  o_color.rgb = shell.rgb + bone.rgb * (1.0 - shell.a) + pet.rgb * (1.0 - shell.a - bone.a);
+  o_color.a = shell.a + bone.a * (1.0 - shell.a) + pet.a * (1.0 - shell.a - bone.a);
 
   // Background
   vec4 background_color = ray_direction.y > 0.0 ? SKY_COLOR: GROUND_COLOR;
