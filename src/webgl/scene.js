@@ -14,14 +14,21 @@ export async function reloadShaders(gl, scene)
 {
   for (const geometry of scene.geometries)
   {
-    const shader = geometry.shaderFileNames;
-
-    geometry.programInfo = await createShaderProgram(gl, shader.vert, shader.frag, false);
-
-    if (geometry.uniformBlock)
+    for (const draw of geometry.draws)
     {
-      const blockName = geometry.uniformBlock.info.name;
-      geometry.uniformBlock.info = twgl.createUniformBlockInfo(gl, geometry.programInfo, blockName);
+      const shader = draw.shaderFileNames;
+
+      draw.programInfo = await createShaderProgram(gl, shader.vert, shader.frag, false);
+
+      if (draw.uniformBlocks)
+      {
+        for (const uniformBlock of draw.uniformBlocks)
+        {
+          const blockName = uniformBlock.info.name;
+          uniformBlock.info = twgl.createUniformBlockInfo(gl, draw.programInfo, blockName);
+        }
+      }
+
     }
   }
 
