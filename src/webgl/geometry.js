@@ -96,6 +96,7 @@ export function createVolumeGeometry(gl, drawInfo, volumeMedia)
         shaderFileNames: drawInfo.raytracePET.shaderFileNames,
         uniforms: {
           u_volume_texture: drawInfo.raytracePET.textureUniforms.volumeTexturePET,
+          u_end_sample_point_texture: null,
           u_bbox_min: bbox_min,
           u_bbox_max: bbox_max,
           u_vm_index: 1,
