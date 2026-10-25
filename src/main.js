@@ -135,11 +135,13 @@ window.onload = async function init()
   const samplePointTextureShell = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "float");
   const samplePointTexturePET = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "float");
   const samplePointTextureBone = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "float");
-  const heatmapTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
+  const heatmapTextureShell = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
+  const heatmapTexturePET = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
+  const heatmapTextureBone = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
 
-  raytraceShellFrameBuffer = createFramebuffer(gl, { color: [samplePointTextureShell, heatmapTexture], depth: depthTexture });
-  raytracePETFrameBuffer = createFramebuffer(gl, { color: [samplePointTexturePET, heatmapTexture], depth: depthTexture });
-  raytraceBoneFrameBuffer = createFramebuffer(gl, { color: [samplePointTextureBone, heatmapTexture], depth: depthTexture });
+  raytraceShellFrameBuffer = createFramebuffer(gl, { color: [samplePointTextureShell, heatmapTextureShell], depth: depthTexture });
+  raytracePETFrameBuffer = createFramebuffer(gl, { color: [samplePointTexturePET, heatmapTexturePET], depth: depthTexture });
+  raytraceBoneFrameBuffer = createFramebuffer(gl, { color: [samplePointTextureBone, heatmapTextureBone], depth: depthTexture });
   shadeShellFrameBuffer = createFramebuffer(gl, { color: [colorTextureShell], depth: depthTexture });
   shadePETFrameBuffer = createFramebuffer(gl, { color: [colorTexturePET], depth: depthTexture });
   shadeBoneFrameBuffer = createFramebuffer(gl, { color: [colorTextureBone], depth: depthTexture });
@@ -156,7 +158,19 @@ window.onload = async function init()
       gl,
       idleShaderProgramInfo,
       idleShaderNames,
-      heatmapTexture
+      heatmapTextureShell
+    ),
+    createFullScreenGeometry(
+      gl,
+      idleShaderProgramInfo,
+      idleShaderNames,
+      heatmapTexturePET
+    ),
+    createFullScreenGeometry(
+      gl,
+      idleShaderProgramInfo,
+      idleShaderNames,
+      heatmapTextureBone
     ),
   ];
 
@@ -360,19 +374,8 @@ function renderLoop(currentTime)
   }
 
   // Idle render
-  context.gl.bindFramebuffer(context.gl.FRAMEBUFFER, null);
-
-  switch (appData.settings.uniforms.debug.u_output.value)
-  {
-    case 0: // FINAL
-      render(context.gl, context.canvas, environment.viewport, sceneEmpty, idleGeometries.slice(0, 1));
-      break;
-    case 1: // HEATMAP
-      render(context.gl, context.canvas, environment.viewport, sceneEmpty, idleGeometries.slice(1, 2));
-      break;
-    default:
-      render(context.gl, context.canvas, environment.viewport, sceneEmpty, idleGeometries);
-  }
+  const output = appData.settings.uniforms.debug.u_output.value;
+  render(context.gl, context.canvas, environment.viewport, sceneEmpty, idleGeometries.slice(output, output + 1));
 
   // State reset
   updatePostFrame();

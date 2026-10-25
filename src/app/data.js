@@ -200,7 +200,7 @@ const settings = {
       u_curvature_delta_multiplier: { value: 4.0, options: { min: 0.5, max: 6.0, step: 0.1 } },
     },
     debug: {
-      u_output: { value: 0, options: { isList: true, final: 0, heatmap: 1 } },
+      u_output: { value: 0, options: { isList: true, final: 0, heatmapShell: 1, heatmapPET: 2, heatmapBone: 3 } },
       u_heatmap_div: { value: 32.0, options: { min: 1.0, max: 128.0, step: 1 } },
     },
   },
