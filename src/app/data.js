@@ -31,9 +31,9 @@ const tf = {
   // muscle: { interval: hu.muscle, color: { r: 0.46, g: 0.02, b: 0.02, a: 0.00 } },
   // softTissueContrast: { interval: hu.softTissueContrast, color: { r: 0.66, g: 0.36, b: 0.52, a: 0.00 } },
   // boneCancellous: { interval: hu.boneCancellous, color: { r: 0.41, g: 0.66, b: 0.17, a: 0.0 } },
-  boneCortical: { interval: hu.boneCortical, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, options: { min: 1000, max: 4100, step: 1 } },
+  boneCortical: { interval: hu.boneCortical, color: { r: 0.00, g: 0.34, b: 0.97, a: 1.00 }, options: { min: 1000, max: 4100, step: 1 } },
   bodyShell: { interval: { min: hu.skin.min, max: hu.boneCortical.max }, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, options: { min: 50, max: 3000, step: 1 } },
-  pet: { interval: hu.pet, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, options: { min: 3000, max: 40000, step: 1 } },
+  pet: { interval: hu.pet, color: { r: 1.00, g: 0.00, b: 0.00, a: 1.00 }, options: { min: 3000, max: 40000, step: 1 } },
 };
 
 // Lights Setup
@@ -157,6 +157,9 @@ const volumeMedia = {
     ],
   },
 };
+
+volumeMedia.bone.shading[0].parameters.stylized.u_tau.value = 0.68;
+volumeMedia.pet.shading[0].parameters.stylized.u_tau.value = 1.0;
 
 // Application time keeping
 const time = {
