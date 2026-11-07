@@ -5,10 +5,10 @@ precision mediump sampler2D;
 /* --------CONSTANTS-------- */
 /* ------------------------- */
 // Colors
-const vec4 GROUND_COLOR = vec4(0.15, 0.2, 0.2, 1.0);
-const vec4 SKY_COLOR = vec4(0.36f, 0.64f, 0.64f, 1.0f);
-const vec4 DIRECTION_COLOR = vec4(0.54f, 0.25f, 0.5f, 1.0f);
-const vec4 DIRECTION_COLOR2 = vec4(0.83f, 0.54f, 0.09f, 1.0f);
+const vec4 GROUND_COLOR = vec4(0.38f, 0.48f, 0.22f, 1.0f);
+const vec4 SKY_COLOR = vec4(0.83f, 0.54f, 0.09f, 1.0f);
+const vec4 DIRECTION_COLOR = vec4(0.68f, 0.2f, 0.62f, 1.0f);
+const vec4 DIRECTION_COLOR2 = vec4(0.0f, 0.35f, 1.0f, 1.0f);
 
 /* -------DEFINITIONS------- */
 /* ------------------------- */
@@ -51,10 +51,24 @@ void main()
   o_color.a = shell.a + bone.a * (1.0 - shell.a) + pet.a * (1.0 - shell.a - bone.a);
 
   // Background
-  vec4 background_color = ray_direction.y > 0.0 ? SKY_COLOR: GROUND_COLOR;
-	background_color = mix(vec4(0.7, 0.7, 0.7, 1.0), background_color, smoothstep(0.0, 1.0, abs(ray_direction.y)));
-	if (ray_direction.x > 0.0)
-		background_color = mix(background_color, DIRECTION_COLOR, ray_direction.x);
+  vec2 horizontal_ray = normalize(vec2(ray_direction.x, ray_direction.z));
+  vec2 direction_normal = normalize(vec2(-1.0, 1.0));
+
+  // dot product (-1,1) -> (0,1)
+  float transformed_dot = (dot(horizontal_ray, direction_normal) + 1.0) * 0.5;
+
+  vec4 background_color = mix(
+    DIRECTION_COLOR2,
+    DIRECTION_COLOR,
+    smoothstep(0.0, 1.0, transformed_dot)
+  );
+
+  vec4 vertical_color = ray_direction.y > 0.0 ? SKY_COLOR : GROUND_COLOR;
+  background_color = mix(
+    background_color,
+    vertical_color,
+    smoothstep(0.3, 0.7, abs(ray_direction.y))
+  );
 
   o_color.rgb += background_color.rgb * (1.0 - o_color.a);
   o_color.a = 1.0;
