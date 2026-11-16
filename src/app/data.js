@@ -51,6 +51,12 @@ const lights = {
     enabled: { value: true },
   },
   backLight: {
+    position: { x: 0, y: 1, z: 1, options: { min: -1, max: 1 } },
+    intensity: { value: 0.25, options: { min: 0, max: 1 } },
+    relativeToCamera: { value: false },
+    enabled: { value: true },
+  },
+  relativeBackLight: {
     position: { x: 0, y: 0, z: -10, options: { min: -10, max: 10 } }, // -10 hopes to be far enough to be behind the volume
     intensity: { value: 1.0, options: { min: 0, max: 1 } },
     relativeToCamera: { value: true },
@@ -111,13 +117,13 @@ const volumeMedia = {
     transferFunction: initTransferFunctionProperties(tf.bodyShell),
     shading: [
       {
-        lights: initLightsProperties(lights.backLight),
+        lights: initLightsProperties(lights.relativeBackLight),
         model: structuredClone(STYLIZED),
         parameters: structuredClone(shadingModel),
         enabled: { value: true },
       },
       {
-        lights: initLightsProperties(lights.keyLight, lights.fillLight),
+        lights: initLightsProperties(structuredClone(lights.keyLight), structuredClone(lights.fillLight)),
         model: structuredClone(STYLIZED),
         parameters: structuredClone(shadingModel),
         enabled: { value: false },
@@ -130,8 +136,20 @@ const volumeMedia = {
     transferFunction: initTransferFunctionProperties(tf.pet),
     shading: [
       {
-        lights: initLightsProperties(lights.keyLight),
-        model: structuredClone(NORMAL),
+        lights: initLightsProperties(structuredClone(lights.keyLight)),
+        model: structuredClone(STYLIZED),
+        parameters: structuredClone(shadingModel),
+        enabled: { value: true },
+      },
+      {
+        lights: initLightsProperties(structuredClone(lights.fillLight)),
+        model: structuredClone(STYLIZED),
+        parameters: structuredClone(shadingModel),
+        enabled: { value: true },
+      },
+      {
+        lights: initLightsProperties(structuredClone(lights.relativeBackLight)),
+        model: structuredClone(STYLIZED),
         parameters: structuredClone(shadingModel),
         enabled: { value: true },
       },
@@ -143,13 +161,13 @@ const volumeMedia = {
     transferFunction: initTransferFunctionProperties(tf.boneCortical),
     shading: [
       {
-        lights: initLightsProperties(lights.backLight),
+        lights: initLightsProperties(structuredClone(lights.relativeBackLight)),
         model: structuredClone(STYLIZED),
         parameters: structuredClone(shadingModel),
         enabled: { value: true },
       },
       {
-        lights: initLightsProperties(lights.keyLight, lights.fillLight),
+        lights: initLightsProperties(structuredClone(lights.keyLight), structuredClone(lights.fillLight)),
         model: structuredClone(STYLIZED),
         parameters: structuredClone(shadingModel),
         enabled: { value: false },
