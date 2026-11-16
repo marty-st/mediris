@@ -47,7 +47,6 @@ struct Hit
 
 struct TransferFunctionMedium
 {
-	vec4 color;
 	vec2 interval;
 };
 

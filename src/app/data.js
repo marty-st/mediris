@@ -24,16 +24,53 @@ const hu = {
 
 // Transfer Function Definition
 const tf = {
-  air: { interval: hu.air, color: { r: 0, g: 0, b: 0, a: 0 } },
+  // air: { interval: hu.air, color: { r: 0, g: 0, b: 0, a: 0 } },
   // lungs: { interval: hu.lungs, color: { r: 0.65, g: 0.35, b: 0.11, a: 0.00 } },
   // fat: { interval: hu.fat, color: { r: 0.82, g: 0.83, b: 0.18, a: 0.00 } },
   // water: { interval: hu.water, color: { r: 0.03, g: 0.49, b: 0.87, a: 0.00 } },
   // muscle: { interval: hu.muscle, color: { r: 0.46, g: 0.02, b: 0.02, a: 0.00 } },
   // softTissueContrast: { interval: hu.softTissueContrast, color: { r: 0.66, g: 0.36, b: 0.52, a: 0.00 } },
   // boneCancellous: { interval: hu.boneCancellous, color: { r: 0.41, g: 0.66, b: 0.17, a: 0.0 } },
-  boneCortical: { interval: hu.boneCortical, color: { r: 0.00, g: 0.34, b: 0.97, a: 1.00 }, options: { min: 1000, max: 4100, step: 1 } },
-  bodyShell: { interval: { min: hu.skin.min, max: hu.boneCortical.max }, color: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 }, options: { min: 50, max: 3000, step: 1 } },
-  pet: { interval: hu.pet, color: { r: 1.00, g: 0.00, b: 0.00, a: 1.00 }, options: { min: 3000, max: 40000, step: 1 } },
+  boneCortical: {
+    interval: hu.boneCortical,
+    colors: {
+      rim: { r: 0.00, g: 0.34, b: 0.97, a: 1.00 },
+      main: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 },
+    },
+    options: {
+      min: 1000,
+      max: 4100,
+      step: 1,
+    },
+  },
+  bodyShell: {
+    interval: {
+      min: hu.skin.min,
+      max: hu.boneCortical.max,
+    },
+    colors: {
+      rim: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 },
+      main: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 },
+    },
+    options: {
+      min: 50,
+      max: 3000,
+      step: 1,
+    },
+  },
+  pet: {
+    interval: hu.pet,
+    colors: {
+      main: { r: 1.00, g: 0.00, b: 0.00, a: 1.00 },
+      accent: { r: 0.83, g: 0.54, b: 0.09, a: 1.0 },
+      rim: { r: 0.88, g: 0.88, b: 0.88, a: 1.00 },
+    },
+    options: {
+      min: 3000,
+      max: 40000,
+      step: 1,
+    },
+  },
 };
 
 // Lights Setup
@@ -117,12 +154,14 @@ const volumeMedia = {
     transferFunction: initTransferFunctionProperties(tf.bodyShell),
     shading: [
       {
+        color: initColorProperties(tf.bodyShell.colors.rim),
         lights: initLightsProperties(lights.relativeBackLight),
         model: structuredClone(STYLIZED),
         parameters: structuredClone(shadingModel),
         enabled: { value: true },
       },
       {
+        color: initColorProperties(tf.bodyShell.colors.main),
         lights: initLightsProperties(structuredClone(lights.keyLight), structuredClone(lights.fillLight)),
         model: structuredClone(STYLIZED),
         parameters: structuredClone(shadingModel),
@@ -136,18 +175,21 @@ const volumeMedia = {
     transferFunction: initTransferFunctionProperties(tf.pet),
     shading: [
       {
+        color: initColorProperties(tf.pet.colors.main),
         lights: initLightsProperties(structuredClone(lights.keyLight)),
         model: structuredClone(STYLIZED),
         parameters: structuredClone(shadingModel),
         enabled: { value: true },
       },
       {
+        color: initColorProperties(tf.pet.colors.accent),
         lights: initLightsProperties(structuredClone(lights.fillLight)),
         model: structuredClone(STYLIZED),
         parameters: structuredClone(shadingModel),
         enabled: { value: true },
       },
       {
+        color: initColorProperties(tf.pet.colors.rim),
         lights: initLightsProperties(structuredClone(lights.relativeBackLight)),
         model: structuredClone(STYLIZED),
         parameters: structuredClone(shadingModel),
@@ -161,12 +203,14 @@ const volumeMedia = {
     transferFunction: initTransferFunctionProperties(tf.boneCortical),
     shading: [
       {
+        color: initColorProperties(tf.boneCortical.colors.rim),
         lights: initLightsProperties(structuredClone(lights.relativeBackLight)),
         model: structuredClone(STYLIZED),
         parameters: structuredClone(shadingModel),
         enabled: { value: true },
       },
       {
+        color: initColorProperties(tf.boneCortical.colors.main),
         lights: initLightsProperties(structuredClone(lights.keyLight), structuredClone(lights.fillLight)),
         model: structuredClone(STYLIZED),
         parameters: structuredClone(shadingModel),
@@ -241,13 +285,19 @@ function initTransferFunctionProperties(mediumTF)
 {
   const transferFunction = {
     interval: mediumTF.interval,
-    color: mediumTF.color,
     intervalVec: initIntervalVec(mediumTF),
-    colorVec: initColorVec(mediumTF),
     options: mediumTF.options,
   };
 
   return transferFunction;
+}
+
+function initColorProperties(color)
+{
+  return {
+    obj: color,
+    vec: initColorVec(color),
+  };
 }
 
 /**

@@ -57,17 +57,6 @@ function addTransferFunctionBinding(folder, GUIData)
       const { min, max } = event.value;
       vec2.set(medium.intervalVec, min, max);
     });
-
-  folder.addBinding(medium, "color", {
-    color: { type: "float" },
-    picker: "inline",
-    expanded: false,
-  })
-    .on('change', event =>
-    {
-      const { r, g, b, a } = event.value;
-      vec4.set(medium.colorVec, r, g, b, a);
-    });
 }
 
 function refreshTransferFunctionBinding(folder, GUIData)
@@ -145,6 +134,22 @@ function addShadingModelSelectBinding(index, folder, GUIData)
     });
 }
 
+function addshadingColorBinding(index, folder, GUIData)
+{
+  const shadingColor = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[index].color;
+
+  folder.addBinding(shadingColor, "obj", {
+    color: { type: "float" },
+    picker: "inline",
+    expanded: false,
+  })
+    .on('change', event =>
+    {
+      const { r, g, b, a } = event.value;
+      vec4.set(shadingColor.vec, r, g, b, a);
+    });
+}
+
 function addShadingModelParametersBindings(index, folder, GUIData)
 {
   const modelKey = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[index].model.key;
@@ -194,6 +199,7 @@ function addShadingModelBindings(index, folder, GUIData)
 {
   let enableModelBinding = addShadingModelEnableBinding(index, folder, GUIData);
   const modelSelectBinding = addShadingModelSelectBinding(index, folder, GUIData);
+  /* const shadingColorBinding = */ addshadingColorBinding(index, folder, GUIData);
   const folderP = addShadingModelParametersFolder(index, folder, GUIData);
   /* const folderLArray = */ addLightFolders(index, folder, GUIData);
 

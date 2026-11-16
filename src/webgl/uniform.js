@@ -18,7 +18,6 @@ export function createTransferFunctionUniformBlock(flatTransferFunction)
   for (const mediumTF of flatTransferFunction)
   {
     tf.array.push({
-      color: mediumTF.colorVec,
       interval: mediumTF.intervalVec,
     });
   }
@@ -111,6 +110,7 @@ export function createShadingUniformBlock(flatShading, flatShadingParameters, fl
     const shadingElement = {
       params_index: flatShadingParameters.findIndex(fsp => shading.parameters === fsp),
       light_indices: shading.lights.map(l => flatLights.findIndex(fl => l === fl)),
+      color: shading.color.vec,
       light_count: shading.lights.length,
       model: undefined,
       enabled: undefined,

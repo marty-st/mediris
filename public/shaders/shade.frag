@@ -43,7 +43,6 @@ struct Light
 
 struct TransferFunctionMedium
 {
-	vec4 color;
 	vec2 interval;
 };
 
@@ -74,8 +73,9 @@ struct ShadingModelParameters
 
 struct Shading
 {
-	int params_index;
 	int light_indices[MAX_LIGHT_INDICES];
+	vec4 color;
+	int params_index;
 	int light_count;
 	int model;
 	bool enabled;
@@ -83,8 +83,8 @@ struct Shading
 
 struct VolumeMedium
 {
-	int tf_index;
 	int shd_indices[MAX_SHADING_INDICES];
+	int tf_index;
 	int shading_count;
 	int channel;
 	bool enabled;
@@ -504,8 +504,18 @@ vec4 shade_stylized(int vm_index, int shd_index, vec4 medium_color, vec4 sample_
 	/*-------------*/
 }
 
+vec4 get_medium_color(int vm_index, int shd_index)
+{
+	switch(u_mode)
+	{
+		case DICOM:
+			return shd.array[vm.array[vm_index].shd_indices[shd_index]].color;
+		case SPHERE_DEBUG:
+			return shd.array[vm.array[vm_index].shd_indices[shd_index]].color; // TODO: index of 1 selected medium
+	}
+}
 
-vec4 shade(int vm_index, vec4 medium_color, vec4 sample_point, vec3 normal)
+vec4 shade(int vm_index, vec4 sample_point, vec3 normal)
 {
 	vec4 color = vec4(0.0);
 
@@ -517,6 +527,7 @@ vec4 shade(int vm_index, vec4 medium_color, vec4 sample_point, vec3 normal)
 			continue;
 	
 		int shading_model = SHADING.model;
+		vec4 medium_color = get_medium_color(vm_index, s);
 
 		switch(shading_model)
 		{
@@ -591,17 +602,6 @@ vec4 get_sample_point(vec2 uv_coords)
 	return texture(u_sample_point_texture, uv_coords);
 }
 
-vec4 get_medium_color(int vm_index)
-{
-	switch(u_mode)
-	{
-		case DICOM:
-			return tf.array[vm.array[vm_index].tf_index].color;
-		case SPHERE_DEBUG:
-			return tf.array[vm.array[vm.array_size - 1].tf_index].color; // TODO: index of 1 selected medium
-	}
-}
-
 vec3 get_shading_normal(vec4 sample_point, vec3 surface_normal)
 {
 	vec3 result;
@@ -632,13 +632,13 @@ vec4 shade_volume(vec3 surface_normal)
 	if (!vm.array[u_vm_index].enabled)
 		return color;
 
-	vec4 medium_color = get_medium_color(u_vm_index);
+	// vec4 medium_color = get_medium_color(u_vm_index);
 	int medium_channel = vm.array[u_vm_index].channel;
 
 	sample_point.a = float(medium_channel);
 	vec3 normal = get_shading_normal(sample_point, surface_normal);
 		
-	return shade(u_vm_index, medium_color, sample_point, normal);
+	return shade(u_vm_index, sample_point, normal);
 }
 
 void main()
