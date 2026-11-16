@@ -8,7 +8,7 @@ precision mediump sampler3D;
 #define PI 3.14159265358979323846
 // Array size
 #define MAX_TF_ARRAY_SIZE 3
-#define MAX_SHADING_INDICES 2
+#define MAX_SHADING_INDICES 3
 // Render mode
 const int DICOM = 0;
 const int SPHERE_DEBUG = 1;

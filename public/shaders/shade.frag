@@ -9,10 +9,10 @@ precision mediump sampler3D;
 #define UP_VECTOR vec3(0.0, 1.0, 0.0)
 // Array size
 #define MAX_TF_ARRAY_SIZE 3
-#define MAX_LIGHT_ARRAY_SIZE 7
+#define MAX_LIGHT_ARRAY_SIZE 10
 #define MAX_LIGHT_INDICES 3
-#define MAX_SHADING_ARRAY_SIZE 5
-#define MAX_SHADING_INDICES 2
+#define MAX_SHADING_ARRAY_SIZE 7
+#define MAX_SHADING_INDICES 3
 // Variable macros
 #define TRAVEL_DISTANCE_CHANNEL a
 // Render mode
