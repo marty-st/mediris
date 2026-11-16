@@ -40,12 +40,12 @@ export function initIntervalVec(medium)
 
 /**
  * Helper function, creates a GPU-compatible representation of the transfer function color.
- * @param {*} medium transfer function medium object, must contain attribute `color`
+ * @param {*} color color object that contains attributes r,g,b,a
  * @returns vec4 object containing the given color
  */
-export function initColorVec(medium)
+export function initColorVec(color)
 {
-  return vec4.fromValues(medium.color.r, medium.color.g, medium.color.b, medium.color.a);
+  return vec4.fromValues(color.r, color.g, color.b, color.a);
 }
 
 /**
