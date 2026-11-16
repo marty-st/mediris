@@ -470,19 +470,38 @@ vec4 shade_stylized(int vm_index, int shd_index, vec4 medium_color, vec4 sample_
 	// NOTE: possible to use color ramps for concave/convex transitions
 	// PI - u / PI is a fake color ramp
 	// NOTE: use alpha = I for layering
+	// NOTE: rgb MUST be multiplied with I for "premultiplied alpha"
+	//			 otherwise it would have to be dealt with during blending
 
-	// intensity driven purely by the function
-	// return vec4(light.intensity * I * medium_color.rgb * (PI - u) / PI, I);
+	/* Intensity driven purely by the function */
+	// return vec4(light_intensity * I * mix(vec3(1.0), medium_color.rgb, (PI - u) / PI));
+	/*-----------------------------------------*/
 
-	// alpha affects intensity
+	/* Medium alpha affects intensity */
+	// CORRECT version with faked color ramp
+	// RAMP: white (strongest response, aka u = 0) -> medium_color (smallest response)
+	// return vec4(light_intensity * medium_color.a * I * mix(vec3(1.0), medium_color.rgb, u / PI), I * medium_color.a);
+	// INCORRECT version with faked color ramp
+	// RAMP: medium_color (strongest response, aka u = 0) -> white (smallest response)
 	return vec4(light_intensity * medium_color.a * I * mix(vec3(1.0), medium_color.rgb, (PI - u) / PI), I * medium_color.a);
 
-	// test curvature
+	// version without the color ramp
+	// return vec4(light_intensity * medium_color.a * I * medium_color.rgb, I * medium_color.a);
+	/* ------------------------------ */
+
+	/* TEST OUTPUT */
+	// Test curvature
 	// return vec4(vec3(compute_curvature(sample_point)), 1.0);
-	// test u()
-	// return vec4(vec3(u(sample_point, n, l, v)) / PI, 1.0);
-	// test I()
+
+	// Test u() direct output (larger response == darker)
+	// return vec4(vec3((u / PI)), 1.0);
+
+	// Test u() inverse (larger response == brighter)
+	// return vec4(vec3(((PI - u) / PI) * 0.5), 1.0);
+
+	// Test I()
 	// return vec4(vec3(I), 1.0);
+	/*-------------*/
 }
 
 
