@@ -47,8 +47,8 @@ void main()
   vec4 bone = texture(u_texture_bone, var.tex_coord);
 
   // Blend
-  o_color.rgb = shell.rgb + bone.rgb * (1.0 - shell.a) + pet.rgb * (1.0 - shell.a - bone.a);
-  o_color.a = shell.a + bone.a * (1.0 - shell.a) + pet.a * (1.0 - shell.a - bone.a);
+  o_color.rgb = shell.rgb + bone.rgb * (1.0 - shell.a) + pet.rgb * max(1.0 - shell.a - bone.a, 0.0);
+  o_color.a = shell.a + bone.a * (1.0 - shell.a) + pet.a * max(1.0 - shell.a - bone.a, 0.0);
 
   // Background
   vec2 horizontal_ray = normalize(vec2(ray_direction.x, ray_direction.z));
