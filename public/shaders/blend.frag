@@ -7,8 +7,8 @@ precision mediump sampler2D;
 // Colors
 const vec4 GROUND_COLOR = vec4(0.38f, 0.48f, 0.22f, 1.0f);
 const vec4 SKY_COLOR = vec4(0.83f, 0.54f, 0.09f, 1.0f);
-const vec4 DIRECTION_COLOR = vec4(0.43f, 0.21f, 0.58f, 1.0f);
-const vec4 DIRECTION_COLOR2 = vec4(0.11f, 0.47f, 0.64f, 1.0f);
+const vec4 DIRECTION_COLOR = vec4(0.22f, 0.0f, 0.37f, 1.0f);
+const vec4 DIRECTION_COLOR2 = vec4(0.0f, 0.2f, 0.56f, 1.0f);
 // const vec4 DIRECTION_COLOR2 = vec4(0.18f, 0.36f, 0.71f, 1.0f);
 /* -------DEFINITIONS------- */
 /* ------------------------- */
