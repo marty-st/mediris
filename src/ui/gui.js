@@ -20,8 +20,6 @@ export function initGUIData(appData)
     framesPerSecond: 0,
     // App Data
     settings: appData.settings,
-    // lights: Object.fromEntries(Object.entries(appData.environment.volumeMedia)
-    //   .map(([key, medium]) => [key, medium.lights])), // TODO: Is it needed?
     transferFunction: Object.fromEntries(Object.entries(appData.environment.volumeMedia)
       .map(([key, medium]) => [key, medium.transferFunction])),
     selectedVolumeMediumKey: Object.keys(appData.environment.volumeMedia)[0],
@@ -139,6 +137,7 @@ function addshadingColorBinding(index, folder, GUIData)
   const shadingColor = GUIData.volumeMedia[GUIData.selectedVolumeMediumKey].shading[index].color;
 
   folder.addBinding(shadingColor, "obj", {
+    label: "color",
     color: { type: "float" },
     picker: "inline",
     expanded: false,
