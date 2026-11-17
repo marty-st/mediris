@@ -16,7 +16,7 @@
  */
 
 import * as twgl from 'twgl.js';
-import { vec3 } from 'gl-matrix';
+import { vec2, vec3 } from 'gl-matrix';
 import {
   createLightsUniformBlock,
   createShadingParametersUniformBlock,
@@ -270,7 +270,90 @@ export function createVolumeGeometry(gl, drawInfo, volumeMedia)
           },
         ],
       },
-      { // Blend
+      { // Blur PET
+        frameBuffer: drawInfo.blurA.frameBuffer,
+        drawBuffers: [gl.COLOR_ATTACHMENT0], // A
+        bufferInfo: fullScreenQuadBufferInfo,
+        vao: emptyVAO,
+        programInfo: drawInfo.blurA.shaderProgramInfo,
+        shaderFileNames: drawInfo.blurA.shaderFileNames,
+        uniforms: {
+          u_texture: drawInfo.blurA.textureUniforms.colorTexturePET,
+          u_resolution_inverse: vec2.fromValues(1 / 900, 1 / 800),
+          u_pixel_offset: 0,
+          u_offset_multiplier: 3,
+        },
+      },
+      { // Blur PET
+        frameBuffer: drawInfo.blurB.frameBuffer,
+        drawBuffers: [gl.COLOR_ATTACHMENT0], // B
+        bufferInfo: fullScreenQuadBufferInfo,
+        vao: emptyVAO,
+        programInfo: drawInfo.blurB.shaderProgramInfo,
+        shaderFileNames: drawInfo.blurB.shaderFileNames,
+        uniforms: {
+          u_texture: drawInfo.blurB.textureUniforms.blurTextureA,
+          u_resolution_inverse: vec2.fromValues(1 / 900, 1 / 800),
+          u_pixel_offset: 1,
+          u_offset_multiplier: 3,
+        },
+      },
+      { // Blur PET
+        frameBuffer: drawInfo.blurA.frameBuffer,
+        drawBuffers: [gl.COLOR_ATTACHMENT0], // A
+        bufferInfo: fullScreenQuadBufferInfo,
+        vao: emptyVAO,
+        programInfo: drawInfo.blurA.shaderProgramInfo,
+        shaderFileNames: drawInfo.blurA.shaderFileNames,
+        uniforms: {
+          u_texture: drawInfo.blurA.textureUniforms.blurTextureB,
+          u_resolution_inverse: vec2.fromValues(1 / 900, 1 / 800),
+          u_pixel_offset: 2,
+          u_offset_multiplier: 3,
+        },
+      },
+      { // Blur PET
+        frameBuffer: drawInfo.blurB.frameBuffer,
+        drawBuffers: [gl.COLOR_ATTACHMENT0], // B
+        bufferInfo: fullScreenQuadBufferInfo,
+        vao: emptyVAO,
+        programInfo: drawInfo.blurB.shaderProgramInfo,
+        shaderFileNames: drawInfo.blurB.shaderFileNames,
+        uniforms: {
+          u_texture: drawInfo.blurB.textureUniforms.blurTextureA,
+          u_resolution_inverse: vec2.fromValues(1 / 900, 1 / 800),
+          u_pixel_offset: 2,
+          u_offset_multiplier: 3,
+        },
+      },
+      { // Blur PET
+        frameBuffer: drawInfo.blurA.frameBuffer,
+        drawBuffers: [gl.COLOR_ATTACHMENT0], // A
+        bufferInfo: fullScreenQuadBufferInfo,
+        vao: emptyVAO,
+        programInfo: drawInfo.blurA.shaderProgramInfo,
+        shaderFileNames: drawInfo.blurA.shaderFileNames,
+        uniforms: {
+          u_texture: drawInfo.blurA.textureUniforms.blurTextureB,
+          u_resolution_inverse: vec2.fromValues(1 / 900, 1 / 800),
+          u_pixel_offset: 3,
+          u_offset_multiplier: 3,
+        },
+      },
+      { // Bloom PET
+        frameBuffer: drawInfo.bloom.frameBuffer,
+        drawBuffers: [gl.COLOR_ATTACHMENT0],
+        bufferInfo: fullScreenQuadBufferInfo,
+        vao: emptyVAO,
+        programInfo: drawInfo.bloom.shaderProgramInfo,
+        shaderFileNames: drawInfo.bloom.shaderFileNames,
+        uniforms: {
+          u_texture_original: drawInfo.bloom.textureUniforms.colorTexturePET,
+          u_texture_blur: drawInfo.bloom.textureUniforms.blurTextureA,
+          u_bloom_intensity: 1.0,
+        },
+      },
+      { // Blend Final Image
         frameBuffer: drawInfo.blend.frameBuffer,
         drawBuffers: [gl.COLOR_ATTACHMENT0],
         bufferInfo: fullScreenQuadBufferInfo,
@@ -279,7 +362,7 @@ export function createVolumeGeometry(gl, drawInfo, volumeMedia)
         shaderFileNames: drawInfo.blend.shaderFileNames,
         uniforms: {
           u_texture_shell: drawInfo.blend.textureUniforms.colorTextureShell,
-          u_texture_pet: drawInfo.blend.textureUniforms.colorTexturePET,
+          u_texture_pet: drawInfo.blend.textureUniforms.bloomTexturePET,
           u_texture_bone: drawInfo.blend.textureUniforms.colorTextureBone,
         },
       },

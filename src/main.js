@@ -29,13 +29,6 @@ const appData = initAppData();
 
 let sceneEmpty = undefined;
 let idleGeometries = undefined;
-let raytraceShellFrameBuffer = undefined;
-let raytracePETFrameBuffer = undefined;
-let raytraceBoneFrameBuffer = undefined;
-let shadeShellFrameBuffer = undefined;
-let shadePETFrameBuffer = undefined;
-let shadeBoneFrameBuffer = undefined;
-let blendFrameBuffer = undefined;
 
 // Wrapper object for the UI controls & GUI, managed by the UI manager
 let UI = undefined;
@@ -45,6 +38,8 @@ const loadingScreenShaderNames = { vert: "fsquad", frag: "fstexture" };
 const idleShaderNames = { vert: "fsquad", frag: "fstexture" };
 const raytraceShaderNames = { vert: "fsquad", frag: "raytrace" };
 const shadeShaderNames = { vert: "fsquad", frag: "shade" };
+const blurShaderNames = { vert: "fsquad", frag: "blur" };
+const bloomShaderNames = { vert: "fsquad", frag: "bloom" };
 const blendShaderNames = { vert: "fsquad", frag: "blend" };
 
 // FILE PRELOAD
@@ -88,6 +83,8 @@ window.onload = async function init()
   const idleShaderProgramInfo = await createShaderProgram(gl, idleShaderNames.vert, idleShaderNames.frag, NO_CACHE);
   const raytraceProgramInfo = await createShaderProgram(gl, raytraceShaderNames.vert, raytraceShaderNames.frag, NO_CACHE);
   const shadeProgramInfo = await createShaderProgram(gl, shadeShaderNames.vert, shadeShaderNames.frag, NO_CACHE);
+  const blurProgramInfo = await createShaderProgram(gl, blurShaderNames.vert, blurShaderNames.frag, NO_CACHE);
+  const bloomProgramInfo = await createShaderProgram(gl, bloomShaderNames.vert, bloomShaderNames.frag, NO_CACHE);
   const blendProgramInfo = await createShaderProgram(gl, blendShaderNames.vert, blendShaderNames.frag, NO_CACHE);
 
   /* --------------------- */
@@ -128,6 +125,9 @@ window.onload = async function init()
   });
 
   const blendTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
+  const blurTextureA = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
+  const blurTextureB = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
+  const bloomTexturePET = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
   const colorTextureShell = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
   const colorTexturePET = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
   const colorTextureBone = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
@@ -139,13 +139,16 @@ window.onload = async function init()
   const heatmapTexturePET = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
   const heatmapTextureBone = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
 
-  raytraceShellFrameBuffer = createFramebuffer(gl, { color: [samplePointTextureShell, heatmapTextureShell], depth: depthTexture });
-  raytracePETFrameBuffer = createFramebuffer(gl, { color: [samplePointTexturePET, heatmapTexturePET], depth: depthTexture });
-  raytraceBoneFrameBuffer = createFramebuffer(gl, { color: [samplePointTextureBone, heatmapTextureBone], depth: depthTexture });
-  shadeShellFrameBuffer = createFramebuffer(gl, { color: [colorTextureShell], depth: depthTexture });
-  shadePETFrameBuffer = createFramebuffer(gl, { color: [colorTexturePET], depth: depthTexture });
-  shadeBoneFrameBuffer = createFramebuffer(gl, { color: [colorTextureBone], depth: depthTexture });
-  blendFrameBuffer = createFramebuffer(gl, { color: [blendTexture], depth: depthTexture });
+  const raytraceShellFrameBuffer = createFramebuffer(gl, { color: [samplePointTextureShell, heatmapTextureShell], depth: depthTexture });
+  const raytracePETFrameBuffer = createFramebuffer(gl, { color: [samplePointTexturePET, heatmapTexturePET], depth: depthTexture });
+  const raytraceBoneFrameBuffer = createFramebuffer(gl, { color: [samplePointTextureBone, heatmapTextureBone], depth: depthTexture });
+  const shadeShellFrameBuffer = createFramebuffer(gl, { color: [colorTextureShell], depth: depthTexture });
+  const shadePETFrameBuffer = createFramebuffer(gl, { color: [colorTexturePET], depth: depthTexture });
+  const shadeBoneFrameBuffer = createFramebuffer(gl, { color: [colorTextureBone], depth: depthTexture });
+  const blurAFrameBuffer = createFramebuffer(gl, { color: [blurTextureA], depth: depthTexture });
+  const blurBFrameBuffer = createFramebuffer(gl, { color: [blurTextureB], depth: depthTexture });
+  const bloomFrameBuffer = createFramebuffer(gl, { color: [bloomTexturePET], depth: depthTexture });
+  const blendFrameBuffer = createFramebuffer(gl, { color: [blendTexture], depth: depthTexture });
 
   idleGeometries = [
     createFullScreenGeometry(
@@ -153,6 +156,18 @@ window.onload = async function init()
       idleShaderProgramInfo,
       idleShaderNames,
       blendTexture
+    ),
+    createFullScreenGeometry(
+      gl,
+      idleShaderProgramInfo,
+      idleShaderNames,
+      blurTextureA
+    ),
+    createFullScreenGeometry(
+      gl,
+      idleShaderProgramInfo,
+      idleShaderNames,
+      bloomTexturePET
     ),
     createFullScreenGeometry(
       gl,
@@ -302,11 +317,29 @@ window.onload = async function init()
           frameBuffer: shadeBoneFrameBuffer,
           textureUniforms: { volumeTextureBone, samplePointTextureBone },
         },
+        blurA: {
+          shaderProgramInfo: blurProgramInfo,
+          shaderFileNames: blurShaderNames,
+          frameBuffer: blurAFrameBuffer,
+          textureUniforms: { colorTexturePET, blurTextureB },
+        },
+        blurB: {
+          shaderProgramInfo: blurProgramInfo,
+          shaderFileNames: blurShaderNames,
+          frameBuffer: blurBFrameBuffer,
+          textureUniforms: { colorTexturePET, blurTextureA },
+        },
+        bloom: {
+          shaderProgramInfo: bloomProgramInfo,
+          shaderFileNames: bloomShaderNames,
+          frameBuffer: bloomFrameBuffer,
+          textureUniforms: { colorTexturePET, blurTextureA },
+        },
         blend: {
           shaderProgramInfo: blendProgramInfo,
           shaderFileNames: blendShaderNames,
           frameBuffer: blendFrameBuffer,
-          textureUniforms: { colorTextureShell, colorTexturePET, colorTextureBone },
+          textureUniforms: { colorTextureShell, bloomTexturePET, colorTextureBone },
         },
       },
       appData.environment.volumeMedia
