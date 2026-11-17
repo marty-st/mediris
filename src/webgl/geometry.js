@@ -270,76 +270,76 @@ export function createVolumeGeometry(gl, drawInfo, volumeMedia)
           },
         ],
       },
-      { // Blur PET
-        frameBuffer: drawInfo.blurA.frameBuffer,
-        drawBuffers: [gl.COLOR_ATTACHMENT0], // A
-        bufferInfo: fullScreenQuadBufferInfo,
-        vao: emptyVAO,
-        programInfo: drawInfo.blurA.shaderProgramInfo,
-        shaderFileNames: drawInfo.blurA.shaderFileNames,
-        uniforms: {
-          u_texture: drawInfo.blurA.textureUniforms.colorTexturePET,
-          u_resolution_inverse: vec2.fromValues(1 / 900, 1 / 800),
-          u_pixel_offset: 0,
-          u_offset_multiplier: 3,
-        },
-      },
-      { // Blur PET
-        frameBuffer: drawInfo.blurB.frameBuffer,
-        drawBuffers: [gl.COLOR_ATTACHMENT0], // B
-        bufferInfo: fullScreenQuadBufferInfo,
-        vao: emptyVAO,
-        programInfo: drawInfo.blurB.shaderProgramInfo,
-        shaderFileNames: drawInfo.blurB.shaderFileNames,
-        uniforms: {
-          u_texture: drawInfo.blurB.textureUniforms.blurTextureA,
-          u_resolution_inverse: vec2.fromValues(1 / 900, 1 / 800),
-          u_pixel_offset: 1,
-          u_offset_multiplier: 3,
-        },
-      },
-      { // Blur PET
-        frameBuffer: drawInfo.blurA.frameBuffer,
-        drawBuffers: [gl.COLOR_ATTACHMENT0], // A
-        bufferInfo: fullScreenQuadBufferInfo,
-        vao: emptyVAO,
-        programInfo: drawInfo.blurA.shaderProgramInfo,
-        shaderFileNames: drawInfo.blurA.shaderFileNames,
-        uniforms: {
-          u_texture: drawInfo.blurA.textureUniforms.blurTextureB,
-          u_resolution_inverse: vec2.fromValues(1 / 900, 1 / 800),
-          u_pixel_offset: 2,
-          u_offset_multiplier: 3,
-        },
-      },
-      { // Blur PET
-        frameBuffer: drawInfo.blurB.frameBuffer,
-        drawBuffers: [gl.COLOR_ATTACHMENT0], // B
-        bufferInfo: fullScreenQuadBufferInfo,
-        vao: emptyVAO,
-        programInfo: drawInfo.blurB.shaderProgramInfo,
-        shaderFileNames: drawInfo.blurB.shaderFileNames,
-        uniforms: {
-          u_texture: drawInfo.blurB.textureUniforms.blurTextureA,
-          u_resolution_inverse: vec2.fromValues(1 / 900, 1 / 800),
-          u_pixel_offset: 2,
-          u_offset_multiplier: 3,
-        },
-      },
-      { // Blur PET
-        frameBuffer: drawInfo.blurA.frameBuffer,
-        drawBuffers: [gl.COLOR_ATTACHMENT0], // A
-        bufferInfo: fullScreenQuadBufferInfo,
-        vao: emptyVAO,
-        programInfo: drawInfo.blurA.shaderProgramInfo,
-        shaderFileNames: drawInfo.blurA.shaderFileNames,
-        uniforms: {
-          u_texture: drawInfo.blurA.textureUniforms.blurTextureB,
-          u_resolution_inverse: vec2.fromValues(1 / 900, 1 / 800),
-          u_pixel_offset: 3,
-          u_offset_multiplier: 3,
-        },
-      },
+      // { // Blur PET
+      //   frameBuffer: drawInfo.blurA.frameBuffer,
+      //   drawBuffers: [gl.COLOR_ATTACHMENT0], // A
+      //   bufferInfo: fullScreenQuadBufferInfo,
+      //   vao: emptyVAO,
+      //   programInfo: drawInfo.blurA.shaderProgramInfo,
+      //   shaderFileNames: drawInfo.blurA.shaderFileNames,
+      //   uniforms: {
+      //     u_texture: drawInfo.blurA.textureUniforms.colorTexturePET,
+      //     u_resolution_inverse: vec2.fromValues(1 / 900, 1 / 800),
+      //     u_pixel_offset: 0,
+      //     u_offset_multiplier: 3,
+      //   },
+      // },
+      // { // Blur PET
+      //   frameBuffer: drawInfo.blurB.frameBuffer,
+      //   drawBuffers: [gl.COLOR_ATTACHMENT0], // B
+      //   bufferInfo: fullScreenQuadBufferInfo,
+      //   vao: emptyVAO,
+      //   programInfo: drawInfo.blurB.shaderProgramInfo,
+      //   shaderFileNames: drawInfo.blurB.shaderFileNames,
+      //   uniforms: {
+      //     u_texture: drawInfo.blurB.textureUniforms.blurTextureA,
+      //     u_resolution_inverse: vec2.fromValues(1 / 900, 1 / 800),
+      //     u_pixel_offset: 1,
+      //     u_offset_multiplier: 3,
+      //   },
+      // },
+      // { // Blur PET
+      //   frameBuffer: drawInfo.blurA.frameBuffer,
+      //   drawBuffers: [gl.COLOR_ATTACHMENT0], // A
+      //   bufferInfo: fullScreenQuadBufferInfo,
+      //   vao: emptyVAO,
+      //   programInfo: drawInfo.blurA.shaderProgramInfo,
+      //   shaderFileNames: drawInfo.blurA.shaderFileNames,
+      //   uniforms: {
+      //     u_texture: drawInfo.blurA.textureUniforms.blurTextureB,
+      //     u_resolution_inverse: vec2.fromValues(1 / 900, 1 / 800),
+      //     u_pixel_offset: 2,
+      //     u_offset_multiplier: 3,
+      //   },
+      // },
+      // { // Blur PET
+      //   frameBuffer: drawInfo.blurB.frameBuffer,
+      //   drawBuffers: [gl.COLOR_ATTACHMENT0], // B
+      //   bufferInfo: fullScreenQuadBufferInfo,
+      //   vao: emptyVAO,
+      //   programInfo: drawInfo.blurB.shaderProgramInfo,
+      //   shaderFileNames: drawInfo.blurB.shaderFileNames,
+      //   uniforms: {
+      //     u_texture: drawInfo.blurB.textureUniforms.blurTextureA,
+      //     u_resolution_inverse: vec2.fromValues(1 / 900, 1 / 800),
+      //     u_pixel_offset: 2,
+      //     u_offset_multiplier: 3,
+      //   },
+      // },
+      // { // Blur PET
+      //   frameBuffer: drawInfo.blurA.frameBuffer,
+      //   drawBuffers: [gl.COLOR_ATTACHMENT0], // A
+      //   bufferInfo: fullScreenQuadBufferInfo,
+      //   vao: emptyVAO,
+      //   programInfo: drawInfo.blurA.shaderProgramInfo,
+      //   shaderFileNames: drawInfo.blurA.shaderFileNames,
+      //   uniforms: {
+      //     u_texture: drawInfo.blurA.textureUniforms.blurTextureB,
+      //     u_resolution_inverse: vec2.fromValues(1 / 900, 1 / 800),
+      //     u_pixel_offset: 3,
+      //     u_offset_multiplier: 3,
+      //   },
+      // },
       { // Bloom PET
         frameBuffer: drawInfo.bloom.frameBuffer,
         drawBuffers: [gl.COLOR_ATTACHMENT0],
