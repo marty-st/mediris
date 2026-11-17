@@ -655,4 +655,18 @@ void main()
 	}
 
 	o_color = shade_volume(surface_normal);
+
+	// if (o_color.a > 0.0)
+	// {
+	// 	vec4 fogColor = vec4(0.1, 0.1, 0.1, o_color.a);
+
+	// 	float density = 5.0; 
+
+	// 	vec3 sample_point = get_sample_point(var.tex_coord).xyz;
+
+	// 	float distance = distance(sample_point, u_eye_position);
+
+	// 	// o_color = mix( o_color, fogColor, 1.0 - exp(-distance * density));
+	// 	o_color.xyz *= 1.0 - exp(-distance * density);
+	// }
 }
