@@ -407,7 +407,7 @@ function renderLoop(currentTime)
   }
 
   // Idle render
-  const output = appData.settings.uniforms.debug.u_output.value;
+  const output = appData.settings.debug.output.value;
   render(context.gl, context.canvas, environment.viewport, sceneEmpty, idleGeometries.slice(output, output + 1));
 
   // State reset
