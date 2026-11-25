@@ -149,6 +149,7 @@ window.onload = async function init()
   const blurBFrameBuffer = createFramebuffer(gl, { color: [blurTextureB], depth: depthTexture });
   const bloomFrameBuffer = createFramebuffer(gl, { color: [bloomTexturePET], depth: depthTexture });
   const blendFrameBuffer = createFramebuffer(gl, { color: [blendTexture], depth: depthTexture });
+  // TODO: screen-space ambient occlusion for the bone layer (better spatial perception)
 
   idleGeometries = [
     createFullScreenGeometry(
