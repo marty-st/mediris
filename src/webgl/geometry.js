@@ -351,6 +351,7 @@ export function createVolumeGeometry(gl, drawInfo, volumeMedia)
           u_texture_original: drawInfo.bloom.textureUniforms.colorTexturePET,
           u_texture_blur: drawInfo.bloom.textureUniforms.blurTextureA,
           u_bloom_intensity: 1.0,
+          u_use_bloom: false,
         },
       },
       { // Blend Final Image
