@@ -248,7 +248,7 @@ const environment = {
 // Application settings
 const settings = {
   debug: {
-    output: { value: 0, options: { isList: true, final: 0, blur: 1, bloomPET: 2, heatmapShell: 3, heatmapPET: 4, heatmapBone: 5 } },
+    output: { value: 0, options: { isList: true, final: 0, blur: 1, focusWindow: 2, bloomPET: 3, heatmapShell: 4, heatmapPET: 5, heatmapBone: 6 } },
   },
   uniforms: {
     general: {

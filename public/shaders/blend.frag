@@ -27,6 +27,7 @@ in VaryingData var;
 uniform sampler2D u_texture_shell;
 uniform sampler2D u_texture_pet;
 uniform sampler2D u_texture_bone;
+uniform sampler2D u_texture_focus_window;
 // Camera uniforms
 uniform vec3 u_eye_position;
 uniform mat4 u_view_inv;
@@ -45,8 +46,13 @@ void main()
   vec4 shell = texture(u_texture_shell, var.tex_coord);
   vec4 pet = texture(u_texture_pet, var.tex_coord);
   vec4 bone = texture(u_texture_bone, var.tex_coord);
+  vec4 focus_window = texture(u_texture_focus_window, var.tex_coord);
 
   // Blend
+
+  // Focus Window
+  bone *= focus_window.a;
+
   o_color.rgb = shell.rgb + bone.rgb * (1.0 - shell.a) + pet.rgb * max(1.0 - shell.a - bone.a, 0.0);
   o_color.a = shell.a + bone.a * (1.0 - shell.a) + pet.a * max(1.0 - shell.a - bone.a, 0.0);
 

@@ -127,6 +127,8 @@ window.onload = async function init()
   const blendTexture = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
   const blurTextureA = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
   const blurTextureB = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
+  const focusWindowTextureA = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
+  const focusWindowTextureB = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
   const bloomTexturePET = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
   const colorTextureShell = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
   const colorTexturePET = createFramebufferTexture(gl, { width: canvas.width, height: canvas.height }, "rgba");
@@ -145,8 +147,8 @@ window.onload = async function init()
   const shadeShellFrameBuffer = createFramebuffer(gl, { color: [colorTextureShell], depth: depthTexture });
   const shadePETFrameBuffer = createFramebuffer(gl, { color: [colorTexturePET], depth: depthTexture });
   const shadeBoneFrameBuffer = createFramebuffer(gl, { color: [colorTextureBone], depth: depthTexture });
-  const blurAFrameBuffer = createFramebuffer(gl, { color: [blurTextureA], depth: depthTexture });
-  const blurBFrameBuffer = createFramebuffer(gl, { color: [blurTextureB], depth: depthTexture });
+  const blurAFrameBuffer = createFramebuffer(gl, { color: [blurTextureA, focusWindowTextureA], depth: depthTexture });
+  const blurBFrameBuffer = createFramebuffer(gl, { color: [blurTextureB, focusWindowTextureB], depth: depthTexture });
   const bloomFrameBuffer = createFramebuffer(gl, { color: [bloomTexturePET], depth: depthTexture });
   const blendFrameBuffer = createFramebuffer(gl, { color: [blendTexture], depth: depthTexture });
   // TODO: screen-space ambient occlusion for the bone layer (better spatial perception)
@@ -163,6 +165,12 @@ window.onload = async function init()
       idleShaderProgramInfo,
       idleShaderNames,
       blurTextureA
+    ),
+    createFullScreenGeometry(
+      gl,
+      idleShaderProgramInfo,
+      idleShaderNames,
+      focusWindowTextureA
     ),
     createFullScreenGeometry(
       gl,
@@ -322,13 +330,13 @@ window.onload = async function init()
           shaderProgramInfo: blurProgramInfo,
           shaderFileNames: blurShaderNames,
           frameBuffer: blurAFrameBuffer,
-          textureUniforms: { colorTexturePET, blurTextureB },
+          textureUniforms: { colorTexturePET, blurTextureB, focusWindowTextureB },
         },
         blurB: {
           shaderProgramInfo: blurProgramInfo,
           shaderFileNames: blurShaderNames,
           frameBuffer: blurBFrameBuffer,
-          textureUniforms: { colorTexturePET, blurTextureA },
+          textureUniforms: { colorTexturePET, blurTextureA, focusWindowTextureA },
         },
         bloom: {
           shaderProgramInfo: bloomProgramInfo,
@@ -340,7 +348,7 @@ window.onload = async function init()
           shaderProgramInfo: blendProgramInfo,
           shaderFileNames: blendShaderNames,
           frameBuffer: blendFrameBuffer,
-          textureUniforms: { colorTextureShell, bloomTexturePET, colorTextureBone },
+          textureUniforms: { colorTextureShell, bloomTexturePET, colorTextureBone, focusWindowTextureA },
         },
       },
       appData.environment.volumeMedia
