@@ -27,9 +27,13 @@ in VaryingData var;
 uniform sampler2D u_texture_shell;
 uniform sampler2D u_texture_pet;
 uniform sampler2D u_texture_bone;
+// uniform sampler2D u_texture_pet_blur;
 uniform sampler2D u_texture_focus_window;
 // Options
+// NOTE: more efficient to disable draw calls on the CPU
 uniform bool u_use_ss_focus_window;
+// uniform bool u_use_bloom;
+// uniform float u_bloom_intensity;
 // Camera uniforms
 uniform vec3 u_eye_position;
 uniform mat4 u_view_inv;
@@ -48,13 +52,17 @@ void main()
   vec4 shell = texture(u_texture_shell, var.tex_coord);
   vec4 pet = texture(u_texture_pet, var.tex_coord);
   vec4 bone = texture(u_texture_bone, var.tex_coord);
-  vec4 focus_window = texture(u_texture_focus_window, var.tex_coord);
-
-  // Blend
 
   // Focus Window
   if (u_use_ss_focus_window)
-    bone *= focus_window.a;
+    bone *= texture(u_texture_focus_window, var.tex_coord).a;
+
+  // NOTE: Bloom may be moved here if visual debug not required.
+  // Bloom
+  // if (u_use_bloom)
+  //   pet += u_bloom_intensity * + texture(u_texture_pet_blur, var.tex_coord);
+
+  // Blend
 
   o_color.rgb = shell.rgb + bone.rgb * (1.0 - shell.a) + pet.rgb * max(1.0 - shell.a - bone.a, 0.0);
   o_color.a = shell.a + bone.a * (1.0 - shell.a) + pet.a * max(1.0 - shell.a - bone.a, 0.0);

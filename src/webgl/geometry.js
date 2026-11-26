@@ -384,6 +384,8 @@ export function createVolumeGeometry(gl, drawInfo, volumeMedia)
           u_texture_bone: drawInfo.blend.textureUniforms.colorTextureBone,
           u_texture_focus_window: drawInfo.blend.textureUniforms.focusWindowTextureA,
           u_use_ss_focus_window: false,
+          // u_bloom_intensity: 1.0,
+          // u_use_bloom: false,
         },
       },
     ],
