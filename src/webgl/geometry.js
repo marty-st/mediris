@@ -287,7 +287,6 @@ export function createVolumeGeometry(gl, drawInfo, volumeMedia)
           u_pixel_offset_focus_window: 0,
           u_offset_multiplier_blur: 3,
           u_offset_multiplier_focus_window: 3,
-          u_use_ss_focus_window: true,
         },
       },
       { // Blur PET
@@ -305,7 +304,6 @@ export function createVolumeGeometry(gl, drawInfo, volumeMedia)
           u_pixel_offset_focus_window: 1,
           u_offset_multiplier_blur: 3,
           u_offset_multiplier_focus_window: 3,
-          u_use_ss_focus_window: true,
         },
       },
       { // Blur PET
@@ -323,7 +321,6 @@ export function createVolumeGeometry(gl, drawInfo, volumeMedia)
           u_pixel_offset_focus_window: 2,
           u_offset_multiplier_blur: 3,
           u_offset_multiplier_focus_window: 3,
-          u_use_ss_focus_window: true,
         },
       },
       { // Blur PET
@@ -341,7 +338,6 @@ export function createVolumeGeometry(gl, drawInfo, volumeMedia)
           u_pixel_offset_focus_window: 2,
           u_offset_multiplier_blur: 3,
           u_offset_multiplier_focus_window: 3,
-          u_use_ss_focus_window: true,
         },
       },
       { // Blur PET
@@ -359,7 +355,6 @@ export function createVolumeGeometry(gl, drawInfo, volumeMedia)
           u_pixel_offset_focus_window: 3,
           u_offset_multiplier_blur: 3,
           u_offset_multiplier_focus_window: 3,
-          u_use_ss_focus_window: true,
         },
       },
       { // Bloom PET
@@ -388,6 +383,7 @@ export function createVolumeGeometry(gl, drawInfo, volumeMedia)
           u_texture_pet: drawInfo.blend.textureUniforms.bloomTexturePET,
           u_texture_bone: drawInfo.blend.textureUniforms.colorTextureBone,
           u_texture_focus_window: drawInfo.blend.textureUniforms.focusWindowTextureA,
+          u_use_ss_focus_window: false,
         },
       },
     ],

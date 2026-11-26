@@ -22,7 +22,6 @@ uniform float u_pixel_offset_blur;
 uniform float u_offset_multiplier_blur;
 uniform float u_pixel_offset_focus_window;
 uniform float u_offset_multiplier_focus_window;
-uniform bool u_use_ss_focus_window;
 
 /* ---------OUTPUT---------- */
 /* ------------------------- */
@@ -98,7 +97,5 @@ void main()
 	// NOTE: evaluating both blur and focus window in one function may bring more performance
 	// as one texture fetch may serve both.
   o_color_blur = kawase_blur(u_texture_blur, vec2(u_pixel_offset_blur), u_offset_multiplier_blur);
-
-	if (u_use_ss_focus_window)
-  	o_color_focus_window = vec4(dilate(u_texture_focus_window, vec2(u_pixel_offset_focus_window), u_offset_multiplier_focus_window));
+	o_color_focus_window = vec4(dilate(u_texture_focus_window, vec2(u_pixel_offset_focus_window), u_offset_multiplier_focus_window));
 }
