@@ -85,6 +85,8 @@ export function createVolumeGeometry(gl, drawInfo, volumeMedia)
 
   const flatVolumeMedia = flattenVolumeMedia(volumeMedia);
 
+  // TODO: make r-value uniforms be read from central data structure
+
   return {
     draws: [
       { // Raytrace PET
